@@ -99,7 +99,7 @@
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
       <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
@@ -114,7 +114,6 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <AdditionalIncludeDirectories>%DX8SDK_ROOT%\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions>/D "_HAS_ITERATOR_DEBUGGING=0" %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4244;4996;4018;</DisableSpecificWarnings>
     </ClCompile>
     <Midl>
@@ -137,7 +136,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\RailSim2\RailSim2_Debug_vc2010.exe</OutputFile>
-      <AdditionalDependencies>libcpmt.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcpmtd.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%DX8SDK_ROOT%\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libci</IgnoreSpecificDefaultLibraries>
     </Link>
