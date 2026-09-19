@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-19.
 #include "stdafx.h"
 #include "md5.h"
 #include "Network.h"
@@ -9,11 +10,12 @@
 #include "CSimulationMode.h"
 #include "CTrainGroup.h"
 #include "CSaveFile.h"
+#include "RS2EXTiming.h"
 
 //	ì‡ïîíËêî
 extern const int RSN_SCRNAME_MAX = 32;
-extern const int RSN_SYNC_INTERVAL_MIN = MAXFPS/10;
-extern const int RSN_SYNC_INTERVAL_MAX = MAXFPS*5;
+extern const int RSN_SYNC_INTERVAL_MIN = RS2EXTiming::SIMULATION_HZ/10;
+extern const int RSN_SYNC_INTERVAL_MAX = RS2EXTiming::SIMULATION_HZ*5;
 const int RSN_MEMBER_MAX = 12;
 const int RSN_TRANSFER_STRIDE = 16000;
 

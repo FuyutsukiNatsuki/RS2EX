@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-19.
 #include "stdafx.h"
 #include "HighTimer.h"
 #include "Capture.h"
@@ -38,6 +39,7 @@
 #include "CStationEditMode.h"
 #include "CSceneEditMode.h"
 #include "CEnvEditMode.h"
+#include "RS2EXTiming.h"
 #include "CSimulationMode.h"
 #include "CFileMode.h"
 #include "CConfigMode.h"
@@ -674,7 +676,7 @@ void CGameMode::RenderCompass(){
 	if(ms_ActiveMode!=g_NeutralMode || !g_ConfigMode->IsWindowDiv()){
 		int vp_w = g_DispWidth, vp_h = g_DispHeight;
 		g_StrTex->RenderRight(vp_w*45/100, vp_h-TILE_UNIT,
-			0xffffffff, 0xff000000, FlashIn("%s: %.1f [m/s]", lang(WindSpeed), MAXFPS*windspeed));
+			0xffffffff, 0xff000000, FlashIn("%s: %.1f [m/s]", lang(WindSpeed), RS2EXTiming::SIMULATION_HZ*windspeed));
 	}
 }
 

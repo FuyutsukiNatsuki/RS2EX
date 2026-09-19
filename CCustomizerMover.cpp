@@ -1,7 +1,9 @@
+//	Modified for RS2EX on 2026-09-19.
 #include "stdafx.h"
 #include "CCustomizerMover.h"
 #include "CSaveFile.h"
 #include "CConfigMode.h"
+#include "RS2EXTiming.h"
 
 //	内部グローバル
 bool g_PreviewAnimation = true;	//	プレビュー時アニメーションフラグ (編成プレビューでは false)
@@ -114,7 +116,7 @@ float CStaticMoverBase::ProcDelay(){
 		float th = i+1.0f;
 		if(pos.x<th){
 			if(timing[i]){
-				float tmp = 1.0f/(timing[i]*MAXFPS);
+				float tmp = 1.0f/(timing[i]*RS2EXTiming::SIMULATION_HZ);
 				if(g_MoverEnabled) pos.x += credit*tmp;
 				credit = (pos.x-th)/tmp;
 				ValueArea(&pos.x, i, th);
@@ -212,18 +214,20 @@ char *CDynamicRotator::Read(
 	if(tmp = AsgnVector3D(eee = str, "RotationAxis", &m_RotationAxis)) str = tmp;
 	else m_RotationAxis = V3DIR;
 	if(!(str = AsgnFloat(eee = str, "RotationSpeed", &m_RotationSpeed))) throw CSynErr(eee);
-	m_RotationSpeed *= 2.0f*D3DX_PI/MAXFPS;
+	m_RotationSpeed *= 2.0f*D3DX_PI/RS2EXTiming::SIMULATION_HZ;
 	if(tmp = AsgnFloat(eee = str, "Acceleration", &m_Acceleration)){
 		str = tmp;
 		if(m_Acceleration<0.0f) m_Acceleration = m_RotationSpeed;
-		else m_Acceleration *= 2.0f*D3DX_PI/(MAXFPS*MAXFPS);
+		else m_Acceleration *= 2.0f*D3DX_PI
+			/(RS2EXTiming::SIMULATION_HZ*RS2EXTiming::SIMULATION_HZ);
 	}else{
 		m_Acceleration = m_RotationSpeed;
 	}
 	if(tmp = AsgnFloat(eee = str, "Deceleration", &m_Deceleration)){
 		str = tmp;
 		if(m_Deceleration<0.0f) m_Deceleration = m_Deceleration;
-		else m_Deceleration *= 2.0f*D3DX_PI/(MAXFPS*MAXFPS);
+		else m_Deceleration *= 2.0f*D3DX_PI
+			/(RS2EXTiming::SIMULATION_HZ*RS2EXTiming::SIMULATION_HZ);
 	}else{
 		m_Deceleration = m_RotationSpeed;
 	}

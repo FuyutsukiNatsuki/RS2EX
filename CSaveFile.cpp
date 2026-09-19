@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-19.
 #include "stdafx.h"
 #include "md5.h"
 #include "RailMap.h"
@@ -22,6 +23,7 @@
 #include "CGirderPlugin.h"
 #include "CPierPlugin.h"
 #include "CLinePlugin.h"
+#include "RS2EXTiming.h"
 
 //	ä÷êîêÈåæ
 bool IsLeapYear(int);
@@ -95,7 +97,8 @@ void CSaveFile::UpdateWind(){
 	m_WindDir1 = m_WindDir2;
 	m_WindDir2 = speed*VEC3(sinf(theta), 0.0f, cosf(theta));
 	m_WindCount = 0;
-	m_WindTime = Rand2(12*60*60*MAXFPS, 48*60*60*MAXFPS);
+	m_WindTime = Rand2(12*60*60*RS2EXTiming::SIMULATION_HZ,
+		48*60*60*RS2EXTiming::SIMULATION_HZ);
 }
 
 /*
@@ -563,8 +566,8 @@ void CSaveFile::Simulate(
 
 		int dpm = GetDaysPerMonth(m_Year, m_Month);
 		m_Frame += scale;
-		m_Second += m_Frame/30;
-		m_Frame %= 30;
+		m_Second += m_Frame/RS2EXTiming::SIMULATION_HZ;
+		m_Frame %= RS2EXTiming::SIMULATION_HZ;
 		m_Minute += m_Second/60;
 		m_Second %= 60;
 		m_Hour += m_Minute/60;

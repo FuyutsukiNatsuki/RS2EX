@@ -1,8 +1,10 @@
+//	Modified for RS2EX on 2026-09-19.
 #include "stdafx.h"
 #include "CModelPlugin.h"
 #include "CEnvPlugin.h"
 #include "CScene.h"
 #include "CConfigMode.h"
+#include "RS2EXTiming.h"
 
 //	ì‡ïîÉOÉçÅ[ÉoÉã
 VEC3 g_WindDir = V3ZERO;	//	ïóï˚å¸
@@ -173,14 +175,14 @@ char *CParticle::Read(
 	else m_AccelerationRel = 0.0f;
 	if(tmp = AsgnFloat(eee = str, "DecelerationRel", &m_DecelerationRel)) str = tmp;
 	else m_DecelerationRel = 0.0f;
-	m_MinQty /= MAXFPS;
-	m_MaxQty /= MAXFPS;
+	m_MinQty /= RS2EXTiming::SIMULATION_HZ;
+	m_MaxQty /= RS2EXTiming::SIMULATION_HZ;
 	m_VelocityRel *= 3.6f;
-	m_AccelerationRel *= 3.6f*MAXFPS;
-	m_DecelerationRel *= 3.6f*MAXFPS;
+	m_AccelerationRel *= 3.6f*RS2EXTiming::SIMULATION_HZ;
+	m_DecelerationRel *= 3.6f*RS2EXTiming::SIMULATION_HZ;
 	if(!(str = AsgnFloat(eee = str, "Lifetime", m_Lifetime, 2, true))) throw CSynErr(eee);
 	if(!(str = AsgnVector3D(eee = str, "Direction", m_Direction, 2, true))) throw CSynErr(eee);
-	for(i = 0; i<2; i++) m_Direction[i] /= MAXFPS;
+	for(i = 0; i<2; i++) m_Direction[i] /= RS2EXTiming::SIMULATION_HZ;
 	if(!(str = AsgnFloat(eee = str, "InitialRadius", m_InitialRadius, 2, true))) throw CSynErr(eee);
 	if(!(str = AsgnFloat(eee = str, "FinalRadius", m_FinalRadius, 2, true))) throw CSynErr(eee);
 	if(!(str = AsgnColor(eee = str, "Color", m_Color, 2, true))) throw CSynErr(eee);
@@ -191,13 +193,13 @@ char *CParticle::Read(
 	if(tmp = AsgnFloat(eee = str, "AirResistance", &m_AirResistance)) str = tmp;
 	else m_AirResistance = 0.0f;
 	ValueArea(&m_AirResistance, 0.0f, 1.0f);
-	m_AirResistance = 1.0f-powf(1.0f-m_AirResistance, 1.0f/MAXFPS);
+	m_AirResistance = 1.0f-powf(1.0f-m_AirResistance, 1.0f/RS2EXTiming::SIMULATION_HZ);
 	if(tmp = AsgnFloat(eee = str, "Gravity", &m_Gravity)) str = tmp;
 	else m_Gravity = 0.0f;
-	m_Gravity /= MAXFPS;
+	m_Gravity /= RS2EXTiming::SIMULATION_HZ;
 	if(tmp = AsgnFloat(eee = str, "Turbulence", &m_Turbulence)) str = tmp;
 	else m_Turbulence = 0.0f;
-	m_Turbulence /= MAXFPS;
+	m_Turbulence /= RS2EXTiming::SIMULATION_HZ;
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 	m_LinkState = NULL;
 	return str;
@@ -259,7 +261,7 @@ void CParticle::Register(
 			this, pos+fix*rad, vfix*dir+(1.0f-vfix)*wind,
 			FRand2(m_InitialRadius[0], m_InitialRadius[1]),
 			FRand2(m_FinalRadius[0], m_FinalRadius[1]),
-			Round(FRand2(m_Lifetime[0], m_Lifetime[1])*MAXFPS), scene));
+			Round(FRand2(m_Lifetime[0], m_Lifetime[1])*RS2EXTiming::SIMULATION_HZ), scene));
 	}
 	m_LinkState->m_OldPos = pos;
 	m_LinkState->m_OldSpeed = speed;

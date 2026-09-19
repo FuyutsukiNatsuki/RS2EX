@@ -1,5 +1,8 @@
+//	Modified for RS2EX on 2026-09-19.
 #ifndef CSAVEFILE_H_INCLUDED
 #define CSAVEFILE_H_INCLUDED
+
+#include "RS2EXTiming.h"
 
 class MD5;
 class CListView;
@@ -76,7 +79,7 @@ public:
 	int GetSceneNum(){ return m_SceneNum; }
 	int GetSumDays(){ return m_SumDays; }
 	double GetDayTime(){
-		return (m_Hour+(m_Minute+(m_Second+m_Frame/30.0)/60.0)/60.0)/24.0;
+		return (m_Hour+(m_Minute+(m_Second+m_Frame/static_cast<double>(RS2EXTiming::SIMULATION_HZ))/60.0)/60.0)/24.0;
 	}
 	double GetAbsTime(){ return m_SumDays+GetDayTime(); }
 	char *GetTimeText();

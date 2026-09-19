@@ -976,6 +976,9 @@
     <ClInclude Include="RailMap.h">
       <Filter>Header Files\RS2 Header\Misc Header</Filter>
     </ClInclude>
+    <ClInclude Include="RS2EXTiming.h">
+      <Filter>Header Files\RS2 Header\Misc Header</Filter>
+    </ClInclude>
     <ClInclude Include="RSPV.H">
       <Filter>Header Files\RS2 Header\Misc Header</Filter>
     </ClInclude>

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-19.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CSimpleDialog.h"
@@ -14,6 +15,7 @@
 #include "CPluginTree.h"
 #include "CTrainGroupTemplate.h"
 #include "CSimulationMode.h"
+#include "RS2EXTiming.h"
 
 //	関数宣言
 void PushUndoStack();
@@ -32,7 +34,7 @@ const float SPEED_CONTROL_DELTA = 1.0f;				//	速度設定幅
 const float FINAL_ACCELERATION = 0.5f;				//	最終加速度率
 const float STOP_LIMIT_LINE = 1.0f;					//	停止余裕距離
 extern const float GROUP_PREVIEW_SPEED = 0.1f;		//	編成プレビュー移動速度
-const double FRAME_PER_DAY = 24.0*60.0*60.0*30.0;	//	1 日当たりフレーム数
+const double FRAME_PER_DAY = 24.0*60.0*60.0*RS2EXTiming::SIMULATION_HZ;	//	1 日当たりフレーム数
 
 //	内部グローバル
 CTrain *g_CabinViewTrain = NULL;	//	運転席適用車輌
@@ -776,7 +778,7 @@ void CTrainGroup::SetConnectSwitch(
 	}
 	g_SystemSwitch[SYS_SW_VELOCITY].SetValue(Round(fabsf(m_CurrentSpeed)));
 	g_SystemSwitch[SYS_SW_ACCEL].SetValue(Round(
-		(fabsf(m_CurrentSpeed)-fabsf(m_OldSpeed))*(1000*MAXFPS)));
+		(fabsf(m_CurrentSpeed)-fabsf(m_OldSpeed))*(1000*RS2EXTiming::SIMULATION_HZ)));
 	g_SystemSwitch[SYS_SW_CABINVIEW].SetValue(g_CabinViewTrain==train);
 }
 
@@ -864,7 +866,7 @@ void CTrainGroup::Simulate(){
 	g_SystemSwitch[SYS_SW_SERIAL].SetValue(m_Serial);
 	m_OldSpeed = m_CurrentSpeed;
 	double abstime = g_SaveFile->GetAbsTime();
-	float speed = m_CurrentSpeed/(3.6f*MAXFPS);	//	[km/h] to [m/frame]
+	float speed = m_CurrentSpeed/(3.6f*RS2EXTiming::SIMULATION_HZ);	//	[km/h] to [m/frame]
 	m_Location[0].Detach();
 	m_Location[1].Detach();
 	m_Seeker.Detach();
@@ -879,7 +881,7 @@ void CTrainGroup::Simulate(){
 	speed = speed<0.0f ? -sptmp : sptmp;
 	ITrainSetBuffer ib = m_SetBuffer.begin();
 	for(; ib!=m_SetBuffer.end(); ib++) ib->Rotate(speed);
-	if(hit) m_CurrentSpeed = speed*3.6f*MAXFPS;
+	if(hit) m_CurrentSpeed = speed*3.6f*RS2EXTiming::SIMULATION_HZ;
 	m_Seeker = head;
 	head.m_Offset = head.m_SetRail->GetSegLen()-head.m_Offset;
 	Trail(true, false);
@@ -903,8 +905,8 @@ void CTrainGroup::Simulate(){
 	g_HitTrainGroup.m_Group = NULL;
 	float seekdist, dccmpff;
 	if(g_ManualControl) goto NORMAL;
-	seekdist = m_CurrentSpeed/(3.6f*MAXFPS);	//	[km/h] to [m/frame]
-	dccmpff = (g_IgnoreAcceleration ? 1000.0f : m_MaxDeceleration)/(3.6f*MAXFPS);	//	[km/h/frame] to [m/frame/frame]
+	seekdist = m_CurrentSpeed/(3.6f*RS2EXTiming::SIMULATION_HZ);	//	[km/h] to [m/frame]
+	dccmpff = (g_IgnoreAcceleration ? 1000.0f : m_MaxDeceleration)/(3.6f*RS2EXTiming::SIMULATION_HZ);	//	[km/h/frame] to [m/frame/frame]
 	seekdist = STOP_LIMIT_LINE+0.5f*seekdist*seekdist/dccmpff;
 	m_NotifyFlag = false;
 	hit = head.m_SetRail->MarchTrain(&seekdist, &m_Seeker, this, this);
@@ -928,7 +930,7 @@ void CTrainGroup::Simulate(){
 		if(seekdist<0.0f) seekdist = 0.0f;
 		sptmp = sqrtf(2.0f*seekdist*dccmpff);	//	[m/frame]
 		if(sptmp>seekdist) sptmp = seekdist;
-		sptmp *= 3.6f*MAXFPS;	//	[m/frame] to [km/h]
+		sptmp *= 3.6f*RS2EXTiming::SIMULATION_HZ;	//	[m/frame] to [km/h]
 		newspeed = m_CurrentSpeed<0.0f ? -sptmp : sptmp;
 
 		tmpdccspeed = m_CurrentSpeed;
@@ -952,7 +954,7 @@ SUSPEND:
 			if(!m_CurrentSpeed && (m_StopTarget<STOP_LIMIT_LINE || hit==1)){
 				m_State = 2;
 				m_DoorWait = m_OpenDoor[0] || m_OpenDoor[1]
-					? Round(m_DoorClosingTime*MAXFPS) : 0;
+					? Round(m_DoorClosingTime*RS2EXTiming::SIMULATION_HZ) : 0;
 				if(hit==1 || m_DiaElement.m_Action==1
 					|| !head.m_SetRail->CheckPlatformExtend(head.m_Side, m_Platform))
 					m_EffectTargetSpeed = -m_EffectTargetSpeed;

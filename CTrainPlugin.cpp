@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-19.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CTrainPlugin.h"
@@ -7,6 +8,7 @@
 #include "CSimulationMode.h"
 #include "CConfigMode.h"
 #include "CSaveFile.h"
+#include "RS2EXTiming.h"
 
 //	外部グローバル
 extern bool g_MoverEnabled;
@@ -557,8 +559,8 @@ bool CTrainPlugin::Load(){
 		if(tmp = AsgnFloat(str, "DoorClosingTime", &m_DoorClosingTime)) str = tmp;
 		else m_DoorClosingTime = 0.0;
 		//	[km/h/sec] to [km/h/frame]
-		m_MaxAcceleration /= MAXFPS;
-		m_MaxDeceleration /= MAXFPS;
+		m_MaxAcceleration /= RS2EXTiming::SIMULATION_HZ;
+		m_MaxDeceleration /= RS2EXTiming::SIMULATION_HZ;
 		if(m_MaxVelocity<0.0f) m_MaxVelocity = 0.0f;
 		if(m_MaxAcceleration<0.0f) m_MaxVelocity = 0.0f;
 		if(m_MaxDeceleration<0.0f) m_MaxDeceleration = 0.0f;
@@ -634,8 +636,8 @@ bool CTrainPlugin::LoadOldForm(){
 	m_TailLimit = -m_FrontLimit;
 	m_Length = m_FrontLimit-m_TailLimit;
 	m_MaxVelocity = spd*10.0f;
-	m_MaxAcceleration = 3.0f/MAXFPS;
-	m_MaxDeceleration = 4.0f/MAXFPS;
+	m_MaxAcceleration = 3.0f/RS2EXTiming::SIMULATION_HZ;
+	m_MaxDeceleration = 4.0f/RS2EXTiming::SIMULATION_HZ;
 	m_TiltSpeed = 1.0f;
 	m_DoorClosingTime = 0.0f;
 	if(m_MaxVelocity<0.0f) m_MaxVelocity = 0.0f;

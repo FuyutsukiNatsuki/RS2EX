@@ -420,6 +420,7 @@
     <ClInclude Include="Network.h" />
     <ClInclude Include="RailMap.h" />
     <ClInclude Include="RSPV.H" />
+    <ClInclude Include="RS2EXTiming.h" />
     <ClInclude Include="Script.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemCover.h" />
