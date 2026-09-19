@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-20.
 
 #include "stdafx.h"
 #include "HighTimer.h"
@@ -63,4 +64,28 @@ int CFixedSimulationClock::ConsumeTicks(){
 		ticks++;
 	}
 	return ticks;
+}
+
+/*
+ *	How far this render frame sits between simulation states.
+ *
+ *	returns	: 0.0 just after a tick, approaching 1.0 just before the next one
+ *
+ *	ConsumeTicks() leaves the accumulator holding the real time that has passed
+ *	since the last completed tick, which is exactly the fraction the renderer
+ *	needs to blend the previous and current simulation states.
+ *
+ *	Deriving the fraction from real time rather than counting render frames is
+ *	deliberate: it keeps working if the render target stops being twice the
+ *	simulation rate, and it does not assume an exact frame cadence.
+ *
+ *	Clamped, so a timer anomaly cannot turn into extrapolation past the current
+ *	state.
+ */
+float CFixedSimulationClock::GetInterpolationAlpha() const{
+	if(!m_Initialized) return 0.0f;
+	const double alpha = m_AccumulatorMs/RS2EXTiming::SIMULATION_STEP_MS;
+	if(alpha<=0.0) return 0.0f;
+	if(alpha>=1.0) return 1.0f;
+	return (float)alpha;
 }

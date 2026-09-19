@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-20.
 //
 //	Fixed-rate simulation clock.
 //
@@ -32,6 +33,10 @@ public:
 
 	//	How many base ticks should be processed now (0..MAX_CATCH_UP_TICKS).
 	int ConsumeTicks();
+
+	//	How far the current render frame sits between the last completed tick and
+	//	the next one, as 0..1.  Render-only: nothing in the simulation may read it.
+	float GetInterpolationAlpha() const;
 };
 
 #endif	//	CFIXEDSIMULATIONCLOCK_H_INCLUDED
