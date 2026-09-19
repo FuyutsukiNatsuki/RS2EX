@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CPixelbit.h"
 #include "Capture.h"
@@ -354,7 +355,11 @@ void StartVideoCapture(){
 		chdir(g_BaseDir);
 		chdir("Video");
 		std::string avifile_name = FlashIn("%08d.avi", g_VideoCount);
-		const int video_frame_per_sec = 30;
+		//	[RS2EX] VideoCapture() writes one frame per rendered frame, so the AVI
+		//	rate has to follow the render target.  Leaving this at 30 while
+		//	rendering at 60 would store 60 frames for every second of real time
+		//	and play them back at 30, i.e. at half speed.
+		const int video_frame_per_sec = RENDER_TARGET_FPS;
 
 #if 0
 		WAVEFORMATEX wave_format;
