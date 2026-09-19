@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CRailWay.h"
 #include "CTrain.h"
@@ -26,6 +27,11 @@ CAxlePosture::CAxlePosture(
 	m_Rotation = m_Distance = 0.0f;
 	m_Terminate = term;
 	m_Rail = NULL;
+	//	[RS2EX] No history yet: render the authoritative state until a real
+	//	snapshot pair exists.
+	m_RenderStateValid = false;
+	m_RenderPos = m_RenderDir = m_RenderUp = m_RenderRight = V3ZERO;
+	m_RenderPrevPos = m_RenderPrevDir = m_RenderPrevUp = V3ZERO;
 }
 
 /*
@@ -74,6 +80,76 @@ void CAxlePosture::Rotate(
 		CRailPlugin *rpi = m_Rail->GetRailPlugin();
 		if(rpi) rpi->PlayWheelSound(tmp, m_Distance, m_Pos);
 	}
+}
+
+/*
+ *	[RS2EX] Remember the authoritative posture as the interpolation origin.
+ *
+ *	Called once at the outer fixed-tick boundary, before the world advances.
+ *	Deliberately not called from SetPosture(): CSaveFile::Simulate(-1) runs its
+ *	inner loop once per simulation-speed step, so capturing there would record
+ *	the last internal step instead of the presentation boundary.
+ *
+ *	Always captures simulation state, never an already interpolated posture.
+ */
+void CAxlePosture::CaptureRenderState(){
+	m_RenderPrevPos = m_Pos;
+	m_RenderPrevDir = m_Dir;
+	m_RenderPrevUp = m_Up;
+	m_RenderStateValid = true;
+}
+
+/*
+ *	[RS2EX] Drop the interpolation history.
+ *
+ *	Used wherever the previous posture stops describing the same continuous
+ *	movement: placement, load, merge, split, warp, speed change.  Interpolating
+ *	across those would sweep the vehicle through space it never occupied.
+ */
+void CAxlePosture::InvalidateRenderState(){
+	m_RenderStateValid = false;
+}
+
+/*
+ *	[RS2EX] Work out the posture to present this frame.
+ *
+ *	alpha		: 0..1 between the previous and current simulation states
+ *	interpolate	: false to snap to the authoritative state
+ *
+ *	Gives every consumer one uniform render posture, so nothing downstream has
+ *	to ask whether interpolation is currently active.
+ */
+void CAxlePosture::PrepareRenderState(
+	float alpha,		//	interpolation factor
+	bool interpolate	//	interpolation allowed
+){
+	if(interpolate && m_RenderStateValid){
+		const float inv = 1.0f-alpha;
+		m_RenderPos = inv*m_RenderPrevPos+alpha*m_Pos;
+		m_RenderDir = inv*m_RenderPrevDir+alpha*m_Dir;
+		m_RenderUp = inv*m_RenderPrevUp+alpha*m_Up;
+		//	Lerping two unit vectors does not give a unit vector, and the basis
+		//	has to stay orthonormal or the body reconstruction skews.
+		V3NormAxis(&m_RenderRight, &m_RenderUp, &m_RenderDir);
+	}else{
+		m_RenderPos = m_Pos;
+		m_RenderDir = m_Dir;
+		m_RenderUp = m_Up;
+		m_RenderRight = m_Right;
+	}
+}
+
+/*
+ *	[RS2EX] Push the render posture at the axle object.
+ *
+ *	The render counterpart of Apply().  Apply() keeps its simulation meaning so
+ *	the simulation path is untouched.
+ *
+ *	m_Rotation stays the simulation value: wheel rotation wraps into 0..1 and
+ *	interpolating it needs wrap-aware state, which v0.0.3 defers.
+ */
+void CAxlePosture::ApplyRender(){
+	m_Axle->SetPosture(m_RenderPos, m_RenderDir, m_RenderUp, m_Rotation);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

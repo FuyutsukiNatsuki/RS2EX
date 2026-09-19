@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CTRAINSETBUFFER_H_INCLUDED
 #define CTRAINSETBUFFER_H_INCLUDED
 
@@ -21,12 +22,35 @@ private:
 	CRailWay *m_Rail;		//	ÉåÅ[Éã
 	CAxleObject *m_Axle;	//	é‘é≤
 	CTrain *m_Train;		//	é‘Áq
+
+	//	[RS2EX] Render-only interpolation state.  The members above stay the
+	//	authoritative simulation posture and are never written from the render
+	//	path; these mirror them for presentation between two 30 Hz states.
+	VEC3 m_RenderPrevPos;	//	posture at the previous outer fixed tick
+	VEC3 m_RenderPrevDir;
+	VEC3 m_RenderPrevUp;
+	VEC3 m_RenderPos;		//	posture handed to the renderer this frame
+	VEC3 m_RenderRight;
+	VEC3 m_RenderUp;
+	VEC3 m_RenderDir;
+	//	Explicit, not inferred from coordinates: the origin is a valid position.
+	bool m_RenderStateValid;
 public:
 	CAxlePosture(CAxleObject *, CTrain *, bool);
 	void SetPosture(VEC3, VEC3, VEC3, CRailWay *);
 	float GetZPos();
 	void Apply();
 	void Rotate(float, bool);
+
+	//	[RS2EX] render-only interpolation
+	void CaptureRenderState();
+	void InvalidateRenderState();
+	void PrepareRenderState(float alpha, bool interpolate);
+	void ApplyRender();
+	VEC3 GetRenderPos() const{ return m_RenderPos; }
+	VEC3 GetRenderDir() const{ return m_RenderDir; }
+	VEC3 GetRenderUp() const{ return m_RenderUp; }
+	VEC3 GetRenderRight() const{ return m_RenderRight; }
 };
 
 //	îΩïúéq
