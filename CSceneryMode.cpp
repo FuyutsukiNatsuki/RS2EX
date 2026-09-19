@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-19.
 #include "stdafx.h"
 #include "HighTimer.h"
 #include "CPixelbit.h"
@@ -62,7 +63,16 @@ void CSceneryMode::EnterGame(){
 void CSceneryMode::SpinGame(){
 	devSetState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
 	g_ConfigMode->SetTexFilter();
-	if(!g_ModalDialog && !IsPausedScenery()) g_SaveFile->Simulate(-1);
+	//	[RS2EX] The world used to advance once per rendered frame, which tied
+	//	simulation speed to the render rate.  Drive it from real time instead.
+	//	Simulate(-1) is called once per tick and never as Simulate(ticks):
+	//	its argument means simulation-speed steps (1x/2x/10x/100x), which is a
+	//	different quantity from the number of elapsed fixed ticks.
+	const bool simulateEnabled = !g_ModalDialog && !IsPausedScenery();
+	const int simulateTicks = ConsumeSimulationTicks(simulateEnabled);
+	int simulateIndex;
+	for(simulateIndex = 0; simulateIndex<simulateTicks; simulateIndex++)
+		g_SaveFile->Simulate(-1);
 	ms_NeedResetViewport = false;
 	CWindowInfo* active_wnd = NULL;
 	if(g_ConfigMode->GetStereo()){

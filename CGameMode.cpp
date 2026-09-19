@@ -109,6 +109,7 @@ float CGameMode::ms_WindDirTemp;
 string CGameMode::ms_ModeLabel;
 CGameMode *CGameMode::ms_ActiveMode;
 CToggleIcon *CGameMode::ms_MenuIcon[];
+CFixedSimulationClock CGameMode::ms_SimulationClock;
 
 /*
  *	[static]
@@ -782,6 +783,40 @@ void CGameMode::SpinSound(){
 /*
  *	実効シミュレーション速度取得
  */
+/*
+ *	[static]
+ *	How many base simulation ticks to run this pass.
+ *
+ *	enabled	: false while paused or blocked by a modal dialog
+ *	returns	: tick count, 0..RS2EXTiming::MAX_CATCH_UP_TICKS
+ *
+ *	When disabled the accumulator is cleared rather than left to grow, so a
+ *	ten second pause does not turn into ten seconds of simulation the moment
+ *	it is lifted.  RailSim II stopped the world while paused and this keeps
+ *	that behaviour.
+ */
+int CGameMode::ConsumeSimulationTicks(
+	bool enabled	//	simulation allowed to advance
+){
+	if(!enabled){
+		ms_SimulationClock.Reset(false);
+		return 0;
+	}
+	return ms_SimulationClock.ConsumeTicks();
+}
+
+/*
+ *	[static]
+ *	Discard accumulated real time.
+ *
+ *	prime	: true to let the next call yield one tick immediately
+ */
+void CGameMode::ResetSimulationClock(
+	bool prime	//	prime the accumulator
+){
+	ms_SimulationClock.Reset(prime);
+}
+
 int CGameMode::GetEffectSpeed(){
 	return IsPaused() ? 0 : g_SimulationMode->GetSimSpeed();
 }

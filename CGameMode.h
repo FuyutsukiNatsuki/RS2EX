@@ -1,9 +1,11 @@
+//	Modified for RS2EX on 2026-09-19.
 #ifndef CGAMEMODE_H_INCLUDED
 #define CGAMEMODE_H_INCLUDED
 
 #include "CCursor.h"
 #include "CCamera.h"
 #include "CInterface.h"
+#include "CFixedSimulationClock.h"
 
 class CToggleIcon;
 
@@ -20,6 +22,16 @@ protected:
 	static string ms_ModeLabel;					//	モードラベル
 	static CGameMode *ms_ActiveMode;			//	現在のモード
 	static CToggleIcon *ms_MenuIcon[MODE_NUM];	//	モードアイコン
+
+	//	[RS2EX] Real-time source for simulation ticks, shared by every mode so
+	//	that switching modes does not restart or double-count elapsed time.
+	static CFixedSimulationClock ms_SimulationClock;
+
+	//	How many base simulation ticks to run now.  Passing enabled=false clears
+	//	the accumulator instead of banking it, so a pause or a modal dialog does
+	//	not replay its whole duration once it ends.
+	static int ConsumeSimulationTicks(bool enabled);
+	static void ResetSimulationClock(bool prime = false);
 	CInterface m_Interface;	//	統括インターフェイス
 public:
 	static void WakeUp();
