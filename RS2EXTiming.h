@@ -3,15 +3,14 @@
 //
 //	Simulation timing constants.
 //
-//	RailSim II 2.15 used MAXFPS (lib/frame.h) for two unrelated purposes: the
+//	RailSim II 2.15 used a single MAXFPS constant for two unrelated purposes: the
 //	render frame rate, and the rate at which the simulated world advances.
 //	Because both were the same constant, changing the render frame rate would
 //	silently change train speed, acceleration, the in-game clock and the wind.
 //
-//	SIMULATION_HZ below is the simulation rate and nothing else.  MAXFPS stays
-//	the render/UI frame rate.  Both are 30 in v0.0.1, so behaviour is unchanged;
-//	the point is that the two meanings are now separate symbols and can diverge
-//	safely in a later version.
+//	SIMULATION_HZ below is the simulation rate and nothing else.  The render
+//	side lives in lib/frame.h as RENDER_TARGET_FPS and LEGACY_RENDER_FPS.
+//	Raising the render target must never change this constant.
 
 #ifndef RS2EX_TIMING_H_INCLUDED
 #define RS2EX_TIMING_H_INCLUDED

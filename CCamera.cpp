@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CInterface.h"
@@ -339,7 +340,7 @@ void CCamera::PrintInfo(
 	if(m_PrintInfoTime<=0) return;
 	static char *onoff[2] = {"OFF", "ON"};
 	static char *local[3] = {"OFF", "HORZ", "ALL"};
-	const int ERASE = MAXFPS/3;
+	const int ERASE = RENDER_TARGET_FPS/3;
 	float alpha = m_PrintInfoTime>=ERASE ? 1.0f : (float)m_PrintInfoTime/ERASE;
 	m_PrintInfoTime--;
 	int ix = g_DispWidth*60/100, iy = g_DispHeight;

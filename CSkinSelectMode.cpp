@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CSkinPlugin.h"
 #include "CSkinSelectMode.h"
@@ -123,7 +124,7 @@ void CSkinSelectMode::ScanInputPlugin(){
 			m_PropertyList.GetElement(0)->SetString(1, pi->GetID());
 			m_PropertyList.GetElement(1)->SetString(1, pi->GetName());
 			m_PropertyList.GetElement(2)->SetString(1, pi->GetAuthor());
-			ms_TopPanelTime = ms_RightPanelTime = MAXFPS*3;
+			ms_TopPanelTime = ms_RightPanelTime = RENDER_TARGET_FPS*3;
 		}else{
 			m_TestWindow.Show(false);
 		}

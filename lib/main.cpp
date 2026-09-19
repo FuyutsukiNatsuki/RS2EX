@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 //	Copyright (c) 2002 Midikyou
 
 #include "udx.h"
@@ -151,15 +152,15 @@ void CApp::Run(){
  *	FPS調節のため初期化
  */
 void CFrame::Init(){
-	frameWait = 1000/MAXFPS;
-	fineWait = (1000%MAXFPS)/10;
+	frameWait = 1000/RENDER_TARGET_FPS;
+	fineWait = (1000%RENDER_TARGET_FPS)/10;
 
 	frame = 0;
 	cnt = 0;
 	start = timeGetTime();
 	old = start;
-	fps = MAXFPS;
-	framecnt = MAXFPS;
+	fps = RENDER_TARGET_FPS;
+	framecnt = RENDER_TARGET_FPS;
 
 	srand((unsigned)time(NULL));
 }
@@ -178,8 +179,8 @@ void CFrame::Sync(){
 	framecnt++;
 
 	//	約0.5secごとにFPSを計算
-	if(frame==MAXFPS/2){
-		fps = (MAXFPS*500.f)/(now-old);
+	if(frame==RENDER_TARGET_FPS/2){
+		fps = (RENDER_TARGET_FPS*500.f)/(now-old);
 		old = now;
 		frame = 0;
 	}
@@ -187,7 +188,7 @@ void CFrame::Sync(){
 	//	ウエイト処理
 	DWORD wait;
 
-	if(++cnt==MAXFPS/10) wait = frameWait+fineWait, cnt = 0;
+	if(++cnt==RENDER_TARGET_FPS/10) wait = frameWait+fineWait, cnt = 0;
 	else wait = frameWait;
 
 	if(diff<wait){

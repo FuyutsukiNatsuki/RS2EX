@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CCAMERA_H_INCLUDED
 #define CCAMERA_H_INCLUDED
 
@@ -65,7 +66,7 @@ public:
 	void Select();
 	void Apply(bool, CObject *tlocal = NULL);
 	void ApplyProjection(float, CObject *tlocal = NULL);
-	void BeginPrint(){ m_PrintInfoTime = MAXFPS*2; }
+	void BeginPrint(){ m_PrintInfoTime = RENDER_TARGET_FPS*2; }
 	void PrintInfo(bool ext = false);
 	void ControlLocal(CObject *tlocal = NULL);
 	int ScanInput(int, CObject *tlocal = NULL);

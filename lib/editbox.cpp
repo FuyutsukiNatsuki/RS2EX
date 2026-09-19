@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 //	Copyright (c) 2002 Midikyou
 
 #include "headers.h"
@@ -23,7 +24,7 @@
 string EliminateTabAndCRLF(string);
 
 //	内部定数
-const int BLINK_FRAME = MAXFPS/2;	//	点滅間隔
+const int BLINK_FRAME = RENDER_TARGET_FPS/2;	//	点滅間隔
 const int BASE_MARGINX = 1;			//	編集領域余白
 
 //	static メンバ

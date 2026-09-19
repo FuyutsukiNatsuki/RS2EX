@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "HighTimer.h"
 #include "CJobTimer.h"
@@ -104,12 +105,12 @@ void CJobTimer::DrawResult(){
 	TIMER_RAII("CJobTimer::DrawResult()");
 	CFrameData &frame_data = m_FrameData[!m_OddFrame];
 	unsigned int i, j;
-	static const double FRAME_UNIT = 1000.0/MAXFPS; // milliseconds
+	static const double FRAME_UNIT = 1000.0/RENDER_TARGET_FPS; // milliseconds
 	const double delta = FromHighTimerCountToMs(frame_data.m_End-frame_data.m_Start);
 	const int span_frames = (int)ceil(delta/FRAME_UNIT);
 	if(span_frames<m_SpanFrames){
 		++m_SpanFrameCount;
-		if(m_SpanFrameCount>MAXFPS) m_SpanFrames = span_frames;
+		if(m_SpanFrameCount>RENDER_TARGET_FPS) m_SpanFrames = span_frames;
 	}else{
 		m_SpanFrames = span_frames;
 		m_SpanFrameCount = 0;

@@ -1,16 +1,30 @@
+//	Modified for RS2EX on 2026-09-20.
 //	Copyright (c) 2002 Midikyou
 
 //	※このファイルを書き換えた場合はmain.cppをリビルドして下さい。
 
-const int MAXFPS = 30;	//	FPSの目標値
+//	[RS2EX] MAXFPS used to mean both "the rate we render at" and "the rate the
+//	RailSim II 2.15 UI and camera speeds were tuned against".  Those stop being
+//	the same number once the render loop runs faster than 30 FPS, so they are
+//	now separate constants and MAXFPS is gone.  Simulation timing is neither of
+//	these: see RS2EXTiming::SIMULATION_HZ.
+
+//	What the render loop aims for right now.
+const int RENDER_TARGET_FPS = 30;
+
+//	The frame rate RailSim II 2.15 was written against.  Per-frame movement
+//	amounts that were tuned at 30 FPS are scaled relative to this, never to
+//	RENDER_TARGET_FPS - dividing the target by itself would just give 1 and
+//	double the real-time speed.
+const int LEGACY_RENDER_FPS = 30;
 
 class CFrame{
 	DWORD frame;		//	フレームをカウント
 	DWORD frameWait;	//	フレーム毎のウエイト
-	DWORD fineWait;		//	MAXFPS/10毎のウエイト
-	DWORD cnt;			//	MAXFPS/10までフレームをカウント
+	DWORD fineWait;		//	RENDER_TARGET_FPS/10毎のウエイト
+	DWORD cnt;			//	RENDER_TARGET_FPS/10までフレームをカウント
 	DWORD start;		//	開始時間
-	DWORD old;			//	MAXFPS/2フレーム前の時間
+	DWORD old;			//	RENDER_TARGET_FPS/2フレーム前の時間
 
 public:
 	float fps;		//	FPSの実測値

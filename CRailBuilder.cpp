@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CInterface.h"
@@ -390,7 +391,7 @@ void CRailBuilder::Render(
 			devSetZWrite(TRUE);
 			devSetLighting(TRUE);
 			g_ArrowObject.SetPos(m_Next ? m_Next->m_Pos : m_Pos);
-			g_ArrowObject.RotY(2.0f*D3DX_PI/MAXFPS);
+			g_ArrowObject.RotY(2.0f*D3DX_PI/RENDER_TARGET_FPS);
 			g_ArrowObject.Render();
 		}
 	}else{

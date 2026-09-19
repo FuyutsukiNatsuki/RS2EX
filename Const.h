@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CONST_H_INCLUDED
 #define CONST_H_INCLUDED
 
@@ -7,8 +8,8 @@ extern const char* VERSION_STRING;
 const int FONT_WIDTH = 6;				//	標準フォント幅
 const int FONT_HEIGHT = 12;				//	標準フォント高
 const int MODE_NUM = 6;					//	モード数
-const int REPEAT_FRAME = MAXFPS/4;		//	長押フレーム数
-const int DBLCLK_FRAME = MAXFPS/2;		//	ダブルクリックフレーム数
+const int REPEAT_FRAME = RENDER_TARGET_FPS/4;		//	長押フレーム数
+const int DBLCLK_FRAME = RENDER_TARGET_FPS/2;		//	ダブルクリックフレーム数
 const int DETECT_2D_MIN = 5;			//	2D 検出最小距離
 const int DETECT_2D_MAX = 50;			//	2D 検出最大距離
 

@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20.
 #include "stdafx.h"
 #include "HighTimer.h"
 #include "Capture.h"
@@ -55,7 +55,7 @@ namespace LanguageResource{
 
 //	内部定数
 const int MODE_LABEL_WIDTH = TILE_UNIT*6;			//	モード表示部幅
-const int PANEL_HIDE_FRAME = MAXFPS;				//	パネル表示時間
+const int PANEL_HIDE_FRAME = RENDER_TARGET_FPS;				//	パネル表示時間
 const int MODE_SUB[MODE_NUM] = {8, 4, 3, 3, 3, 5};	//	サブモード数
 const float PANEL_SHOW_RATIO = 0.5f;				//	パネル表示速度
 const float PANEL_HIDE_RATIO = 0.1f;				//	パネル隠蔽速度
@@ -64,7 +64,7 @@ const float PANEL_HIDE_RATIO = 0.1f;				//	パネル隠蔽速度
 extern bool g_IgnoreAcceleration;
 
 //	内部グローバル
-int g_BlinkCounter = 0;			//	汎用点滅カウンタ (0..MAXFPS-1)
+int g_BlinkCounter = 0;			//	汎用点滅カウンタ (0..RENDER_TARGET_FPS-1)
 float g_BlinkAlpha = 0.0f;		//	汎用点滅アルファ (0.0..1.0)
 bool g_RenderBlink = false;		//	レンダリング点滅フラグ
 LONGLONG g_SoundSync = 0;		//	サウンド同期用タイマ
@@ -733,8 +733,8 @@ void CGameMode::Spin(){
 				//カーソル描画直前に
 				//ScanInputDevice();
 				//g_Cursor.FixCursor();
-				g_BlinkCounter = (g_BlinkCounter+1)%MAXFPS;
-				g_BlinkAlpha = 0.5f*(sinf(2.0f*D3DX_PI*g_BlinkCounter/MAXFPS)+1.0f);
+				g_BlinkCounter = (g_BlinkCounter+1)%RENDER_TARGET_FPS;
+				g_BlinkAlpha = 0.5f*(sinf(2.0f*D3DX_PI*g_BlinkCounter/RENDER_TARGET_FPS)+1.0f);
 				g_ConfigMode->SetSpecularLight();
 				g_ManualControl = !!g_SimulationMode->GetManualControl() || g_NetworkInitialized;
 				g_IgnoreAcceleration = !!g_SimulationMode->GetIgnoreAcceleration();

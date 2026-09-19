@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 //	Copyright (c) 2002 Midikyou
 
 #include "headers.h"
@@ -20,7 +21,9 @@
  *	r		: Š´“x
  */
 void KeyLook(float r){
-	float t = r/10*(float)MAXFPS/GetFPS();
+	//	[RS2EX] Legacy reference on purpose: RENDER_TARGET_FPS/GetFPS() would be
+	//	1 at target rate and move the camera once per frame at the 30 FPS amount.
+	float t = r/10*(float)LEGACY_RENDER_FPS/GetFPS();
 	if(GetKey(DIK_UP) >=S_PUSH) RotVX(-t);
 	if(GetKey(DIK_DOWN)>=S_PUSH) RotVX(t);
 	if(GetKey(DIK_LEFT)>=S_PUSH) RotVY(-t);
@@ -39,7 +42,7 @@ void KeyLook(float r){
 		v.z /= SQRT2, v.x /= SQRT2;
 
 	float fps = GetFPS();
-	if(fps>=1) MoveV((float)MAXFPS/fps*v);
+	if(fps>=1) MoveV((float)LEGACY_RENDER_FPS/fps*v);
 }
 
 /*
@@ -77,7 +80,7 @@ void MouseLook(float r){
 		v.z /= SQRT2, v.x /= SQRT2;
 
 	float fps = GetFPS();
-	if(fps>=1) MoveV((float)MAXFPS/fps*v);
+	if(fps>=1) MoveV((float)LEGACY_RENDER_FPS/fps*v);
 }
 
 /*
