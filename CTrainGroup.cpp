@@ -427,11 +427,15 @@ bool CTrainGroup::CalcViewAxis(
 	VEC3 pmin = VEC3(0.0f, center.y, 0.0f), pmax = pmin;
 	for(itsb = m_SetBuffer.begin(); itsb!=m_SetBuffer.end(); itsb++){
 		if(!itsb->m_Posture) continue;
-		VEC3 to = itsb->m_Posture->m_Pos-center;
+		//	[RS2EX] Render posture here too.  center comes from the render
+		//	positions above, so measuring the consist against simulation
+		//	positions mixes two timelines and makes the camera jitter at
+		//	30 Hz even though the train itself is smooth.
+		VEC3 to = itsb->m_Posture->GetRenderPos()-center;
 		float x = V3Dot(&tright, &to);
 		if(x<pmin.x) pmin.x = x;
 		if(x>pmax.x) pmax.x = x;
-		float y = itsb->m_Posture->m_Pos.y;
+		float y = itsb->m_Posture->GetRenderPos().y;
 		if(y<pmin.y) pmin.y = y;
 		if(y>pmax.y) pmax.y = y;
 		float z = V3Dot(&tdir, &to);

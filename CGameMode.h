@@ -26,6 +26,8 @@ protected:
 	//	[RS2EX] Real-time source for simulation ticks, shared by every mode so
 	//	that switching modes does not restart or double-count elapsed time.
 	static CFixedSimulationClock ms_SimulationClock;
+	//	Whether the previous render frame was drawn from interpolated posture.
+	static bool ms_TrainRenderPrepared;
 
 	//	How many base simulation ticks to run now.  Passing enabled=false clears
 	//	the accumulator instead of banking it, so a pause or a modal dialog does
@@ -42,6 +44,9 @@ protected:
 	static bool IsTrainInterpolationEnabled();
 	//	Detects transitions that make remembered posture meaningless.
 	static void UpdateTrainInterpolationPolicy();
+	//	Prepare train posture for this render frame, snapping once when
+	//	interpolation stops so no interpolated geometry is left on screen.
+	static void PrepareTrainRenderFrame(bool interpolate);
 	static float GetTrainInterpolationAlpha();
 	CInterface m_Interface;	//	統括インターフェイス
 public:

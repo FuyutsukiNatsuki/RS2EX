@@ -80,9 +80,7 @@ void CSceneryMode::SpinGame(){
 	//	Skipped when interpolation is off: the simulation has already left the
 	//	correct posture in place, which is exactly what should be presented.
 	UpdateTrainInterpolationPolicy();
-	const bool interpolateTrains = simulateEnabled && IsTrainInterpolationEnabled();
-	if(interpolateTrains)
-		g_SaveFile->PrepareTrainRenderState(GetTrainInterpolationAlpha(), true);
+	PrepareTrainRenderFrame(simulateEnabled && IsTrainInterpolationEnabled());
 	ms_NeedResetViewport = false;
 	CWindowInfo* active_wnd = NULL;
 	if(g_ConfigMode->GetStereo()){

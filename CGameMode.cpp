@@ -110,6 +110,7 @@ string CGameMode::ms_ModeLabel;
 CGameMode *CGameMode::ms_ActiveMode;
 CToggleIcon *CGameMode::ms_MenuIcon[];
 CFixedSimulationClock CGameMode::ms_SimulationClock;
+bool CGameMode::ms_TrainRenderPrepared = false;
 //	[RS2EX] Last simulation speed seen by the render-interpolation policy.
 static int g_TrainInterpolationLastSpeed = -1;
 static bool g_TrainInterpolationLastNetwork = false;
@@ -875,6 +876,34 @@ void CGameMode::UpdateTrainInterpolationPolicy(){
 		g_SaveFile->InvalidateTrainRenderState();
 		g_TrainInterpolationLastSpeed = speed;
 		g_TrainInterpolationLastNetwork = network;
+	}
+}
+
+/*
+ *	[static]
+ *	[RS2EX] Build the posture the trains are drawn from this frame.
+ *
+ *	interpolate	: blend between simulation states, else present the current one
+ *
+ *	The else branch matters.  Interpolated posture is written into the vehicles'
+ *	instance objects and stays there until something rewrites it, and while
+ *	paused no simulation tick does.  Without one snapping pass the frame where
+ *	interpolation stops would keep showing the last blended posture, up to most
+ *	of a tick ahead of the truth.
+ *
+ *	Only on the transition, so steady-state accelerated or paused rendering
+ *	costs nothing extra.
+ */
+void CGameMode::PrepareTrainRenderFrame(
+	bool interpolate	//	interpolation allowed this frame
+){
+	if(!g_SaveFile) return;
+	if(interpolate){
+		g_SaveFile->PrepareTrainRenderState(GetTrainInterpolationAlpha(), true);
+		ms_TrainRenderPrepared = true;
+	}else if(ms_TrainRenderPrepared){
+		g_SaveFile->PrepareTrainRenderState(0.0f, false);
+		ms_TrainRenderPrepared = false;
 	}
 }
 
