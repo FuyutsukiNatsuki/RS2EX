@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-20.
 //
 //	Simulation timing constants.
 //
