@@ -10,7 +10,7 @@
 //	these: see RS2EXTiming::SIMULATION_HZ.
 
 //	What the render loop aims for right now.
-const int RENDER_TARGET_FPS = 30;
+const int RENDER_TARGET_FPS = 60;
 
 //	The frame rate RailSim II 2.15 was written against.  Per-frame movement
 //	amounts that were tuned at 30 FPS are scaled relative to this, never to
