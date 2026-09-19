@@ -763,7 +763,14 @@ void CGameMode::Spin(){
 			SetMasterVolume();
 			ClipCursor(NULL);
 			if(g_NetworkInitialized){
-				g_SaveFile->Simulate(-1);
+				//	[RS2EX] This branch keeps a networked session running while the
+				//	window is inactive, and used to advance the world once per loop
+				//	iteration.  SyncFrame() paces that loop at RENDER_TARGET_FPS, so
+				//	at 60 the world would run twice as fast here as it does in the
+				//	active path.  Drive it from the same fixed clock instead.
+				const int ticks = ConsumeSimulationTicks(true);
+				int i;
+				for(i = 0; i<ticks; i++) g_SaveFile->Simulate(-1);
 				SyncFrame();
 			}else{
 				WaitMessage();
