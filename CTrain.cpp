@@ -135,6 +135,12 @@ void CTrain::ApplyAxle(
 		m_Dir = ia->m_Dir+ia2->m_Dir;
 		m_Up = ia->m_Up+ia2->m_Up;
 		V3NormAxis(&m_Right, &m_Up, &m_Dir);
+		//	[RS2EX] Same reason as CAxlePosture::SetPosture(): the render
+		//	getters must stay valid when no interpolation pass runs.
+		m_RenderPos = m_Pos;
+		m_RenderDir = m_Dir;
+		m_RenderUp = m_Up;
+		m_RenderRight = m_Right;
 		if(sim){
 			if(oldwarp){
 				ResetTilt();

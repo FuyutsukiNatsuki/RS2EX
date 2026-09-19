@@ -47,6 +47,15 @@ void CAxlePosture::SetPosture(
 	m_Dir = dir;
 	m_Up = up;
 	V3NormAxis(&m_Right, &m_Up, &m_Dir);
+	//	[RS2EX] Keep the render mirror in step with the authoritative state.
+	//	PrepareRenderState() overwrites these when it blends, but it only runs
+	//	while interpolation is enabled; without this the render getters would
+	//	freeze at 2x and above and anything reading them - the following
+	//	camera among them - would stop tracking the train.
+	m_RenderPos = m_Pos;
+	m_RenderDir = m_Dir;
+	m_RenderUp = m_Up;
+	m_RenderRight = m_Right;
 	m_Rail = way;
 	if(m_Terminate) m_Train->ToggleSetting();
 }
