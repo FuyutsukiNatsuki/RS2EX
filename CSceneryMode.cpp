@@ -79,6 +79,7 @@ void CSceneryMode::SpinGame(){
 	//	the camera tracking a 30 Hz target while the train glides at 60.
 	//	Skipped when interpolation is off: the simulation has already left the
 	//	correct posture in place, which is exactly what should be presented.
+	UpdateTrainInterpolationPolicy();
 	const bool interpolateTrains = simulateEnabled && IsTrainInterpolationEnabled();
 	if(interpolateTrains)
 		g_SaveFile->PrepareTrainRenderState(GetTrainInterpolationAlpha(), true);

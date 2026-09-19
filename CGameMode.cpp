@@ -110,6 +110,9 @@ string CGameMode::ms_ModeLabel;
 CGameMode *CGameMode::ms_ActiveMode;
 CToggleIcon *CGameMode::ms_MenuIcon[];
 CFixedSimulationClock CGameMode::ms_SimulationClock;
+//	[RS2EX] Last simulation speed seen by the render-interpolation policy.
+static int g_TrainInterpolationLastSpeed = -1;
+static bool g_TrainInterpolationLastNetwork = false;
 
 /*
  *	[static]
@@ -852,6 +855,27 @@ bool CGameMode::IsTrainInterpolationEnabled(){
 	if(g_NetworkInitialized) return false;
 	if(!g_SimulationMode) return false;
 	return g_SimulationMode->GetSimSpeed()==1;
+}
+
+/*
+ *	[static]
+ *	[RS2EX] Drop remembered posture when the conditions behind it change.
+ *
+ *	Called once per render frame.  Without this, going 1x -> 10x -> 1x would
+ *	leave a valid-looking pair whose previous half predates the accelerated
+ *	burst, and the first frame back at 1x would sweep the train across
+ *	everything the burst covered.
+ */
+void CGameMode::UpdateTrainInterpolationPolicy(){
+	if(!g_SaveFile || !g_SimulationMode) return;
+	const int speed = g_SimulationMode->GetSimSpeed();
+	const bool network = g_NetworkInitialized;
+	if(speed!=g_TrainInterpolationLastSpeed
+		|| network!=g_TrainInterpolationLastNetwork){
+		g_SaveFile->InvalidateTrainRenderState();
+		g_TrainInterpolationLastSpeed = speed;
+		g_TrainInterpolationLastNetwork = network;
+	}
 }
 
 /*

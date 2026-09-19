@@ -138,6 +138,9 @@ void CTrain::ApplyAxle(
 		if(sim){
 			if(oldwarp){
 				ResetTilt();
+				//	[RS2EX] Coming out of a warp the vehicle is somewhere else
+				//	entirely; a straight line from where it was is meaningless.
+				InvalidateRenderState();
 			}else{
 				float tiltspeed = m_TrainPlugin->m_TiltSpeed;
 				m_TiltDir = (1.0f-tiltspeed)*m_TiltDir

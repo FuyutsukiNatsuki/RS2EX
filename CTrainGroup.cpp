@@ -676,6 +676,8 @@ bool CTrainGroup::Set(
 			tpi->SetPosture();
 			train = train->Next();
 		}
+		//	[RS2EX] Newly placed: there is no history to blend from.
+		InvalidateRenderState();
 		return true;
 	}
 	Remove();
@@ -1130,6 +1132,9 @@ void CTrainGroup::MergeTrain(CTrainGroup *target, int my_side, int tgt_side){
 	ClearPoint();
 	Trail(true, false);
 	g_SaveFile->DeleteGroup(target);
+	//	[RS2EX] The previous posture no longer describes the same continuous
+	//	movement, so drop it rather than sweep the vehicles across the gap.
+	InvalidateRenderState();
 	if(!g_NetworkInitialized) g_TrainGroup = this;
 	g_UpdateTrainGroupList = true;
 }
@@ -1211,6 +1216,11 @@ void CTrainGroup::SplitTrain(int split_pos){
 	}
 	CheckTargetSpeed();
 	new_group->CheckTargetSpeed();
+	//	[RS2EX] Both groups changed topology; neither may reuse the other's
+	//	history.  A one-frame snap is better than a lerp between mismatched
+	//	consists.
+	InvalidateRenderState();
+	new_group->InvalidateRenderState();
 	g_UpdateTrainGroupList = true;
 }
 
@@ -1227,6 +1237,9 @@ void CTrainGroup::RestoreSet(){
 	ClearPoint();
 	head.m_Offset = head.m_SetRail->GetSegLen()-head.m_Offset;
 	Trail(true, false);
+	//	[RS2EX] Rebuilt from save data; anything remembered from before the
+	//	load belongs to a different layout.
+	InvalidateRenderState();
 }
 
 /*

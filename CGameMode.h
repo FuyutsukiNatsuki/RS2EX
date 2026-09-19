@@ -40,6 +40,8 @@ protected:
 	static void RunSimulationTick();
 	//	Whether train posture may be blended this frame, and by how much.
 	static bool IsTrainInterpolationEnabled();
+	//	Detects transitions that make remembered posture meaningless.
+	static void UpdateTrainInterpolationPolicy();
 	static float GetTrainInterpolationAlpha();
 	CInterface m_Interface;	//	統括インターフェイス
 public:

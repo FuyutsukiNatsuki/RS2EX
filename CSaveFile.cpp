@@ -922,6 +922,9 @@ bool CSaveFile::Load(
 	}
 	m_NetworkSyncCount = 0;
 	Simulate(1);	//	1 回だけシミュレート
+	//	[RS2EX] That one simulation step must not become a visible bridge from
+	//	whatever was loaded before this file.
+	InvalidateTrainRenderState();
 	return true;
 }
 
