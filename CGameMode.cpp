@@ -770,7 +770,7 @@ void CGameMode::Spin(){
 				//	active path.  Drive it from the same fixed clock instead.
 				const int ticks = ConsumeSimulationTicks(true);
 				int i;
-				for(i = 0; i<ticks; i++) g_SaveFile->Simulate(-1);
+				for(i = 0; i<ticks; i++) RunSimulationTick();
 				SyncFrame();
 			}else{
 				WaitMessage();
@@ -815,6 +815,51 @@ int CGameMode::ConsumeSimulationTicks(
 		return 0;
 	}
 	return ms_SimulationClock.ConsumeTicks();
+}
+
+/*
+ *	[static]
+ *	[RS2EX] Run one outer fixed simulation tick.
+ *
+ *	The snapshot has to happen here, once per outer tick, and not inside
+ *	CAxlePosture::SetPosture().  CSaveFile::Simulate(-1) runs its body once per
+ *	simulation-speed step, so snapshotting per posture update would record the
+ *	transition from step 99 to step 100 of a 100x burst instead of the boundary
+ *	between two presented states.
+ *
+ *	Simulate(-1) keeps its meaning: its argument is a speed-step count, not a
+ *	tick count, so catch-up still calls it once per tick rather than passing a
+ *	total.
+ */
+void CGameMode::RunSimulationTick(){
+	if(g_SaveFile && IsTrainInterpolationEnabled())
+		g_SaveFile->CaptureTrainRenderState();
+	g_SaveFile->Simulate(-1);
+}
+
+/*
+ *	[static]
+ *	[RS2EX] Whether train posture may be blended for rendering.
+ *
+ *	Deliberately conservative.  At 2x and above one outer tick can carry the
+ *	train a long way, and a straight line between two world positions would cut
+ *	the corner off curved track.  Network mode is excluded because legacy
+ *	networking is not a priority and interpolation must not become a network
+ *	project.  Everything excluded here simply renders the authoritative state,
+ *	which is what v0.0.2 already did.
+ */
+bool CGameMode::IsTrainInterpolationEnabled(){
+	if(g_NetworkInitialized) return false;
+	if(!g_SimulationMode) return false;
+	return g_SimulationMode->GetSimSpeed()==1;
+}
+
+/*
+ *	[static]
+ *	[RS2EX] How far this render frame sits between two simulation states.
+ */
+float CGameMode::GetTrainInterpolationAlpha(){
+	return ms_SimulationClock.GetInterpolationAlpha();
 }
 
 /*

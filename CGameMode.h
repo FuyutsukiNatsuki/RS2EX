@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20.
 #ifndef CGAMEMODE_H_INCLUDED
 #define CGAMEMODE_H_INCLUDED
 
@@ -32,6 +32,15 @@ protected:
 	//	not replay its whole duration once it ends.
 	static int ConsumeSimulationTicks(bool enabled);
 	static void ResetSimulationClock(bool prime = false);
+
+	//	[RS2EX] One outer fixed tick: snapshot the train posture the renderer
+	//	will interpolate from, then advance the world exactly once.  Routing
+	//	every tick through here keeps the snapshot on the presentation boundary
+	//	rather than inside Simulate()'s speed-multiplier loop.
+	static void RunSimulationTick();
+	//	Whether train posture may be blended this frame, and by how much.
+	static bool IsTrainInterpolationEnabled();
+	static float GetTrainInterpolationAlpha();
 	CInterface m_Interface;	//	統括インターフェイス
 public:
 	static void WakeUp();

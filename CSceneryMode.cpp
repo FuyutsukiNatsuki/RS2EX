@@ -72,7 +72,16 @@ void CSceneryMode::SpinGame(){
 	const int simulateTicks = ConsumeSimulationTicks(simulateEnabled);
 	int simulateIndex;
 	for(simulateIndex = 0; simulateIndex<simulateTicks; simulateIndex++)
-		g_SaveFile->Simulate(-1);
+		RunSimulationTick();
+	//	[RS2EX] Build the posture the trains will be drawn with, before the
+	//	camera is applied.  Both the train-following view and the cab view are
+	//	calculated inside ApplyCamera(), so preparing afterwards would leave
+	//	the camera tracking a 30 Hz target while the train glides at 60.
+	//	Skipped when interpolation is off: the simulation has already left the
+	//	correct posture in place, which is exactly what should be presented.
+	const bool interpolateTrains = simulateEnabled && IsTrainInterpolationEnabled();
+	if(interpolateTrains)
+		g_SaveFile->PrepareTrainRenderState(GetTrainInterpolationAlpha(), true);
 	ms_NeedResetViewport = false;
 	CWindowInfo* active_wnd = NULL;
 	if(g_ConfigMode->GetStereo()){
