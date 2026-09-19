@@ -115,8 +115,12 @@ void CInterfaceMode::SpinGame(){
 	const bool simulateEnabled = g_NetworkInitialized && !g_ModalDialog;
 	const int simulateTicks = ConsumeSimulationTicks(simulateEnabled);
 	int simulateIndex;
+	//	[RS2EX] Same outer-tick helper as the scenery path, so there is one
+	//	place where a tick means snapshot-then-advance.  The helper skips the
+	//	snapshot when interpolation is off, which it always is here: this
+	//	branch only runs with a network session up.
 	for(simulateIndex = 0; simulateIndex<simulateTicks; simulateIndex++)
-		g_SaveFile->Simulate(-1);
+		RunSimulationTick();
 	if(m_Camera){
 		m_Camera->Apply(true);
 		g_AncientNightFlag = !m_Camera->IsLightOn();

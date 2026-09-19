@@ -265,9 +265,12 @@ void CTrain::SetCabinView(
 		vup = joint->GetUp();
 		vdir = joint->GetDir();
 	}else{
-		vpos = GetPos()+(rev ? -0.5f : 0.5f)*GetDir()*m_TrainPlugin->m_Length;
-		vup = GetUp();
-		vdir = rev ? -GetDir() : GetDir();
+		//	[RS2EX] Render posture: this runs during camera setup, and the
+		//	linked-joint branch above already uses interpolated body geometry.
+		vpos = GetRenderPos()
+			+(rev ? -0.5f : 0.5f)*GetRenderDir()*m_TrainPlugin->m_Length;
+		vup = GetRenderUp();
+		vdir = rev ? -GetRenderDir() : GetRenderDir();
 	}
 	V3NormAxis(&vright, &vup, &vdir);
 	vpos += V3LocalToWorld(&pos, &vright, &vup, &vdir);

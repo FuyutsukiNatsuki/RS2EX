@@ -397,11 +397,14 @@ bool CTrainGroup::CalcViewAxis(
 	CScene *firstscene = NULL, *lastscene = NULL;
 	for(itsb = m_SetBuffer.begin(); itsb!=m_SetBuffer.end(); itsb++){
 		if(itsb->m_Posture){
+			//	[RS2EX] Render posture, not simulation posture: this axis aims
+			//	the following camera, and a camera tracking the 30 Hz position
+			//	while the train is drawn at 60 would shake against it.
 			if(!firstscene){
-				front = itsb->m_Posture->m_Pos;
+				front = itsb->m_Posture->GetRenderPos();
 				firstscene = itsb->m_Posture->m_Rail->GetScene();
 			}
-			tail = itsb->m_Posture->m_Pos;
+			tail = itsb->m_Posture->GetRenderPos();
 			lastscene = itsb->m_Posture->m_Rail->GetScene();
 			if(itsb->m_Posture->m_Rail->GetScene()==g_Scene) inscene++;
 			else warping = true;

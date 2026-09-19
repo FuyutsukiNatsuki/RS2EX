@@ -799,8 +799,11 @@ void CTrainPlugin::Render(
 ){
 	SetAnimation(train);
 	if(train){
-		train->SetLocalAxis();
-		SetCamDistSwitch(train->GetPos());
+		//	[RS2EX] Render posture here so the distance switch and the local
+		//	axis match the geometry actually being drawn.  Simulate() and
+		//	ScanInput() keep the authoritative position on purpose.
+		train->SetLocalAxisRender();
+		SetCamDistSwitch(train->GetRenderPos());
 	}else{
 		VEC3 pvpos = m_AxleObject.size()
 			? 0.5f*(m_AxleObject.begin()->GetObject()->GetPos()
