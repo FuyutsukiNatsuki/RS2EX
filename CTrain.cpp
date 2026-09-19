@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CSimpleDialog.h"
@@ -146,6 +147,71 @@ void CTrain::ApplyAxle(
 		CBodyObject::SetTiltDir(m_TiltDir);
 	}
 	for(; ia!=m_AxleList.end(); ia++) ia->Apply();
+}
+
+/*
+ *	[RS2EX] Publish the render posture as SYS_OBJ_LOCAL.
+ *
+ *	Separate from CModelInst::SetLocalAxis() so simulation and plugin logic keep
+ *	seeing authoritative coordinates; only render-time evaluation gets these.
+ */
+void CTrain::SetLocalAxisRender(){
+	g_SystemObject[SYS_OBJ_LOCAL].SetPreviewPosture(
+		m_RenderPos, m_RenderDir, m_RenderUp);
+}
+
+/*
+ *	[RS2EX] Record the interpolation origin for every axle of this vehicle.
+ */
+void CTrain::CaptureRenderState(){
+	IAxlePosture ia = m_AxleList.begin();
+	for(; ia!=m_AxleList.end(); ia++) ia->CaptureRenderState();
+}
+
+/*
+ *	[RS2EX] Drop interpolation history for every axle of this vehicle.
+ */
+void CTrain::InvalidateRenderState(){
+	IAxlePosture ia = m_AxleList.begin();
+	for(; ia!=m_AxleList.end(); ia++) ia->InvalidateRenderState();
+}
+
+/*
+ *	[RS2EX] Build the posture this vehicle will be drawn with.
+ *
+ *	alpha		: 0..1 between the previous and current simulation states
+ *	interpolate	: false to present the authoritative state
+ *
+ *	Mirrors the centre/orientation half of ApplyAxle() against the render
+ *	posture, then hands the interpolated axles to the existing body system so
+ *	bodies, joints and free objects are rebuilt by the code that already knows
+ *	how.  Deliberately does not touch m_Pos / m_Dir / m_Up / m_Right, m_OldPos
+ *	or m_TiltDir: those are simulation state, and tilt stays at 30 Hz in this
+ *	version.
+ */
+void CTrain::PrepareRenderState(
+	float alpha,		//	interpolation factor
+	bool interpolate	//	interpolation allowed
+){
+	IAxlePosture ia = m_AxleList.begin();
+	for(; ia!=m_AxleList.end(); ia++) ia->PrepareRenderState(alpha, interpolate);
+	if(!m_AxleList.size()) return;
+	ia = m_AxleList.begin();
+	IAxlePosture ia2 = --m_AxleList.end();
+	m_RenderPos = 0.5f*(ia->GetRenderPos()+ia2->GetRenderPos());
+	m_RenderDir = ia->GetRenderDir()+ia2->GetRenderDir();
+	m_RenderUp = ia->GetRenderUp()+ia2->GetRenderUp();
+	V3NormAxis(&m_RenderRight, &m_RenderUp, &m_RenderDir);
+	if(!CheckScene() || m_Warping) return;
+	//	Rebuild the drawable geometry from the render posture.  SetPartsInst()
+	//	re-points the shared plugin object tree at this vehicle's own instance
+	//	objects, and the axle/body/free traversals consume that iterator in
+	//	order, so each vehicle writes only its own posture.
+	m_TrainPlugin->SetSwitch(this);
+	m_TrainPlugin->SetPartsInst(this);
+	CBodyObject::SetTiltDir(m_TiltDir);
+	for(ia = m_AxleList.begin(); ia!=m_AxleList.end(); ia++) ia->ApplyRender();
+	m_TrainPlugin->SetPostureRender(this);
 }
 
 /*

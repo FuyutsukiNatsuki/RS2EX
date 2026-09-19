@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20.
 #ifndef CSAVEFILE_H_INCLUDED
 #define CSAVEFILE_H_INCLUDED
 
@@ -75,6 +75,11 @@ public:
 	void SetSceneByVector(vector<CScene *>);
 	void RenderScene(int);
 	void Simulate(int);
+
+	//	[RS2EX] render-only interpolation, traversal only
+	void CaptureTrainRenderState();
+	void InvalidateTrainRenderState();
+	void PrepareTrainRenderState(float alpha, bool interpolate);
 	void ResetSwitch();
 	int GetSceneNum(){ return m_SceneNum; }
 	int GetSumDays(){ return m_SumDays; }

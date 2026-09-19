@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CTRAINGROUP_H_INCLUDED
 #define CTRAINGROUP_H_INCLUDED
 
@@ -92,6 +93,11 @@ public:
 	float CalcSignedSpeedLimit();
 	bool CalcViewAxis(CObject *);
 	void SetCabinView();
+
+	//	[RS2EX] render-only interpolation, traversal only - no geometry here
+	void CaptureRenderState();
+	void InvalidateRenderState();
+	void PrepareRenderState(float alpha, bool interpolate);
 	void AddTrain(CTrainPlugin *, bool);
 	void DeleteTrain(CTrain *);
 	void ListTrain(CListView *);

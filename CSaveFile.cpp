@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20.
 #include "stdafx.h"
 #include "md5.h"
 #include "RailMap.h"
@@ -601,6 +601,53 @@ void CSaveFile::Simulate(
 			group = group->Next();
 		}
 		g_CabinViewTrain = NULL;
+	}
+}
+
+/*
+ *	[RS2EX] Record the interpolation origin for every train.
+ *
+ *	Must be called once immediately before each outer Simulate(-1), never from
+ *	inside it: Simulate() runs its body once per simulation-speed step, so
+ *	capturing there would record the last internal step of a 100x burst rather
+ *	than the boundary the renderer needs to blend across.
+ */
+void CSaveFile::CaptureTrainRenderState(){
+	CTrainGroup *group = m_GroupList;
+	while(group){
+		group->CaptureRenderState();
+		group = group->Next();
+	}
+}
+
+/*
+ *	[RS2EX] Drop interpolation history for every train.
+ */
+void CSaveFile::InvalidateTrainRenderState(){
+	CTrainGroup *group = m_GroupList;
+	while(group){
+		group->InvalidateRenderState();
+		group = group->Next();
+	}
+}
+
+/*
+ *	[RS2EX] Build render posture for every train.
+ *
+ *	alpha		: 0..1 between the previous and current simulation states
+ *	interpolate	: false to present the authoritative state
+ *
+ *	Runs before camera application so the train-following and cab views see the
+ *	same posture the vehicles will be drawn with.
+ */
+void CSaveFile::PrepareTrainRenderState(
+	float alpha,		//	interpolation factor
+	bool interpolate	//	interpolation allowed
+){
+	CTrainGroup *group = m_GroupList;
+	while(group){
+		group->PrepareRenderState(alpha, interpolate);
+		group = group->Next();
 	}
 }
 

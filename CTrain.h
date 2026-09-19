@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CTRAIN_H_INCLUDED
 #define CTRAIN_H_INCLUDED
 
@@ -27,6 +28,13 @@ private:
 	CListElement *m_ListElement;	//	リスト要素
 	list<CAxlePosture> m_AxleList;	//	車軸リスト
 	CTrain *m_Next;					//	次
+
+	//	[RS2EX] Render-only vehicle posture, rebuilt from interpolated axles.
+	//	CModelInst::m_Pos / m_Right / m_Up / m_Dir stay authoritative.
+	VEC3 m_RenderPos;
+	VEC3 m_RenderRight;
+	VEC3 m_RenderUp;
+	VEC3 m_RenderDir;
 public:
 	CTrain(CTrainGroup *);
 	CTrain(CTrainPlugin *, CTrainGroup *, bool);
@@ -46,6 +54,17 @@ public:
 	bool CheckScene();
 	void PushAxle(CAxlePosture &a){ m_AxleList.push_back(a); }
 	void ApplyAxle(bool);
+
+	//	[RS2EX] render-only interpolation
+	void CaptureRenderState();
+	void InvalidateRenderState();
+	void PrepareRenderState(float alpha, bool interpolate);
+	VEC3 GetRenderPos() const{ return m_RenderPos; }
+	VEC3 GetRenderRight() const{ return m_RenderRight; }
+	VEC3 GetRenderUp() const{ return m_RenderUp; }
+	VEC3 GetRenderDir() const{ return m_RenderDir; }
+	//	Render-space counterpart of CModelInst::SetLocalAxis().
+	void SetLocalAxisRender();
 	void ResetTilt();
 	void PrintInfo();	
 	CModelInst *Control();

@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CTrainPlugin.h"
@@ -825,6 +825,37 @@ void CTrainPlugin::Render(
 	IFreeObjectContainer ifo = m_FreeObject.begin();
 	for(; ifo!=m_FreeObject.end(); ifo++) ifo->Render();
 	SimulateEffect(train);
+}
+
+/*
+ *	[RS2EX] Rebuild drawable posture from interpolated axles.
+ *
+ *	train	: vehicle instance
+ *
+ *	The render-frame counterpart of Simulate().  Modelled on the paused branch
+ *	of Render(), which already rebuilds posture without advancing the world.
+ *
+ *	g_MoverEnabled is cleared for the duration: SetPosture() advances movers
+ *	when it is set, and doors and pantographs must keep their 30 Hz cadence
+ *	rather than stepping once per rendered frame.
+ *
+ *	No SimulateEffect() call: particles and sound are simulation-timed and must
+ *	not fire again on a render frame.
+ *
+ *	The closing SetPartsInst() rewinds the shared parts iterator so the render
+ *	traversal that follows starts from this vehicle's first instance object.
+ */
+void CTrainPlugin::SetPostureRender(
+	CTrain *train	//	車漣インスタンス
+){
+	SetMoverState(train);
+	train->SetLocalAxisRender();
+	SetCamDistSwitch(train->GetRenderPos());
+	g_PreSimulationFlag = false;
+	g_MoverEnabled = false;
+	SetPosture();
+	g_MoverEnabled = true;
+	SetPartsInst(train);
 }
 
 /*

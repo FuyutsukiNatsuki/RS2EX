@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CSimpleDialog.h"
@@ -338,6 +338,49 @@ float CTrainGroup::CalcSignedSpeedLimit(){
 	float abs_limited_speed = fabsf(m_EffectTargetSpeed);
 	if(abs_limited_speed>m_SpeedLimit) abs_limited_speed = (float)m_SpeedLimit;
 	return m_EffectTargetSpeed<0.0f ? -abs_limited_speed : abs_limited_speed;
+}
+
+/*
+ *	[RS2EX] Record the interpolation origin for every vehicle in the group.
+ */
+void CTrainGroup::CaptureRenderState(){
+	CTrain *train = m_TrainList;
+	while(train){
+		train->CaptureRenderState();
+		train = train->Next();
+	}
+}
+
+/*
+ *	[RS2EX] Drop interpolation history for every vehicle in the group.
+ *
+ *	The group is the right place to do this for topology changes - placement,
+ *	merge, split, restore - because those move vehicles between groups and the
+ *	previous posture stops describing the same continuous movement.
+ */
+void CTrainGroup::InvalidateRenderState(){
+	CTrain *train = m_TrainList;
+	while(train){
+		train->InvalidateRenderState();
+		train = train->Next();
+	}
+}
+
+/*
+ *	[RS2EX] Build render posture for every vehicle in the group.
+ *
+ *	alpha		: 0..1 between the previous and current simulation states
+ *	interpolate	: false to present the authoritative state
+ */
+void CTrainGroup::PrepareRenderState(
+	float alpha,		//	interpolation factor
+	bool interpolate	//	interpolation allowed
+){
+	CTrain *train = m_TrainList;
+	while(train){
+		train->PrepareRenderState(alpha, interpolate);
+		train = train->Next();
+	}
 }
 
 /*

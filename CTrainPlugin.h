@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CTRAINPLUGIN_H_INCLUDED
 #define CTRAINPLUGIN_H_INCLUDED
 
@@ -285,6 +286,8 @@ public:
 	void ScanInput(CTrain *);
 	void Render(CTrain *);
 	void Simulate(CTrain *);
+	//	[RS2EX] render-space counterpart of Simulate(), see CTrainPlugin.cpp
+	void SetPostureRender(CTrain *);
 	CPLUGIN_CASTFUNC(CTrainPlugin);
 };
 
