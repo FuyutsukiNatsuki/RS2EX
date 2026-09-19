@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20.
 #include "stdafx.h"
 #include "HighTimer.h"
 #include "CPixelbit.h"
@@ -421,8 +421,12 @@ void CArrowSceneryMode::ScanInputScenery(){
 		float s = 0.5f*GetSnapScale();
 		ValueArea(&ArrowPos()->y, m_SnapPos.y-s, m_SnapPos.y+s);
 	}
+	//	[RS2EX] per-render-frame convergence: the legacy ratio has to be
+	//	re-expressed for the current frame rate or the camera snaps to the
+	//	arrow twice as fast at 60 FPS.
+	const float arrowFollow = AdjustLegacyLerp(ARROW_FOLLOW);
 	if(setcam) GetCamera()->SetFocus(
-		(1.0f-ARROW_FOLLOW)*GetCamera()->GetFocus()+ARROW_FOLLOW*m_SnapPos);
+		(1.0f-arrowFollow)*GetCamera()->GetFocus()+arrowFollow*m_SnapPos);
 }
 
 /*

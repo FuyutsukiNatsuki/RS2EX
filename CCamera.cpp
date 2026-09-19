@@ -267,8 +267,12 @@ void CCamera::Apply(
 	}else{
 		if(GetFocusInst()) m_Focus = GetFocusParts()->GetCenter();
 		else if(tlocal) m_Focus = tlocal->GetPos();
-		else if(m_FocusSpeed)
-			m_Focus = (1.0f-m_FocusSpeed)*m_Focus+m_FocusSpeed*m_FocusTarget;
+		else if(m_FocusSpeed){
+			//	[RS2EX] Apply() runs once per rendered frame, so the legacy speed
+			//	has to be re-expressed for the current frame rate.
+			const float focusSpeed = AdjustLegacyLerp(m_FocusSpeed);
+			m_Focus = (1.0f-focusSpeed)*m_Focus+focusSpeed*m_FocusTarget;
+		}
 		pos = m_Focus-m_Dist*dir;
 		SetView(pos, m_Focus, up);
 		if(g_StereoInterval) MoveVW(g_StereoInterval*GetVRight());
@@ -403,14 +407,20 @@ int CCamera::ScanInput(
 		m_Wheel = m_Wheel*1.5f+wh;
 		ret = 1;
 	}else{
+		//	[RS2EX] Unlike a wheel notch, a held key contributes on every rendered
+		//	frame, so both the increment and the 1.1 growth are per-frame rates
+		//	and must be re-expressed for the current frame rate.  1.1^0.5 applied
+		//	60 times equals 1.1 applied 30 times.
 		if(GetKey(DIK_PRIOR)>=S_PUSH) wh += 5;
 		if(GetKey(DIK_NEXT)>=S_PUSH) wh -= 5;
 		if(wh){
 			if(wh*m_Wheel<0.0f) m_Wheel = 0.0f;
-			m_Wheel = m_Wheel*1.1f+wh;
+			m_Wheel = m_Wheel*AdjustLegacyMultiplier(1.1f)
+				+wh*GetLegacyFrameScale();
 			ret = 1;
 		}else{
-			m_Wheel *= 0.5f;
+			//	Decay is a per-frame multiplier too.
+			m_Wheel *= AdjustLegacyMultiplier(0.5f);
 		}
 	}
 	float ratio = CheckFast();
@@ -421,11 +431,14 @@ int CCamera::ScanInput(
 			if(wh) m_FieldOfView += wh>0 ? -5.0f : 5.0f;
 			m_FieldOfView = D3DXToRadian(m_FieldOfView);
 		}else{
-			m_FieldOfView -= m_Wheel*CAM_ZOOM*ratio*sqrtf(m_FieldOfView);
+			//	[RS2EX] m_Wheel is a velocity integrated once per rendered frame.
+			m_FieldOfView -= m_Wheel*CAM_ZOOM*ratio*sqrtf(m_FieldOfView)
+				*GetLegacyFrameScale();
 		}
 		ValueArea(&m_FieldOfView, FOV_MIN, FOV_MAX);
 	}else if((!m_LockPos || !GetFocusInst() && !tlocal) && mode!=4){
-		m_Dist -= m_Dist*m_Wheel*CAM_FOWARD*ratio;
+		//	[RS2EX] see above: per-frame integration step
+		m_Dist -= m_Dist*m_Wheel*CAM_FOWARD*ratio*GetLegacyFrameScale();
 		ValueArea(&m_Dist, m_MinDist/g_FovRatio, m_MaxDist/g_FovRatio);
 	}
 	if(mode==4) return 0;
@@ -459,7 +472,10 @@ int CCamera::ScanInput(
 				if(pos.y<=0) tmp.y = -CAM_EDGE_MOVE;
 				if(pos.y>=g_DispHeight-1) tmp.y = CAM_EDGE_MOVE;
 				VEC3 fow = GetVFow();
-				fow = (GetVRight()*tmp.x-fow*tmp.y)*(ratio*m_Dist*CAM_PAN);
+				//	[RS2EX] applied every rendered frame while the cursor sits at
+				//	the edge, so it is a speed and needs the frame scale.
+				fow = (GetVRight()*tmp.x-fow*tmp.y)
+					*(ratio*m_Dist*CAM_PAN*GetLegacyFrameScale());
 				m_Focus += fow;
 			}else{
 				Slide(mode, tlocal);

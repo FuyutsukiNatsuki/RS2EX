@@ -545,23 +545,28 @@ void CGameMode::RenderFrame(
 			ms_TopPanelTime = PANEL_HIDE_FRAME;
 			ms_RightPanelTime = PANEL_HIDE_FRAME;
 		}
+		//	[RS2EX] These lerps run once per rendered frame, so the legacy ratios
+		//	have to be re-expressed for the current frame rate or the panels
+		//	slide twice as fast at 60 FPS.
+		const float showRatio = AdjustLegacyLerp(PANEL_SHOW_RATIO);
+		const float hideRatio = AdjustLegacyLerp(PANEL_HIDE_RATIO);
 		if(ms_TopPanelTime){
-			ms_TopPanelShow = PANEL_SHOW_RATIO
-				+ms_TopPanelShow*(1.0f-PANEL_SHOW_RATIO);
+			ms_TopPanelShow = showRatio
+				+ms_TopPanelShow*(1.0f-showRatio);
 			ms_TopPanelTime--;
 		}else{
-			ms_TopPanelShow = -0.1f*PANEL_HIDE_RATIO
-				+ms_TopPanelShow*(1.0f-PANEL_HIDE_RATIO);
+			ms_TopPanelShow = -0.1f*hideRatio
+				+ms_TopPanelShow*(1.0f-hideRatio);
 		}
 		top2 = Round(ms_TopPanelShow*TILE_UNIT*2);
 		top1 = top2-TILE_UNIT*2;
 		if(ms_RightPanelTime){
-			ms_RightPanelShow = PANEL_SHOW_RATIO
-				+ms_RightPanelShow*(1.0f-PANEL_SHOW_RATIO);
+			ms_RightPanelShow = showRatio
+				+ms_RightPanelShow*(1.0f-showRatio);
 			ms_RightPanelTime--;
 		}else{
-			ms_RightPanelShow = -1.1f*PANEL_HIDE_RATIO
-				+ms_RightPanelShow*(1.0f-PANEL_HIDE_RATIO);
+			ms_RightPanelShow = -1.1f*hideRatio
+				+ms_RightPanelShow*(1.0f-hideRatio);
 		}
 		right1 = g_DispWidth-Round(ms_RightPanelShow*TILE_UNIT*2);
 		right2 = right1+TILE_UNIT*2;

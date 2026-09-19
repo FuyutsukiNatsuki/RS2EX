@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CToggleIcon.h"
 #include "CSkinPlugin.h"
@@ -104,7 +105,9 @@ void CToggleIcon::SetSlidePos(
 		m_SlideY = y;
 		SetPos(x, y);
 	}else{
-		m_SlideY = y*TI_SLIDE_RATIO+m_SlideY*(1.0f-TI_SLIDE_RATIO);
+		//	[RS2EX] driven from CGameMode::RenderFrame(), so once per rendered frame
+		const float slideRatio = AdjustLegacyLerp(TI_SLIDE_RATIO);
+		m_SlideY = y*slideRatio+m_SlideY*(1.0f-slideRatio);
 		SetPos(x, Round(m_SlideY));
 	}
 }
