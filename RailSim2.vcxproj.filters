@@ -321,6 +321,9 @@
     <ClCompile Include="CFileMode.cpp">
       <Filter>Source Files\RS2 Source\Mode Class Source\SystemMode Class Source</Filter>
     </ClCompile>
+    <ClCompile Include="CFixedSimulationClock.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
     <ClCompile Include="CSkinSelectMode.cpp">
       <Filter>Source Files\RS2 Source\Mode Class Source\SystemMode Class Source</Filter>
     </ClCompile>
@@ -978,6 +981,9 @@
     </ClInclude>
     <ClInclude Include="RS2EXTiming.h">
       <Filter>Header Files\RS2 Header\Misc Header</Filter>
+    </ClInclude>
+    <ClInclude Include="CFixedSimulationClock.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RSPV.H">
       <Filter>Header Files\RS2 Header\Misc Header</Filter>
