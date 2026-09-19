@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-19.
 #include "stdafx.h"
 #include "HighTimer.h"
 #include "Capture.h"
@@ -107,7 +108,15 @@ void CInterfaceMode::EnterGame(){
 void CInterfaceMode::SpinGame(){
 //	static double a = 0.0, s = 0.95;
 //	double b = HighTimer();
-	if(g_NetworkInitialized && !g_ModalDialog) g_SaveFile->Simulate(-1);
+	//	[RS2EX] Same fixed-tick treatment as CSceneryMode::SpinGame().  The RSN
+	//	sync counter advances once per simulation step, so driving the steps from
+	//	real time rather than from rendered frames keeps the sync cadence tied to
+	//	the simulation, which is what the protocol already assumed.
+	const bool simulateEnabled = g_NetworkInitialized && !g_ModalDialog;
+	const int simulateTicks = ConsumeSimulationTicks(simulateEnabled);
+	int simulateIndex;
+	for(simulateIndex = 0; simulateIndex<simulateTicks; simulateIndex++)
+		g_SaveFile->Simulate(-1);
 	if(m_Camera){
 		m_Camera->Apply(true);
 		g_AncientNightFlag = !m_Camera->IsLightOn();
