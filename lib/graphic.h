@@ -13,6 +13,23 @@ struct BOX8{
 	VEC3 v[8];
 };
 
+/*
+ *	[RS2EX] Transitional.  Ownership of the fields below is split, and the
+ *	split is deliberate rather than settled:
+ *
+ *	  pD3D / pDev / d3dpp   owned by the Direct3D 8 backend.  Still exposed
+ *	                        so legacy resource and draw code keeps working.
+ *	                        New high-level code must not take a device
+ *	                        lifecycle dependency on them.
+ *	  width / height /
+ *	  format / iAdapter /
+ *	  fWindowed / type      written by the backend at start-up and reset.
+ *	  caps*                 written by the backend; not the final
+ *	                        cross-API capability model.
+ *	  mtx* / u / v          engine state, nothing to do with the renderer.
+ *
+ *	See docs/v0.0.4-d3d8-inventory.md for the full ownership table.
+ */
 struct SYSVALUE_3D{
 	LPDIRECT3D8				pD3D;	//	Direct3D本体
 	LPDIRECT3DDEVICE8		pDev;	//	3Dデバイス
@@ -65,16 +82,11 @@ extern SYSVALUE_3D sv3;
 
 BOOL InitDirect3D();
 void FreeDirect3D();
-void SelectDisplayAdapter();
-BOOL SetPresentParam();
-D3DFORMAT FindDepthStencilFormat(D3DFORMAT form);
-const char *FormatToString(D3DFORMAT f);
 
 //	[RS2EX] Called by the renderer backend when a resize forces a reset.
 void AffectWindowSize();
 void InitMetrics();
 void InitRenderState();
-void GetDeviceCaps();
 
 BOOL BeginScene(D3DCOLOR c = 0xff000000);
 void EndScene();

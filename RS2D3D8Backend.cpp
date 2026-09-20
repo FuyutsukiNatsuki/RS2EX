@@ -13,6 +13,239 @@
 //	format the backend picked at start-up.
 extern DWORD g_BufferClearMode;
 
+//	Set by the depth/stencil format search below and read by the shadow code
+//	in CConfigMode/GraphicCover.  Defined in lib/graphic.cpp.
+extern bool g_StencilEnabled;
+
+//	Start-up mode selection, unchanged: -win, the plugin viewer and the
+//	fullscreen preference all still decide windowed mode the same way.
+extern char *g_PluginViewArg;
+extern bool g_FullScreen;
+
+//	--- Direct3D 8 device-creation helpers --------------------------------------
+//
+//	[RS2EX] Moved verbatim from lib/graphic.cpp, where they were declared in
+//	graphic.h but never called from outside it.  Adapter enumeration, present
+//	parameters, the depth/stencil format search and the capability query are
+//	as backend-specific as code gets; nothing outside a Direct3D 8 backend can
+//	use them, so they are file-private here.
+
+static void SelectDisplayAdapter();
+static BOOL SetPresentParam();
+static D3DFORMAT FindDepthStencilFormat(D3DFORMAT form);
+static const char *FormatToString(D3DFORMAT f);
+static void GetDeviceCaps();
+
+/*
+ *	ディスプレイアダプタの選択
+ */
+static void SelectDisplayAdapter(){
+	//	アダプタ数の取得
+	int num = sv3.pD3D->GetAdapterCount();
+	Debug("アダプタ数 = %d\n", num);
+
+	//	アダプタの選択
+	Debug("アダプタID = ");
+
+	if(num>=2 && CheckArguments("-2nd")){
+		Debug("1\n");
+		sv3.iAdapter = 1;
+	}else{
+		Debug("D3DADAPTER_DEFAULT\n");
+		sv3.iAdapter = D3DADAPTER_DEFAULT;
+	}
+	//	アダプタ情報の取得
+	D3DADAPTER_IDENTIFIER8 id;
+
+	sv3.pD3D->GetAdapterIdentifier(sv3.iAdapter, 0, &id);
+	Debug("アダプタ名 = %s\n", id.Description);
+}
+
+/*
+ *	デバイスパラメータの初期化
+ */
+static BOOL SetPresentParam(){
+	//	ディスプレイモードをカウント(リフレッシュレートの違いも考慮)
+	UINT num = sv3.pD3D->GetAdapterModeCount(sv3.iAdapter);
+	Debug("アダプタのモード数 = %d\n", num);
+
+	//	現在のサーフェイスフォーマットを取得
+	D3DDISPLAYMODE mode;
+	D3DFORMAT formatAlt = D3DFMT_UNKNOWN;
+
+	sv3.pD3D->GetAdapterDisplayMode(sv3.iAdapter, &mode);
+	sv3.format = mode.Format;
+
+	Debug("現在のモード = %d x %d %s\n",
+		mode.Width, mode.Height, FormatToString(mode.Format));
+
+	//	ディスプレイモードを列挙
+	for(int i = 0; i<num; i++){
+		sv3.pD3D->EnumAdapterModes(sv3.iAdapter, i, &mode);
+
+		//	解像度が一致するか？
+		if(mode.Width==sv3.width && mode.Height==sv3.height){
+			//	フォーマットが一致するか？
+			if(mode.Format==sv3.format)
+				break;	//	列挙終了
+			else
+				formatAlt = mode.Format;	//	代替フォーマットを保存
+		}
+	}
+	Debug("ウインドウ化 = ");
+
+	if(mode.Format!=sv3.format){
+		//	一致するモードがないので代替フォーマットを使用する
+		sv3.format = formatAlt;
+
+		Debug("OFF(フォーマット変更)\n");
+		sv3.fWindowed = FALSE;
+	}else{
+		//	スクリーンモードの決定
+		if(!g_FullScreen || g_PluginViewArg || CheckArguments("-win")){
+			Debug("ON\n");
+			sv3.fWindowed = TRUE;
+		}else{
+			Debug("OFF\n");
+			sv3.fWindowed = FALSE;
+		}
+	}
+	Debug("選択されたモード = %d x %d %s ",
+		sv3.width, sv3.height, FormatToString(sv3.format));
+
+	//	パラメータ設定
+	ZeroMemory(&sv3.d3dpp, sizeof(sv3.d3dpp));
+
+	sv3.d3dpp.BackBufferCount = 1;
+	sv3.d3dpp.BackBufferWidth = sv3.width;
+	sv3.d3dpp.BackBufferHeight = sv3.height;
+	sv3.d3dpp.BackBufferFormat = sv3.format;
+
+	sv3.d3dpp.MultiSampleType = D3DMULTISAMPLE_NONE;
+	sv3.d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+
+	sv3.d3dpp.Windowed = sv3.fWindowed;
+	sv3.d3dpp.hDeviceWindow = svw.hWnd;
+
+	sv3.d3dpp.EnableAutoDepthStencil = TRUE;
+	sv3.d3dpp.AutoDepthStencilFormat = FindDepthStencilFormat(sv3.format);
+
+	Debug("(%s)\n", FormatToString(sv3.d3dpp.AutoDepthStencilFormat));
+
+	return TRUE;
+}
+
+/*
+ *	使用可能なデプス／ステンシルバッファのフォーマットを検索
+ */
+static D3DFORMAT FindDepthStencilFormat(D3DFORMAT form){
+	HRESULT hr;
+
+#define TEST_DSFORMAT(dev, dsf) \
+	hr = sv3.pD3D->CheckDeviceFormat( /* サポートしているか？ */ \
+		sv3.iAdapter, dev, \
+		form, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_SURFACE, dsf); \
+	if(SUCCEEDED(hr)) { \
+		hr = sv3.pD3D->CheckDepthStencilMatch( /* 互換性テスト */ \
+			sv3.iAdapter, dev, \
+			form, form, dsf); \
+		if(SUCCEEDED(hr)) return dsf; \
+	}
+
+	g_StencilEnabled = true;
+	TEST_DSFORMAT( D3DDEVTYPE_HAL, D3DFMT_D24S8 );
+	g_StencilEnabled = true;
+	TEST_DSFORMAT( D3DDEVTYPE_HAL, D3DFMT_D24X4S4 );
+	g_StencilEnabled = false;
+	TEST_DSFORMAT( D3DDEVTYPE_HAL, D3DFMT_D32 );
+	g_StencilEnabled = false;
+	TEST_DSFORMAT( D3DDEVTYPE_HAL, D3DFMT_D24X8 );
+	g_StencilEnabled = false;
+	TEST_DSFORMAT( D3DDEVTYPE_HAL, D3DFMT_D16 );
+	g_StencilEnabled = true;
+	TEST_DSFORMAT( D3DDEVTYPE_HAL, D3DFMT_D15S1 );
+	g_StencilEnabled = false;
+	return D3DFMT_UNKNOWN;
+}
+
+/*
+ *	サーフェイスフォーマットを文字列に変換
+ */
+static const char *FormatToString(D3DFORMAT f){
+	switch(f){
+	case D3DFMT_R8G8B8:			return "D3DFMT_R8G8B8";
+	case D3DFMT_A8R8G8B8:		return "D3DFMT_A8R8G8B8";
+	case D3DFMT_X8R8G8B8:		return "D3DFMT_X8R8G8B8";
+	case D3DFMT_R5G6B5:			return "D3DFMT_R5G6B5";
+	case D3DFMT_X1R5G5B5:		return "D3DFMT_X1R5G5B5";
+	case D3DFMT_A1R5G5B5:		return "D3DFMT_A1R5G5B5";
+	case D3DFMT_A4R4G4B4:		return "D3DFMT_A4R4G4B4";
+	case D3DFMT_R3G3B2:			return "D3DFMT_R3G3B2";
+	case D3DFMT_A8:				return "D3DFMT_A8";
+	case D3DFMT_A8R3G3B2:		return "D3DFMT_A8R3G3B2";
+	case D3DFMT_X4R4G4B4:		return "D3DFMT_X4R4G4B4";
+	case D3DFMT_D16_LOCKABLE:	return "D3DFMT_D16_LOCKABLE";
+	case D3DFMT_D32:			return "D3DFMT_D32";
+	case D3DFMT_D15S1:			return "D3DFMT_D15S1";
+	case D3DFMT_D24S8:			return "D3DFMT_D24S8";
+	case D3DFMT_D16:			return "D3DFMT_D16";
+	case D3DFMT_D24X8:			return "D3DFMT_D24X8";
+	case D3DFMT_D24X4S4:		return "D3DFMT_D24X4S4";
+	default:					return "D3DFMT_UNKNOWN";
+	}
+}
+
+/*
+ *	デバイス能力の取得
+ */
+static void GetDeviceCaps(){
+	D3DCAPS8 caps;
+
+	sv3.pDev->GetDeviceCaps(&caps);
+
+	sv3.capsMaxPrim = caps.MaxPrimitiveCount;
+	sv3.capsMaxLight = caps.MaxActiveLights;
+	sv3.capsFogVertex = (caps.RasterCaps&D3DPRASTERCAPS_FOGVERTEX)!=0;
+	sv3.capsFogPixel = (caps.RasterCaps&D3DPRASTERCAPS_FOGTABLE)!=0;
+	sv3.capsFogRange = (caps.RasterCaps&D3DPRASTERCAPS_FOGRANGE)!=0;
+	sv3.capsTexMem = sv3.pDev->GetAvailableTextureMem()/1024;
+	sv3.capsTexWidth = caps.MaxTextureWidth;
+	sv3.capsTexHeight = caps.MaxTextureHeight;
+	sv3.capsTexStage = caps.MaxSimultaneousTextures;
+	sv3.capsTexAlpha = (caps.TextureCaps&D3DPTEXTURECAPS_ALPHA)!=0;
+	sv3.capsTexMipMap = (caps.TextureCaps&D3DPTEXTURECAPS_MIPMAP)!=0;
+	sv3.capsTexBump = (caps.TextureOpCaps&D3DTEXOPCAPS_BUMPENVMAP)!=0;
+	Debug(
+		"最大プリミティブ = %d\n" 
+		"最大ライト = %d\n"
+		"フォグ{\n"
+		"\t頂点 = %d\n"
+		"\tピクセル = %d\n"
+		"\t範囲 = %d\n"
+		"}\n"
+		"テクスチャー{\n"
+		"\t利用可能メモリ = %d KB\n"
+		"\t最大サイズ = %d x %d\n"
+		"\t最大ステージ = %d\n"
+		"\tアルファブレンド = %d\n"
+		"\tミップマップ = %d\n"
+		"\tバンプマップ = %d\n"
+		"}\n",
+		sv3.capsMaxPrim,
+		sv3.capsMaxLight,
+		sv3.capsFogVertex,
+		sv3.capsFogPixel,
+		sv3.capsFogRange,
+		sv3.capsTexMem,
+		sv3.capsTexWidth, sv3.capsTexHeight,
+		sv3.capsTexStage,
+		sv3.capsTexAlpha,
+		sv3.capsTexMipMap,
+		sv3.capsTexBump);
+}
+
+//	----------------------------------------------------------------------------
+
 CRS2D3D8Backend::CRS2D3D8Backend()
 	: m_Initialized(false),
 	  m_ViewportWidth(1),
