@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 
 using namespace std;
@@ -21,18 +22,16 @@ using namespace std;
  *
  *	※サイズが２の乗数でない場合は自動的に透明な領域が追加される。
  */
-inline HRESULT LOAD_TEXTURE(
-	LPTEX8 *ppTex, LPCSTR strFile, D3DCOLOR cTrans = 0, int nMipLv = 1){
-	HRESULT hr;
-
-	hr = D3DXCreateTextureFromFileExA(
-		sv3.pDev, strFile, 0, 0, nMipLv, 0,
-		D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-		D3DX_DEFAULT, D3DX_DEFAULT,
-		cTrans, NULL, NULL, ppTex);
-	return hr;
-}
+//	[RS2EX] LOAD_TEXTURE() and LOAD_TEXTURE_RES() moved to RS2D3D8Resources.
+//	They put D3DX texture creation in a header included by almost every
+//	translation unit, which is the opposite of having one owner for it.
 //	システムメモリへ
+//
+//	[RS2EX] Left here deliberately.  Its only caller is lib/height_field.cpp,
+//	which is not in the build, so routing it through the resource module would
+//	add a function nothing calls - but deleting it would break that file if it
+//	is ever revived.  An unowned creation path that is unreachable; recorded in
+//	docs/v0.0.5-resource-inventory.md rather than touched.
 inline HRESULT LOAD_TEXTURE_SYS(
 	LPTEX8 *ppTex, LPCSTR strFile, D3DCOLOR cTrans = 0, int nMipLv = 1){
 	HRESULT hr;
@@ -41,18 +40,6 @@ inline HRESULT LOAD_TEXTURE_SYS(
 		sv3.pDev, strFile, 0, 0, nMipLv, 0,
 		D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,
 		D3DX_DEFAULT, D3DX_DEFAULT,
-		cTrans, NULL, NULL, ppTex);
-	return hr;
-}
-//	リソースから
-inline HRESULT LOAD_TEXTURE_RES(
-	LPTEX8 *ppTex, LPCSTR strRes, D3DCOLOR cTrans = 0, int nMipLv = 1){
-	HRESULT hr;
-
-	hr = D3DXCreateTextureFromResourceExA(
-		sv3.pDev, NULL, strRes, 0, 0, nMipLv, 0,
-		D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
-		D3DTEXF_POINT, D3DTEXF_POINT,
 		cTrans, NULL, NULL, ppTex);
 	return hr;
 }
@@ -88,6 +75,11 @@ public:
 	void GetSize(int *pW, int *pH){*pW = m_desc.Width, *pH = m_desc.Height;}
 	/*
 	 *	テクスチャ・オブジェクトの取得
+	 *
+	 *	[RS2EX] Legacy compatibility exposure, not the ownership path.  Eleven
+	 *	call sites feed it straight to devSetTexture() - ten in CStringTexture
+	 *	and the opening screen - and those belong to the fixed-function state
+	 *	phase.  Do not add new callers.
 	 */
 	LPTEX8 GetObject(){ return m_pTex; }
 	/*

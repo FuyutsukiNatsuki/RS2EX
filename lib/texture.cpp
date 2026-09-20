@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 #include "headers.h"
 #include "debug.h"
@@ -6,6 +7,7 @@
 #include "vertex.h"
 #include "draw.h"
 #include "texture.h"
+#include "..\RS2D3D8Resources.h"
 
 //	内部グローバル
 CTexList g_TexList;		//	テクスチャリスト
@@ -52,7 +54,7 @@ BOOL CTexture::LoadResource(LPCSTR strRes, D3DCOLOR cTrans, int nMipLv){
 void CTexture::Free(){
 	if(!m_pTex) return;
 	if(m_fCreate){
-		RELEASE(m_pTex);
+		RS2D3D8_ReleaseTexture(&m_pTex);
 	}else{
 		m_fCreate = FALSE;
 		g_TexList.Release(m_pTex);
@@ -68,13 +70,10 @@ BOOL CTexture::Create(int w, int h){
 	m_fCreate = TRUE;
 
 	//	テクスチャの作成
-	HRESULT hr;
-	int texW = (int)powf(2, ceilf(logf(w)/logf(2)));
-	int texH = (int)powf(2, ceilf(logf(h)/logf(2)));
-
-	hr = sv3.pDev->CreateTexture(
-		texW, texH, 1, 0, D3DFMT_A4R4G4B4,
-		D3DPOOL_MANAGED, &m_pTex);
+	//	[RS2EX] Power-of-two rounding, A4R4G4B4 and the single mip level moved
+	//	to the resource module together - DrawInText() writes 16-bit pixels into
+	//	the locked surface by hand, so the three are one decision, not three.
+	HRESULT hr = RS2D3D8_CreateMutableTexture(&m_pTex, w, h);
 	if(FAILED(hr)) goto error;
 
 	m_pTex->GetLevelDesc(0, &m_desc);	//	実際のテクスチャサイズを取得
@@ -275,8 +274,12 @@ LPTEX8 CTexList::Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv){
 	p = new TEXINFO;
 	p->pTex = NULL;
 
-	if(fRes ? FAILED(LOAD_TEXTURE_RES(&p->pTex, strName, cTrans, nMipLv))
-		: FAILED(LOAD_TEXTURE(&p->pTex, strName, cTrans, nMipLv))){
+	//	[RS2EX] Loading policy stays here; the GPU object comes from the
+	//	resource module.  The list still hands out LPTEX8 because CMesh and
+	//	twelve other call sites take it - see the v0.0.5 resource inventory.
+	if(fRes
+		? FAILED(RS2D3D8_CreateTextureFromResource(&p->pTex, strName, cTrans, nMipLv))
+		: FAILED(RS2D3D8_CreateTextureFromFile(&p->pTex, strName, cTrans, nMipLv))){
 		Debug("failed.\n");
 		return NULL;
 	}
@@ -310,7 +313,7 @@ void CTexList::Release(LPTEX8 pTex){
 			//	参照がなくなればテクスチャを解放、リストから外す
 			if(p->nRef==0){
 				Debug("release(%s)\n", p->strName.c_str());
-				RELEASE(p->pTex);
+				RS2D3D8_ReleaseTexture(&p->pTex);
 
 				if(p==m_pList){
 					//	リストの先頭
