@@ -198,6 +198,8 @@
     <ClCompile Include="CExitMode.cpp" />
     <ClCompile Include="CFileMode.cpp" />
     <ClCompile Include="CFixedSimulationClock.cpp" />
+    <ClCompile Include="RS2Renderer.cpp" />
+    <ClCompile Include="RS2D3D8Backend.cpp" />
     <ClCompile Include="CSkinSelectMode.cpp" />
     <ClCompile Include="CVideoMode.cpp" />
     <ClCompile Include="C3DPluginMode.cpp" />
@@ -423,6 +425,8 @@
     <ClInclude Include="RSPV.H" />
     <ClInclude Include="RS2EXTiming.h" />
     <ClInclude Include="CFixedSimulationClock.h" />
+    <ClInclude Include="RS2Renderer.h" />
+    <ClInclude Include="RS2D3D8Backend.h" />
     <ClInclude Include="Script.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemCover.h" />
