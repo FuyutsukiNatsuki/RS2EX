@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CSkinPlugin.h"
@@ -206,7 +207,7 @@ void CTreeDirElement::PushListElement(
 	CPluginListView *lv	//	リストビュー
 ){
 	int index = lv->GetItemNum();
-	lv->InsertItem(index, (char *)m_String.c_str(), NULL, g_SkinDirIconRect);
+	lv->InsertItem(index, (char *)m_String.c_str(), RS2TextureRef(), g_SkinDirIconRect);
 	lv->GetElement(index)->SetData((DWORD)this);
 }
 

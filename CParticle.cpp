@@ -42,7 +42,7 @@ CParticleInst::CParticleInst(
 void CParticleInst::Render(){
 	if(m_Timer>m_Lifetime || m_Scene!=g_Scene) return;
 	devTransBillboard(m_Pos);
-	devSetTexture(0, m_Emitter->m_Texture);
+	RS2BindTexture(0, m_Emitter->m_Texture);
 	float radius = 1.41421356f*(m_Alpha*m_InitRadius+(1.0f-m_Alpha)*m_FinRadius);
 	float si = sinf(m_Angle)*radius, co = cosf(m_Angle)*radius;
 	D3DCOLOR col = ScaleColor(m_Color, m_Alpha);
@@ -159,7 +159,7 @@ char *CParticle::Read(
 	char *tmp, *eee;
 	int i;
 	string obj, blend;
-	m_Texture = NULL;
+	m_Texture.Clear();
 	if(!(str = BeginBlock(str, "Particle"))) return NULL;
 	if(!(str = AsgnString(eee = str, "TextureFileName", &m_TextureFileName))) throw CSynErr(eee);
 	if(!(str = AsgnString(eee = str, "AttachObject", &obj))) throw CSynErr(eee);

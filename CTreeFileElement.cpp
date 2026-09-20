@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CEditCtrl.h"
 #include "CSkinPlugin.h"
@@ -51,9 +52,9 @@ void CTreeFileElement::PushListElement(
 	CPluginListView *lv	//	リストビュー
 ){
 	int index = lv->GetItemNum();
-	LPTEX8 icon = m_Plugin->GetIconTexture();
+	RS2TextureRef icon = m_Plugin->GetIconTexture();
 	CListElement *le = lv->InsertItem(index, (char *)m_Plugin->m_Name.c_str(),
-		icon, icon ? m_Plugin->GetIconRect() : g_SkinFileIconRect);
+		icon, !icon.IsEmpty() ? m_Plugin->GetIconRect() : g_SkinFileIconRect);
 	le->SetData((DWORD)this);
 	le->SetString(1, (char *)m_Plugin->m_ID.c_str());
 	le->SetString(2, (char *)m_Plugin->m_Author.c_str());

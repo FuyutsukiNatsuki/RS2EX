@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 
 //	内部グローバル
@@ -101,7 +102,7 @@ void CStringDrawer::RenderLeft(
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
 	if(mh<0 || mh>m_Height) mh = m_Height;
-	devSetTexture(0, m_Texture->GetObject());
+	RS2BindTexture(0, m_Texture->GetRef());
 	SetUVMap((float)m_PosX/g_StrTexRadius,
 		(float)m_PosY/g_StrTexRadius,
 		(float)(m_PosX+mw)/g_StrTexRadius,
@@ -120,7 +121,7 @@ void CStringDrawer::RenderCenter(
 	if(mw<0 || mw>m_Width) mw = m_Width;
 	if(mh<0 || mh>m_Height) mh = m_Height;
 	int tw = mw/2;
-	devSetTexture(0, m_Texture->GetObject());
+	RS2BindTexture(0, m_Texture->GetRef());
 	SetUVMap((float)(m_PosX+(m_Width-mw)/2)/g_StrTexRadius,
 		(float)m_PosY/g_StrTexRadius,
 		(float)(m_PosX+(m_Width+mw)/2)/g_StrTexRadius,
@@ -138,7 +139,7 @@ void CStringDrawer::RenderRight(
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
 	if(mh<0 || mh>m_Height) mh = m_Height;
-	devSetTexture(0, m_Texture->GetObject());
+	RS2BindTexture(0, m_Texture->GetRef());
 	SetUVMap((float)(m_PosX+m_Width-mw)/g_StrTexRadius,
 		(float)m_PosY/g_StrTexRadius,
 		(float)(m_PosX+m_Width)/g_StrTexRadius,
@@ -156,7 +157,7 @@ void CStringDrawer::RenderLeftV(
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
 	if(mh<0 || mh>m_Height) mh = m_Height;
-	devSetTexture(0, m_Texture->GetObject());
+	RS2BindTexture(0, m_Texture->GetRef());
 	SetUVMap((float)m_PosX/g_StrTexRadius,
 		(float)m_PosY/g_StrTexRadius,
 		(float)(m_PosX+mw)/g_StrTexRadius,
@@ -175,7 +176,7 @@ void CStringDrawer::RenderCenterV(
 	if(mw<0 || mw>m_Width) mw = m_Width;
 	if(mh<0 || mh>m_Height) mh = m_Height;
 	int tw = mw/2;
-	devSetTexture(0, m_Texture->GetObject());
+	RS2BindTexture(0, m_Texture->GetRef());
 	SetUVMap((float)(m_PosX+(m_Width-mw)/2)/g_StrTexRadius,
 		(float)m_PosY/g_StrTexRadius,
 		(float)(m_PosX+(m_Width+mw)/2)/g_StrTexRadius,
@@ -193,7 +194,7 @@ void CStringDrawer::RenderRightV(
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
 	if(mh<0 || mh>m_Height) mh = m_Height;
-	devSetTexture(0, m_Texture->GetObject());
+	RS2BindTexture(0, m_Texture->GetRef());
 	SetUVMap((float)(m_PosX+m_Width-mw)/g_StrTexRadius,
 		(float)m_PosY/g_StrTexRadius,
 		(float)(m_PosX+m_Width)/g_StrTexRadius,
@@ -212,7 +213,7 @@ void CStringDrawer::RenderLeft3D(
 	float scale		//	スケール [m/px]
 ){
 	float tw = m_Width*scale, th = m_Height*scale;
-	devSetTexture(0, m_Texture->GetObject());
+	RS2BindTexture(0, m_Texture->GetRef());
 	SetUVMap((float)m_PosX/g_StrTexRadius,
 		(float)m_PosY/g_StrTexRadius,
 		(float)(m_PosX+m_Width)/g_StrTexRadius,
@@ -232,7 +233,7 @@ void CStringDrawer::RenderCenter3D(
 	float scale		//	スケール [m/px]
 ){
 	float tw = m_Width*scale, th = m_Height*scale;
-	devSetTexture(0, m_Texture->GetObject());
+	RS2BindTexture(0, m_Texture->GetRef());
 	SetUVMap((float)m_PosX/g_StrTexRadius,
 		(float)m_PosY/g_StrTexRadius,
 		(float)(m_PosX+m_Width)/g_StrTexRadius,
@@ -252,7 +253,7 @@ void CStringDrawer::RenderRight3D(
 	float scale		//	スケール [m/px]
 ){
 	float tw = m_Width*scale, th = m_Height*scale;
-	devSetTexture(0, m_Texture->GetObject());
+	RS2BindTexture(0, m_Texture->GetRef());
 	SetUVMap((float)m_PosX/g_StrTexRadius,
 		(float)m_PosY/g_StrTexRadius,
 		(float)(m_PosX+m_Width)/g_StrTexRadius,
@@ -343,7 +344,7 @@ void CStringTexture::RenderAll(
 	int x, int y,	//	座標
 	int p			//	ページ
 ){
-	devSetTexture(0, m_Texture[p].GetObject());
+	RS2BindTexture(0, m_Texture[p].GetRef());
 	SetUVMap(0.0f, 0.0f, 1.0f, 1.0f);
 	TexMap2DRect(x, y, x+g_StrTexRadius, y+g_StrTexRadius);
 }

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CTEXTUREANIMATION_H_INCLUDED
 #define CTEXTUREANIMATION_H_INCLUDED
 
@@ -12,7 +13,7 @@ class CTexAnimFrame{
 private:
 	int m_FrameLength;					//	フレームの長さ
 	string m_TextureFileName;			//	テクスチャファイル名
-	LPTEX8 m_FrameTexture;				//	フレームテクスチャ
+	RS2TextureRef m_FrameTexture;		//	フレームテクスチャ
 	CTextureTransformer *m_TexTrans;	//	UV 変換
 public:
 	CTexAnimFrame();
@@ -60,8 +61,8 @@ public:
 	}
 	void SetState(CTexAnimState *);
 	void Apply(CMesh *, int);
-	LPTEX8 GetFrameTexture(){
-		return m_FrameList.size() ? m_FrameList[m_CurrentFrame].m_FrameTexture : NULL;
+	RS2TextureRef GetFrameTexture(){
+		return m_FrameList.size() ? m_FrameList[m_CurrentFrame].m_FrameTexture : RS2TextureRef();
 	}
 };
 

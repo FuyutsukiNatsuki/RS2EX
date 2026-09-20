@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CENVPLUGIN_H_INCLUDED
 #define CENVPLUGIN_H_INCLUDED
 
@@ -54,7 +55,7 @@ class CEnvPlugin: public CPlugin{
 private:
 	float m_Latitude;				//	緯度
 	string m_EnvMapTexFile;			//	環境マップファイル名
-	LPTEX8 m_EnvMapTexture;			//	環境マッピング
+	RS2TextureRef m_EnvMapTexture;	//	環境マッピング
 	string m_LandscapeFile;			//	景観ファイル名
 	CMesh *m_LandscapeMesh;			//	景観メッシュ
 	CObject m_LandscapeObject;		//	景観オブジェクト
@@ -78,7 +79,7 @@ public:
 	bool Load();
 	bool GetHemisphere(){ return m_Latitude<0.0f; }
 	void SetPreview();
-	void SetEnvMapTexture(){ devSetTexture(1, m_EnvMapTexture); }
+	void SetEnvMapTexture(){ RS2BindTexture(1, m_EnvMapTexture); }
 	void Render(double abstime = -1.0);
 	void RenderAfter();
 	D3DCOLOR GetShadowColor(){ return m_ShadowColor; }

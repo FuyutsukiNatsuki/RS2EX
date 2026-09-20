@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CListView.h"
 #include "CPopMenu.h"
@@ -133,7 +134,7 @@ CIconListElement::CIconListElement(
 	int cols,			//	列数
 	char *str,			//	第一要素
 	CListView *ctrl,	//	リストビュー
-	LPTEX8 icon,		//	アイコンテクスチャ
+	RS2TextureRef icon,	//	アイコンテクスチャ
 	float *rect			//	アイコン位置
 ):
 	CListElement(cols, str, ctrl)	//	基本クラス
@@ -152,7 +153,7 @@ void CIconListElement::RenderDragItem(
 	CStringDrawer *sd = g_StrTex->DrawString(m_String[0].c_str(), 0);
 	int tw = TILE_UNIT+sd->GetWidth()+LV_COL_MARGIN*3;
 	D3DCOLOR fc;
-	if(m_IconTex) devSetTexture(0, m_IconTex);
+	if(!m_IconTex.IsEmpty()) RS2BindTexture(0, m_IconTex);
 	else g_Skin->SetInterfaceTexture();
 	SetUVMap(m_IconRect[0], m_IconRect[1],
 		m_IconRect[0]+m_IconRect[2], m_IconRect[1]+m_IconRect[3]);
@@ -181,7 +182,7 @@ bool CIconListElement::Render(
 	bool drop		//	ドロップ
 ){
 	D3DCOLOR fc;
-	if(m_IconTex) devSetTexture(0, m_IconTex);
+	if(!m_IconTex.IsEmpty()) RS2BindTexture(0, m_IconTex);
 	else g_Skin->SetInterfaceTexture();
 	int tiw = m_Owner->m_ColHeader[0].GetWidth()-LV_COL_MARGIN;
 	if(tiw>TILE_UNIT) tiw = TILE_UNIT;
@@ -895,7 +896,7 @@ void CIconListView::Init(
 CListElement *CIconListView::InsertItem(
 	int index,		//	行
 	char *str,		//	文字列
-	LPTEX8 icon,	//	アイコンテクスチャ
+	RS2TextureRef icon,	//	アイコンテクスチャ
 	float *rect		//	アイコン位置
 ){
 	return CListView::InsertItem(

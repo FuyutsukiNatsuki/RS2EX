@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CCustomizerMisc.h"
 #include "CModelPlugin.h"
@@ -10,7 +11,7 @@ extern bool g_PreviewAnimation;
  *	コンストラクタ
  */
 CTexAnimFrame::CTexAnimFrame(){
-	m_FrameTexture = NULL;
+	m_FrameTexture.Clear();
 	m_TexTrans = NULL;
 }
 
@@ -35,7 +36,7 @@ CTexAnimFrame::CTexAnimFrame(
 ){
 	m_FrameLength = len;
 	m_TextureFileName = tex;
-	m_FrameTexture = NULL;
+	m_FrameTexture.Clear();
 	m_TexTrans = NULL;
 }
 
@@ -271,5 +272,5 @@ void CTextureAnimation::Apply(
 	int matid		//	マテリアル ID
 ){
 	if(m_FrameList.size()) m_FrameList[m_CurrentFrame].Apply(mesh, matid);
-	else mesh->SetCustomTexture(matid, NULL);
+	else mesh->SetCustomTexture(matid, RS2TextureRef());
 }

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CCursor.h"
 #include "CSkinPlugin.h"
@@ -52,7 +53,7 @@ void CSkinPlugin::_CURSORDATA::Render(
 	int cw = m_Cursor2DSize[0], ch = m_Cursor2DSize[1];
 	int cols = tw/cw;
 	int px = pos.x-m_Cursor2DHotSpot[0], py = pos.y-m_Cursor2DHotSpot[1];
-	devSetTexture(0, m_CursorTexture);
+	RS2BindTexture(0, m_CursorTexture);
 	float fw = (float)cw/tw, fh = (float)ch/th;
 	float u = (m_Anim%cols)*fw;
 	float v = (m_Anim/cols)*fh;

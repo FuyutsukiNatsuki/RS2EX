@@ -56,7 +56,7 @@ public:
 	void RenderCustom(CNamedObject *nobj);
 	void Render();
 	void RenderAmb();
-	void RenderT(LPTEX8);
+	void RenderT(RS2TextureRef);
 	void RenderA(float);
 	void RenderAP(float);
 	void RenderSC(RS2Material *);

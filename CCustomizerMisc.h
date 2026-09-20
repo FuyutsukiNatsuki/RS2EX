@@ -67,7 +67,7 @@ class CTextureChanger: public CCustomizerBase{
 private:
 	int m_MaterialID;			//	マテリアル番号
 	string m_AltTextureName;	//	代替テクスチャファイル名
-	LPTEX8 m_AltTexture;		//	代替テクスチャ
+	RS2TextureRef m_AltTexture;	//	代替テクスチャ
 public:
 	CCustomizerBase *Duplicate(){ return new CTextureChanger(*this); }
 	char *Read(char *);

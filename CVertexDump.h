@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CVERTEXDUMP_H_INCLUDED
 #define CVERTEXDUMP_H_INCLUDED
 
@@ -129,10 +130,10 @@ private:
 	int m_Count;			//	カウンタ
 	VTX_NX *m_Buffer;		//	バッファ
 	CVertex m_Vertex;		//	バーテックス
-	LPTEX8 m_Texture;		//	テクスチャポインタ
+	RS2TextureRef m_Texture;	//	テクスチャポインタ
 	CQuadDumpNX *m_Next;	//	次
 public:
-	CQuadDumpNX(int, LPTEX8);
+	CQuadDumpNX(int, RS2TextureRef);
 	CQuadDumpNX(CQuadDumpNX *);
 	~CQuadDumpNX();
 	int GetCount(){ return m_Count; }

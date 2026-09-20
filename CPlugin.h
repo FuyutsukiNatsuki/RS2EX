@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CPLUGIN_H_INCLUDED
 #define CPLUGIN_H_INCLUDED
 
@@ -19,7 +20,7 @@ protected:
 	int m_State;			//	状態 (0: init, 1: preloaded, 2: loaded)
 	bool m_InsertTreeFlag;	//	ツリー挿入フラグ
 	float m_Version;		//	対応バージョン
-	LPTEX8 m_IconTex;		//	アイコンテクスチャ
+	RS2TextureRef m_IconTex;	//	アイコンテクスチャ
 	float m_IconRect[4];	//	アイコン位置
 	string m_ID;			//	ID
 	string m_Name;			//	名称
@@ -57,7 +58,7 @@ public:
 	virtual bool ConfirmRename(string &){ return false; }
 	virtual bool IsDeletable(){ return false; }
 	void SetIconTexture();
-	LPTEX8 GetIconTexture(){ return m_IconTex; }
+	RS2TextureRef GetIconTexture(){ return m_IconTex; }
 	float *GetIconRect(){ return m_IconRect; }
 	virtual void SetPreview(){}
 };

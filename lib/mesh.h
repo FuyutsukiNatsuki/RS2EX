@@ -40,8 +40,8 @@ class CMesh{
 	DWORD *m_pMatOrder;		//	マテリアル順序
 	RS2Material *m_pMat;		//	マテリアルリスト
 	RS2Material *m_pCustomMat;	//	代替マテリアルリスト
-	LPTEX8 *m_pTex;			//	テクスチャリスト
-	LPTEX8 *m_pCustomTex;	//	代替テクスチャリスト
+	RS2TextureRef *m_pTex;	//	テクスチャリスト
+	RS2TextureRef *m_pCustomTex;	//	代替テクスチャリスト
 	TTMTX *m_pTexTrans;		//	テクスチャ変換リスト
 	DWORD m_dwNumMat;		//	マテリアル数
 	string m_strName;		//	ファイル名
@@ -79,13 +79,13 @@ public:
 	void SetMatFlag(DWORD i, DWORD v){ m_pMatFlag[i] |= v; }
 	RS2Material GetDefaultMaterial(DWORD i){ return m_pMat[i]; }
 	void SetCustomMaterial(DWORD i, RS2Material &mat){ m_pCustomMat[i] = mat; }
-	void SetCustomTexture(DWORD i, LPTEX8 tex){ m_pCustomTex[i] = tex; }
+	void SetCustomTexture(DWORD i, RS2TextureRef tex){ m_pCustomTex[i] = tex; }
 	void SetTexTrans(DWORD i, TTMTX &mtx){ m_pTexTrans[i] = mtx; }
 
 	void RenderCustom(MTX4 *pMtx, CNamedObject *nobj);
 	void Render(MTX4 *pMtx);
 	void RenderAmb(MTX4 *pMtx);
-	void RenderT(MTX4 *pMtx, LPTEX8 pTex);
+	void RenderT(MTX4 *pMtx, RS2TextureRef pTex);
 	void RenderA(MTX4 *pMtx, float alpha);
 	void RenderAP(MTX4 *pMtx, float aplus);
 	void RenderSC(MTX4 *pMtx, RS2Material *pMat);

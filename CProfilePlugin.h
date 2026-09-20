@@ -73,7 +73,7 @@ private:
 	float m_TexVPerMeter;		//	長さ当たり V 座標
 	bool m_UseTexture;			//	テクスチャ使用フラグ
 	string m_TexFileName;		//	テクスチャファイル名
-	LPTEX8 m_Texture;			//	テクスチャ
+	RS2TextureRef m_Texture;	//	テクスチャ
 	list<CProfileFace> m_Face;	//	断面
 	map<CScene *, MapPtrValue<CQuadDumpN> > m_DumpN;	//	ダンパ (テクスチャなし)
 	map<CScene *, MapPtrValue<CQuadDumpNX> > m_DumpNX;	//	ダンパ (テクスチャあり)

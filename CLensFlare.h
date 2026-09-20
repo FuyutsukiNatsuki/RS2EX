@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CLENSFLARE_H_INCLUDED
 #define CLENSFLARE_H_INCLUDED
 
@@ -17,7 +18,7 @@ private:
 	D3DCOLOR m_InnerColor;	//	内側の色
 	D3DCOLOR m_OuterColor;	//	外側の色
 	string m_TexFileName;	//	テクスチャファイル名
-	LPTEX8 m_Texture;		//	テクスチャ
+	RS2TextureRef m_Texture;	//	テクスチャ
 public:
 	char *Read(char *);
 	void LoadData();

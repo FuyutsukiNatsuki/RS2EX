@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CCursor.h"
 #include "CSkinPlugin.h"
@@ -308,7 +309,7 @@ void CSkinPlugin::DrawBackground(
 	D3DCOLOR bg = MultiplyColor(m_BackgroundData.m_BackgroundColor, lc);
 	BeginScene(bg);
 	if(*m_BackgroundData.m_ImageSize){
-		devSetTexture(0, m_WallpaperTexture);
+		RS2BindTexture(0, m_WallpaperTexture);
 		if(m_BackgroundData.m_ImageSize[0]<0) SetUVMap(0.0f, 0.0f, 1.0f, 1.0f);
 		else SetUVMap(0.0f, 0.0f,
 			(float)g_DispWidth/m_BackgroundData.m_ImageSize[0],

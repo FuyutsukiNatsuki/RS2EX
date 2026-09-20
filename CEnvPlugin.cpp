@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CSaveFile.h"
@@ -154,7 +155,7 @@ bool CEnvPlugin::Load(){
 	}
 	if(m_EnvMapTexFile.size())
 		m_EnvMapTexture = g_TexList.Get(FALSE, m_EnvMapTexFile.c_str());
-	else m_EnvMapTexture = NULL;
+	else m_EnvMapTexture.Clear();
 	m_LandscapeMesh = g_MeshList.Get(FALSE, (char *)m_LandscapeFile.c_str(), 0, 1);
 	m_LandscapeObject.SetMesh(m_LandscapeMesh, V3ZERO, m_LandscapeScale);
 	ChDir();

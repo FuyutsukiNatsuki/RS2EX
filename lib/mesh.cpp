@@ -86,8 +86,8 @@ BOOL CMesh::Load(
 	m_pMatFlag = new DWORD[m_dwNumMat];
 	m_pMat = new RS2Material[m_dwNumMat];
 	m_pCustomMat = new RS2Material[m_dwNumMat];
-	m_pTex = new LPTEX8[m_dwNumMat];
-	m_pCustomTex = new LPTEX8[m_dwNumMat];
+	m_pTex = new RS2TextureRef[m_dwNumMat];
+	m_pCustomTex = new RS2TextureRef[m_dwNumMat];
 	m_pTexTrans = new TTMTX[m_dwNumMat];
 
 	DWORD i, j;
@@ -97,7 +97,7 @@ BOOL CMesh::Load(
 		m_pMat[i] = src.material;
 		//	[RS2EX] RailSim behaviour, not an import artefact: keep it here.
 		m_pMat[i].Ambient = m_pMat[i].Diffuse;
-		m_pTex[i] = NULL;
+		m_pTex[i].Clear();
 
 		if(!src.textureFileName) continue;
 
@@ -157,14 +157,14 @@ BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, RS2Color4 cv){
 	m_pMatFlag = new DWORD[m_dwNumMat];
 	m_pMat = new RS2Material[m_dwNumMat];
 	m_pCustomMat = new RS2Material[m_dwNumMat];
-	m_pTex = new LPTEX8[m_dwNumMat];
-	m_pCustomTex = new LPTEX8[m_dwNumMat];
+	m_pTex = new RS2TextureRef[m_dwNumMat];
+	m_pCustomTex = new RS2TextureRef[m_dwNumMat];
 	m_pTexTrans = new TTMTX[m_dwNumMat];
 
 	m_pMat[0].Diffuse = m_pMat[0].Ambient = cv;
 	m_pMat[0].Specular = m_pMat[0].Emissive = RS2MakeColor4(0, 0, 0, 0);
 	m_pMat[0].Power = 0.0f;
-	m_pTex[0] = NULL;
+	m_pTex[0].Clear();
 
 	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
 	//	backend gets a copy.  No ID3DXMesh survives the generator.
@@ -196,14 +196,14 @@ BOOL CMesh::CreateBox(float x, float y, float z, RS2Color4 cv){
 	m_pMatFlag = new DWORD[m_dwNumMat];
 	m_pMat = new RS2Material[m_dwNumMat];
 	m_pCustomMat = new RS2Material[m_dwNumMat];
-	m_pTex = new LPTEX8[m_dwNumMat];
-	m_pCustomTex = new LPTEX8[m_dwNumMat];
+	m_pTex = new RS2TextureRef[m_dwNumMat];
+	m_pCustomTex = new RS2TextureRef[m_dwNumMat];
 	m_pTexTrans = new TTMTX[m_dwNumMat];
 
 	m_pMat[0].Diffuse = m_pMat[0].Ambient = cv;
 	m_pMat[0].Specular = m_pMat[0].Emissive = RS2MakeColor4(0, 0, 0, 0);
 	m_pMat[0].Power = 0.0f;
-	m_pTex[0] = NULL;
+	m_pTex[0].Clear();
 
 	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
 	//	backend gets a copy.  No ID3DXMesh survives the generator.
@@ -235,14 +235,14 @@ BOOL CMesh::CreateTeapot(RS2Color4 cv){
 	m_pMatFlag = new DWORD[m_dwNumMat];
 	m_pMat = new RS2Material[m_dwNumMat];
 	m_pCustomMat = new RS2Material[m_dwNumMat];
-	m_pTex = new LPTEX8[m_dwNumMat];
-	m_pCustomTex = new LPTEX8[m_dwNumMat];
+	m_pTex = new RS2TextureRef[m_dwNumMat];
+	m_pCustomTex = new RS2TextureRef[m_dwNumMat];
 	m_pTexTrans = new TTMTX[m_dwNumMat];
 
 	m_pMat[0].Diffuse = m_pMat[0].Ambient = cv;
 	m_pMat[0].Specular = m_pMat[0].Emissive = RS2MakeColor4(0, 0, 0, 0);
 	m_pMat[0].Power = 0.0f;
-	m_pTex[0] = NULL;
+	m_pTex[0].Clear();
 
 	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
 	//	backend gets a copy.  No ID3DXMesh survives the generator.
@@ -382,7 +382,9 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 	 */
 
 	memcpy(m_pCustomMat, m_pMat, m_dwNumMat*sizeof(RS2Material));
-	memcpy(m_pCustomTex, m_pTex, m_dwNumMat*sizeof(LPTEX8));
+	//	[RS2EX] A loop rather than memcpy(): RS2TextureRef has a constructor,
+	//	so copying it bytewise would be relying on its layout.
+	for(DWORD c = 0; c<m_dwNumMat; c++) m_pCustomTex[c] = m_pTex[c];
 	nobj->SetMaterial(this);
 	for(DWORD i = 0; i<m_dwNumMat; i++){
 		DWORD order = m_pMatOrder[i];
@@ -416,7 +418,7 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 			}
 			if(g_RenderBlink) m_pCustomMat[order].Diffuse.a *= g_BlinkAlpha;
 			RS2SetMaterial(m_pCustomMat[order]);
-			devSetTexture(0, m_pCustomTex[order]);
+			RS2BindTexture(0, m_pCustomTex[order]);
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
 				DrawSubset(order);
@@ -483,7 +485,7 @@ void CMesh::Render(MTX4 *pMtx){
 				if(g_RenderBlink) m_pMat[order].Diffuse.a *= g_BlinkAlpha;
 				RS2SetMaterial(m_pMat[order]);
 			}
-			devSetTexture(0, m_pTex[order]);
+			RS2BindTexture(0, m_pTex[order]);
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
 				DrawSubset(order);
@@ -509,7 +511,7 @@ void CMesh::RenderAmb(MTX4 *pMtx){
 		RS2Color4 &dif = m_pMat[order].Diffuse, tdif = dif;
 		dif.r = dif.g = dif.b = 0.0f;
 		RS2SetMaterial(m_pMat[order]);
-		devSetTexture(0, m_pTex[order]);
+		RS2BindTexture(0, m_pTex[order]);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
 			DrawSubset(order);
@@ -524,7 +526,7 @@ void CMesh::RenderAmb(MTX4 *pMtx){
  *	pMtx	: 座標変換行列
  *	pTex	: テクスチャ
  */
-void CMesh::RenderT(MTX4 *pMtx, LPTEX8 pTex){
+void CMesh::RenderT(MTX4 *pMtx, RS2TextureRef pTex){
 	if(!IsValid()) return;
 	UDX_MESH_TIMER_RAII("CMesh::Render");
 
@@ -533,7 +535,7 @@ void CMesh::RenderT(MTX4 *pMtx, LPTEX8 pTex){
 	for(DWORD i = 0;i<m_dwNumMat;i++){
 		DWORD order = m_pMatOrder[i];
 		RS2SetMaterial(m_pMat[order]);
-		devSetTexture(0, pTex);
+		RS2BindTexture(0, pTex);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
 			DrawSubset(order);
@@ -579,7 +581,7 @@ void CMesh::RenderA(MTX4 *pMtx, float altalpha){
 			m_pMat[order].Diffuse.a *= altalpha*(g_RenderBlink ? g_BlinkAlpha : 1.0f);
 			RS2SetMaterial(m_pMat[order]);
 		}
-		devSetTexture(0, m_pTex[order]);
+		RS2BindTexture(0, m_pTex[order]);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
 			DrawSubset(order);
@@ -610,7 +612,7 @@ void CMesh::RenderAP(MTX4 *pMtx, float aplus){
 		m_pMat[order].Diffuse = m_pMat[order].Ambient = c2;
 
 		RS2SetMaterial(m_pMat[order]);
-		devSetTexture(0, m_pTex[order]);
+		RS2BindTexture(0, m_pTex[order]);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
 			DrawSubset(order);

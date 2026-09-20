@@ -7,7 +7,7 @@
 #include "vertex.h"
 #include "draw.h"
 #include "texture.h"
-#include "..\RS2D3D8Resources.h"
+#include "..\RS2MaterialBinding.h"
 
 //	内部グローバル
 CTexList g_TexList;		//	テクスチャリスト
@@ -16,8 +16,8 @@ CTexList g_TexList;		//	テクスチャリスト
  *	コンストラクタ
  */
 CTexture::CTexture(){
-	m_pTex = NULL;
 	m_fCreate = FALSE;
+	m_Width = m_Height = 0;
 }
 
 /*
@@ -36,15 +36,17 @@ CTexture::~CTexture(){
  */
 BOOL CTexture::Load(LPCSTR strFile, D3DCOLOR cTrans, int nMipLv){
 	Free();	//	既存なら解放
-	if(!(m_pTex = g_TexList.Get(FALSE, strFile, cTrans, nMipLv))) return FALSE;
-	m_pTex->GetLevelDesc(0, &m_desc);
+	m_Texture = g_TexList.Get(FALSE, strFile, cTrans, nMipLv);
+	if(m_Texture.IsEmpty()) return FALSE;
+	m_Texture.GetSize(&m_Width, &m_Height);
 	return TRUE;
 }
 //	リソース（ビットマップのみ）
 BOOL CTexture::LoadResource(LPCSTR strRes, D3DCOLOR cTrans, int nMipLv){
 	Free();	//	既存なら解放
-	if(!(m_pTex = g_TexList.Get(TRUE, strRes, cTrans, nMipLv))) return FALSE;
-	m_pTex->GetLevelDesc(0, &m_desc);
+	m_Texture = g_TexList.Get(TRUE, strRes, cTrans, nMipLv);
+	if(m_Texture.IsEmpty()) return FALSE;
+	m_Texture.GetSize(&m_Width, &m_Height);
 	return TRUE;
 }
 
@@ -52,13 +54,17 @@ BOOL CTexture::LoadResource(LPCSTR strRes, D3DCOLOR cTrans, int nMipLv){
  *	解放
  */
 void CTexture::Free(){
-	if(!m_pTex) return;
+	if(m_Texture.IsEmpty()) return;
 	if(m_fCreate){
-		RS2D3D8_ReleaseTexture(&m_pTex);
+		//	[RS2EX] m_fCreate is deliberately left set, exactly as before.
+		//	Clearing it here would be a behaviour change; it stays a known
+		//	issue rather than a silent repair.
+		RS2DestroyTexture(m_Texture.GetResource());
+		m_Texture.Clear();
 	}else{
 		m_fCreate = FALSE;
-		g_TexList.Release(m_pTex);
-		m_pTex = NULL;
+		g_TexList.Release(m_Texture);
+		m_Texture.Clear();
 	}
 }
 
@@ -73,16 +79,16 @@ BOOL CTexture::Create(int w, int h){
 	//	[RS2EX] Power-of-two rounding, A4R4G4B4 and the single mip level moved
 	//	to the resource module together - DrawInText() writes 16-bit pixels into
 	//	the locked surface by hand, so the three are one decision, not three.
-	HRESULT hr = RS2D3D8_CreateMutableTexture(&m_pTex, w, h);
-	if(FAILED(hr)) goto error;
+	CRS2TextureResource *resource = RS2CreateMutableTexture(w, h);
+	if(!resource) return FALSE;
 
-	m_pTex->GetLevelDesc(0, &m_desc);	//	実際のテクスチャサイズを取得
+	m_Texture = resource->GetRef();
+	m_Texture.GetSize(&m_Width, &m_Height);
 #if 0
-	Debug("Allocated Texture %d x %d.\n", m_desc.Width, m_desc.Height);
+	Debug("Allocated Texture %d x %d.\n", m_Width, m_Height);
 #endif
 
-error:
-	return SUCCEEDED(hr);
+	return TRUE;
 }
 
 /*
@@ -93,7 +99,7 @@ error:
  */
 BOOL CTexture::DrawInText(int x, int y, LPCSTR str,
 	HFONT hFont, D3DCOLOR col, D3DCOLOR sdw, int w, int h){
-	if(!m_pTex) return FALSE;
+	if(m_Texture.IsEmpty()) return FALSE;
 
 	HDC hDC = CreateCompatibleDC(NULL);
 
@@ -139,11 +145,10 @@ BOOL CTexture::DrawInText(int x, int y, LPCSTR str,
 	DrawText(hDC, str, -1, &rect, DT_LEFT|DT_EXPANDTABS|DT_NOCLIP|DT_NOPREFIX);
 
 	//	DIB(32bit)をテクスチャ(16bit)へ転送
-	D3DLOCKED_RECT lockRect;
+	RS2TextureLock lockRect;
+	CRS2TextureResource *resource = m_Texture.GetResource();
 
-	HRESULT hr = m_pTex->LockRect(0, &lockRect, NULL, 0);	//	ロック
-
-	if(SUCCEEDED(hr)){
+	if(resource->Lock(&lockRect)){
 		int i, j;
 		BYTE a = (col&0xff000000)>>24;
 		BYTE r = (col&0x00ff0000)>>16;
@@ -158,8 +163,8 @@ BOOL CTexture::DrawInText(int x, int y, LPCSTR str,
 		if(x<0){ cx = -x; x = 0; }
 		if(y<0){ cy = -y; y = 0; }
 		int cw = w-cx, ch = h-cy;
-		if(x+cw>m_desc.Width) cw = m_desc.Width-x;
-		if(y+ch>m_desc.Height) ch = m_desc.Height-y;
+		if(x+cw>m_Width) cw = m_Width-x;
+		if(y+ch>m_Height) ch = m_Height-y;
 
 		if(sdw){
 			a = (sdw&0xff000000)>>24;
@@ -168,8 +173,8 @@ BOOL CTexture::DrawInText(int x, int y, LPCSTR str,
 			b = sdw&0x000000ff;
 			WORD shadow = ((a&0xf0)<<8)|((r&0xf0)<<4)|(g&0xf0)|((b&0xf0)>>4);	//	16bit化
 			for(i = 0; i<ch; i++){
-				pDst = (WORD *)lockRect.pBits+(lockRect.Pitch/2)*(y+i)+x;
-				pSdw = (WORD *)lockRect.pBits+(lockRect.Pitch/2)*(y+i+1)+x+1;
+				pDst = (WORD *)lockRect.bits+(lockRect.pitch/2)*(y+i)+x;
+				pSdw = (WORD *)lockRect.bits+(lockRect.pitch/2)*(y+i+1)+x+1;
 				pSdw2 = pSdw-1;
 				//pSdw3 = pDst+1;
 				pSrc = (DWORD *)pDIB+w*(i+cy)+cx;
@@ -190,7 +195,7 @@ BOOL CTexture::DrawInText(int x, int y, LPCSTR str,
 			}
 		}else{
 			for(i = 0; i<ch; i++){
-				pDst = (WORD *)lockRect.pBits+(lockRect.Pitch/2)*(y+i)+x;
+				pDst = (WORD *)lockRect.bits+(lockRect.pitch/2)*(y+i)+x;
 				pSrc = (DWORD *)pDIB+w*(i+cy)+cx;
 				for(j = 0; j<cw; j++){
 					*pDst = *pSrc ? color : 0x00000000;
@@ -198,7 +203,7 @@ BOOL CTexture::DrawInText(int x, int y, LPCSTR str,
 				}
 			}
 		}
-		m_pTex->UnlockRect(0);	//	ロック解除
+		resource->Unlock();	//	ロック解除
 	}
 	//	後始末
 	SelectObject(hDC, hOldBM);
@@ -218,9 +223,9 @@ BOOL CTexture::DrawInText(int x, int y, LPCSTR str,
  *	※事前にライティングOFFにすること。
  */
 void CTexture::Render(int x, int y){
-	if(m_pTex){
-		devSetTexture(0, m_pTex);
-		TexMap2DRect(x, y, x+m_desc.Width, y+m_desc.Height);
+	if(!m_Texture.IsEmpty()){
+		RS2BindTexture(0, m_Texture);
+		TexMap2DRect(x, y, x+m_Width, y+m_Height);
 	}
 }
 
@@ -239,13 +244,15 @@ CTexList::CTexList(){
  *	デストラクタ
  */
 CTexList::~CTexList(){
-	while(m_pList) Release(m_pList->pTex);
+	while(m_pList) Release(RS2TextureRef(m_pList->pTex));
 }
 
 /*
  *	テクスチャをリストから検索し、なければロード
  */
-LPTEX8 CTexList::Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv){
+RS2TextureRef CTexList::Get(
+	BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv
+){
 	//	リストからテクスチャーを検索
 	TEXINFO *p = m_pList;
 
@@ -264,7 +271,7 @@ LPTEX8 CTexList::Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv){
 			&& p->cTrans==cTrans && p->nMipLv==nMipLv){
 			//	Debug("[%s] is in texture-list.\n", strName); /*デバッグ*/
 			p->nRef++;
-			return p->pTex;
+			return RS2TextureRef(p->pTex);
 		}
 		p = p->pNext;
 	}
@@ -272,16 +279,16 @@ LPTEX8 CTexList::Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv){
 	Debug("load(%s) ... ", strName);
 
 	p = new TEXINFO;
-	p->pTex = NULL;
 
-	//	[RS2EX] Loading policy stays here; the GPU object comes from the
-	//	resource module.  The list still hands out LPTEX8 because CMesh and
-	//	twelve other call sites take it - see the v0.0.5 resource inventory.
-	if(fRes
-		? FAILED(RS2D3D8_CreateTextureFromResource(&p->pTex, strName, cTrans, nMipLv))
-		: FAILED(RS2D3D8_CreateTextureFromFile(&p->pTex, strName, cTrans, nMipLv))){
+	//	[RS2EX] Loading policy stays here; the texture itself is created and
+	//	owned as a CRS2TextureResource.  The list hands out references, and
+	//	nRef below - not the reference - is still the lifetime contract.
+	p->pTex = fRes
+		? RS2CreateTextureFromResource(strName, cTrans, nMipLv)
+		: RS2CreateTextureFromFile(strName, cTrans, nMipLv);
+	if(!p->pTex){
 		Debug("failed.\n");
-		return NULL;
+		return RS2TextureRef();
 	}
 	Debug("ok.\n");
 
@@ -294,14 +301,15 @@ LPTEX8 CTexList::Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv){
 	p->cTrans = cTrans;
 	p->nMipLv = nMipLv;
 
-	return p->pTex;
+	return RS2TextureRef(p->pTex);
 }
 
 /*
  *	可能ならテクスチャを解放する
  */
-void CTexList::Release(LPTEX8 pTex){
+void CTexList::Release(RS2TextureRef tex){
 	//	テクスチャを検索
+	const CRS2TextureResource *pTex = tex.GetResource();
 	TEXINFO *p = m_pList;
 	TEXINFO *q = NULL;
 
@@ -313,7 +321,8 @@ void CTexList::Release(LPTEX8 pTex){
 			//	参照がなくなればテクスチャを解放、リストから外す
 			if(p->nRef==0){
 				Debug("release(%s)\n", p->strName.c_str());
-				RS2D3D8_ReleaseTexture(&p->pTex);
+				RS2DestroyTexture(p->pTex);
+				p->pTex = 0;
 
 				if(p==m_pList){
 					//	リストの先頭

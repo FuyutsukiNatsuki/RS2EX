@@ -433,7 +433,7 @@ void CObject::RenderAmb(){
  *
  *	更新するデバイスパラメータ	: ワールドマトリクス、マテリアル、テクスチャ
  */
-void CObject::RenderT(LPTEX8 texalt){
+void CObject::RenderT(RS2TextureRef texalt){
 	if(m_pMesh){
 		if(m_pParent) m_pMesh->RenderT(&GetWMatrix(), texalt);
 		else m_pMesh->RenderT(&m_mtx, texalt);

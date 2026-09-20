@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "md5.h"
 #include "Script.h"
@@ -690,7 +691,7 @@ void CFileMode::ListFile(){
 			g_SaveFile->SetFileName((char *)ili->m_FileName.c_str());
 		}
 		CListElement *le = m_FileListView.InsertItem(
-			-1, (char *)ili->m_FileName.c_str(), NULL, g_SkinFileIconRect);
+			-1, (char *)ili->m_FileName.c_str(), RS2TextureRef(), g_SkinFileIconRect);
 		le->SetString(1, (char *)ili->m_FileDate.c_str());
 		le->SetString(2, (char *)ili->m_FileNote.c_str());
 	}

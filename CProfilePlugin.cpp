@@ -103,7 +103,7 @@ char *CProfileFace::Read(
  *	コンストラクタ
  */
 CProfile::CProfile(){
-	m_Texture = NULL;
+	m_Texture.Clear();
 }
 
 /*
@@ -396,7 +396,7 @@ void CProfilePlugin::Dump(
 		MapPtrValue<CQuadDumpNX> &dump_nx = ip->m_DumpNX[g_Scene];
 		MapPtrValue<CQuadDumpN> &dump_n = ip->m_DumpN[g_Scene];
 		float v1 = ip->m_TexMapVTemp, v2 = v1+ip->m_TexVPerMeter*len;
-		if(prev&2) devSetTexture(0, ip->m_Texture);
+		if(prev&2) RS2BindTexture(0, ip->m_Texture);
 		else ip->PrepareDump();
 		IProfileFace ir = ip->m_Face.begin();
 		for(; ir!=ip->m_Face.end(); ir++){

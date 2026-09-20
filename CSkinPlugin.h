@@ -1,8 +1,10 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CSKINPLUGIN_H_INCLUDED
 #define CSKINPLUGIN_H_INCLUDED
 
 #include "CWaveArray.h"
 #include "CPlugin.h"
+#include "RS2MaterialBinding.h"
 
 /*
  *	スキンプラグイン
@@ -17,7 +19,7 @@ public:
 		int m_Cursor2DHotSpot[2];	//	ホットスポット座標
 		int m_Cursor2DAnimNumber;	//	アニメーション枚数
 		int *m_Cursor2DAnimFrame;	//	アニメフレーム長
-		LPTEX8 m_CursorTexture;		//	カーソルテクスチャ
+		RS2TextureRef m_CursorTexture;	//	カーソルテクスチャ
 	public:
 		_CURSORDATA(){ m_Frame = m_Anim = 0; }
 		char *Read(char *, char *);
@@ -95,10 +97,10 @@ public:
 		string m_VideoStartWaveFileName;		//	ビデオ撮影開始 wav ファイル名
 		string m_VideoStopWaveFileName;		//	ビデオ撮影停止 wav ファイル名
 	} m_SoundData;
-	LPTEX8 m_InterfaceTexture;		//	インターフェイステクスチャ
-	LPTEX8 m_FrameTexture;			//	フレームテクスチャ
-	LPTEX8 m_IconTexture[MODE_NUM];	//	アイコンテクスチャ
-	LPTEX8 m_WallpaperTexture;		//	壁紙テクスチャ
+	RS2TextureRef m_InterfaceTexture;	//	インターフェイステクスチャ
+	RS2TextureRef m_FrameTexture;	//	フレームテクスチャ
+	RS2TextureRef m_IconTexture[MODE_NUM];	//	アイコンテクスチャ
+	RS2TextureRef m_WallpaperTexture;	//	壁紙テクスチャ
 	CMesh *m_ArrowMesh;				//	矢印メッシュ
 	CMesh *m_LinkMesh;				//	接続点メッシュ
 	CMesh *m_SegmentMesh;			//	セグメントメッシュ
@@ -117,9 +119,9 @@ public:
 	char *TextName2(){ return "Skin2.txt"; }
 	bool Load();
 	void SetPreview();
-	void SetInterfaceTexture(){ devSetTexture(0, m_InterfaceTexture); }
-	void SetFrameTexture(){ devSetTexture(0, m_FrameTexture); }
-	void SetIconTexture(int i){ devSetTexture(0, m_IconTexture[i]); }
+	void SetInterfaceTexture(){ RS2BindTexture(0, m_InterfaceTexture); }
+	void SetFrameTexture(){ RS2BindTexture(0, m_FrameTexture); }
+	void SetIconTexture(int i){ RS2BindTexture(0, m_IconTexture[i]); }
 	HFONT GetFont(){ return m_InterfaceData.m_hFont; }
 	HFONT GetLabelFont(){ return m_InterfaceData.m_hFont; }
 	void MouseDown();

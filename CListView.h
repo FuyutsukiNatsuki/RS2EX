@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CLISTVIEW_H_INCLUDED
 #define CLISTVIEW_H_INCLUDED
 
@@ -38,10 +39,10 @@ public:
  */
 class CIconListElement: public CListElement{
 private:
-	LPTEX8 m_IconTex;		//	アイコンテクスチャ
+	RS2TextureRef m_IconTex;	//	アイコンテクスチャ
 	float m_IconRect[4];	//	アイコン位置
 public:
-	CIconListElement(int, char *, CListView *, LPTEX8, float *);
+	CIconListElement(int, char *, CListView *, RS2TextureRef, float *);
 	void RenderDragItem(int, int, bool);
 	bool Render(int, int, int, int, bool, bool);
 };
@@ -134,7 +135,7 @@ public:
 	virtual ~CIconListView(){}
 	void Init(int, int, int, int, CInterface *, int, char **,
 		DRAGTYPE, DWORD, CMenuCommander *cmd = NULL, CMDTYPE ctype = CMD_NONE);
-	CListElement *InsertItem(int, char *, LPTEX8, float *);
+	CListElement *InsertItem(int, char *, RS2TextureRef, float *);
 };
 
 #endif

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "RSPV.h"
 #include "CPluginTree.h"
@@ -82,7 +83,7 @@ void Opening(){
 		int i;
 		devTEX_LINEAR(0);
 		devBLEND_ADD2();
-		devSetTexture(0, g_OpeningTexture.GetObject());
+		RS2BindTexture(0, g_OpeningTexture.GetRef());
 		for(i = 0; i<letters; i++){
 			int begin = (anim-letl)*i/(letters-1), end = begin+letl;
 			if(cnt<begin) continue;

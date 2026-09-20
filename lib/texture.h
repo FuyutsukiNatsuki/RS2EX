@@ -4,6 +4,8 @@
 
 using namespace std;
 
+#include "..\RS2TextureResource.h"
+
 #define UDX_TEXTURE_MEASURE (0)
 
 #if UDX_TEXTURE_MEASURE
@@ -48,9 +50,9 @@ inline HRESULT LOAD_TEXTURE_SYS(
  *	テクスチャ・クラス
  */
 class CTexture{
-	BOOL m_fCreate;				//	自作フラグ
-	LPTEX8			m_pTex;		//	テクスチャ・オブジェクト
-	D3DSURFACE_DESC	m_desc;		//	サイズ等の情報
+	BOOL m_fCreate;			//	自作フラグ
+	RS2TextureRef m_Texture;	//	テクスチャ・オブジェクト
+	int m_Width, m_Height;		//	サイズ等の情報
 
 	//	コピーコンストラクタ封印
 	CTexture& operator = (const CTexture&){return *this;}
@@ -72,25 +74,25 @@ public:
 	 *
 	 *	pSize	: サイズの格納先
 	 */
-	void GetSize(int *pW, int *pH){*pW = m_desc.Width, *pH = m_desc.Height;}
+	void GetSize(int *pW, int *pH){*pW = m_Width, *pH = m_Height;}
 	/*
 	 *	テクスチャ・オブジェクトの取得
 	 *
-	 *	[RS2EX] Legacy compatibility exposure, not the ownership path.  Eleven
-	 *	call sites feed it straight to devSetTexture() - ten in CStringTexture
-	 *	and the opening screen - and those belong to the fixed-function state
-	 *	phase.  Do not add new callers.
+	 *	[RS2EX] Replaces GetObject(), which handed out the Direct3D texture.
+	 *	A reference is not ownership: the caller may bind it, and must not
+	 *	release it.
+	 *
+	 *	[RS2EX] GetSurface() removed with it.  It had no caller in the
+	 *	compiled tree, and keeping it would have meant a native escape hatch
+	 *	for nobody.  Capture does its own surface work - see section 6 of
+	 *	docs/v0.0.7-material-texture-inventory.md.
 	 */
-	LPTEX8 GetObject(){ return m_pTex; }
-	/*
-	 *	サーフェイスの取得
-	 */
-	void GetSurface(LPSURF8 *ppSur){m_pTex->GetSurfaceLevel(0, ppSur);}
+	RS2TextureRef GetRef(){ return m_Texture; }
 };
 
 //	テクスチャリストの要素
 struct TEXINFO{
-	LPTEX8 pTex;
+	CRS2TextureResource *pTex;	//	[RS2EX] owned by this entry
 	string strName;
 	int nRef;
 	D3DCOLOR cTrans;
@@ -108,8 +110,8 @@ class CTexList{
 public:
 	CTexList();
 	~CTexList();
-	LPTEX8 Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans = 0, int nMipLv = 1);
-	void Release(LPTEX8 pTex);
+	RS2TextureRef Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans = 0, int nMipLv = 1);
+	void Release(RS2TextureRef tex);
 };
 
 /*

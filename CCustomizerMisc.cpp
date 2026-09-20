@@ -219,7 +219,7 @@ char *CTextureChanger::Read(
 	char *str	//	‘ÎÛ•¶š—ñ
 ){
 	char *eee;
-	m_AltTexture = NULL;
+	m_AltTexture.Clear();
 	if(!(str = Assignment(str, "ChangeTexture"))) return NULL;
 	if(!(str = ConstInteger(eee = str, &m_MaterialID))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);

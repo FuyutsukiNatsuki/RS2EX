@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CPARTICLE_H_INCLUDED
 #define CPARTICLE_H_INCLUDED
 
@@ -64,7 +65,7 @@ class CParticle{
 private:
 	static list<CParticleInst> ms_RenderList;	//	レンダリングリスト
 	string m_TextureFileName;		//	テクスチャファイル名
-	LPTEX8 m_Texture;				//	テクスチャ
+	RS2TextureRef m_Texture;		//	テクスチャ
 	CNamedObject *m_Link;			//	接続先オブジェクト
 	float m_MinQty, m_MaxQty;		//	最小・最大放射量
 	float m_VelocityRel;			//	速度比例成分

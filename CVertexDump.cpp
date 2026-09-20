@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 
 //	内部定数
@@ -458,7 +459,7 @@ void CQuadDumpN::Render(
  */
 CQuadDumpNX::CQuadDumpNX(
 	int quadnum,	//	四角形数
-	LPTEX8 tex		//	テクスチャ
+	RS2TextureRef tex	//	テクスチャ
 ){
 	m_QuadNum = quadnum;
 	if(m_QuadNum>QUAD_DUMP_MAX_MAX) m_QuadNum = QUAD_DUMP_MAX_MAX;
@@ -574,7 +575,7 @@ void CQuadDumpNX::PrepareVertex(){
 void CQuadDumpNX::Render(
 	bool drawup	//	DrawPrimitiveUp を使用
 ){
-	devSetTexture(0, m_Texture);
+	RS2BindTexture(0, m_Texture);
 	if(drawup){
 		sv3.pDev->SetVertexShader(FVF_NX);
 		sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, m_Count*2, m_Buffer, sizeof(VTX_NX));

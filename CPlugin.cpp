@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CPluginTree.h"
 #include "CSkinPlugin.h"
@@ -19,7 +20,7 @@ CPlugin::CPlugin(
 	m_InsertTreeFlag = false;
 	m_ID = id;
 	m_Version = 0.0f;
-	m_IconTex = NULL;
+	m_IconTex.Clear();
 	m_IconRect[0] = m_IconRect[1] = 0.0f; m_IconRect[2] = m_IconRect[3] = 1.0f;
 	m_Next = NULL;
 }
@@ -68,7 +69,7 @@ char *CPlugin::LoadHeader(
 ){
 	char *tmp, *eee;
 	string type;
-	m_IconTex = NULL;
+	m_IconTex.Clear();
 	if(!(str = Space(eee = str))) throw CSynErr(eee);
 	if(!(str = BeginBlock(eee = str, "PluginHeader"))) throw CSynErr(eee);
 	if(!(str = AsgnFloat(eee = str, "RailSimVersion", &m_Version))) throw CSynErr(eee);
@@ -178,8 +179,8 @@ void CPlugin::SetIconTexture(){
 		m_IconTex = g_TexList.Get(FALSE, m_IconFileName.c_str());
 		m_IconFileName = "";
 	}
-	if(m_IconTex){
-		devSetTexture(0, m_IconTex);
+	if(!m_IconTex.IsEmpty()){
+		RS2BindTexture(0, m_IconTex);
 		SetUVMap(m_IconRect[0], m_IconRect[1],
 			m_IconRect[0]+m_IconRect[2], m_IconRect[1]+m_IconRect[3]);
 	}else{

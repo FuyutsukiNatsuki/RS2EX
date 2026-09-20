@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CLensFlare.h"
 #include "CModelPlugin.h"
@@ -10,7 +11,7 @@ char *CFlareElement::Read(
 	char *str	//	‘ÎÛ•¶š—ñ
 ){
 	char *tmp, *eee;
-	m_Texture = NULL;
+	m_Texture.Clear();
 	if(tmp = BeginBlock(str, "Circle")){
 		str = tmp;
 		m_Type = 0;
@@ -125,7 +126,7 @@ void CLensFlare::Render(
 			break;
 		case 2:
 			SetUVMap(0.0f, 0.0f, 1.0f, 1.0f);
-			devSetTexture(0, ifl->m_Texture);
+			RS2BindTexture(0, ifl->m_Texture);
 			TexMap3DRect(
 				VEC3(-ifl->m_Radius, ifl->m_Radius, 0.0f),
 				VEC3(ifl->m_Radius, ifl->m_Radius, 0.0f),
