@@ -362,21 +362,13 @@ void GetDeviceCaps(){
 
 /*
  *	reset
+ *
+ *	[RS2EX] Compatibility entry point.  There is exactly one reset
+ *	implementation and it belongs to the backend - see RS2D3D8Backend.cpp.
  */
 BOOL ResetD3DDevice()
 {
-	FreeFont();
-	HRESULT hr = sv3.pDev->Reset(&sv3.d3dpp);
-	if(FAILED(hr))
-	{
-		Debug("error D3DDevice Reset\n", hr);
-		SendWM_CLOSE();
-		return FALSE;
-	}
-	CreateFont();
-	InitMetrics();
-	InitRenderState();
-	return TRUE;
+	return GetRS2Renderer().Reset() ? TRUE : FALSE;
 }
 
 /*

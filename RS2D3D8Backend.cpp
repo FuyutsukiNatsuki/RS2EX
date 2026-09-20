@@ -138,8 +138,38 @@ void CRS2D3D8Backend::Shutdown(){
 	m_Initialized = false;
 }
 
+/*
+ *	reset
+ *
+ *	[RS2EX] Moved from lib/graphic.cpp ResetD3DDevice().  The sequence is
+ *	unchanged: the D3DX font holds default-pool resources and has to be
+ *	released before Reset() and rebuilt after it.  That coupling is why a
+ *	renderer backend still calls into the font module; the clean fix is a
+ *	default-pool resource registry, which does not exist yet.
+ */
+bool CRS2D3D8Backend::Reset()
+{
+	FreeFont();
+	HRESULT hr = sv3.pDev->Reset(&sv3.d3dpp);
+	if(FAILED(hr))
+	{
+		Debug("error D3DDevice Reset\n", hr);
+		SendWM_CLOSE();
+		return false;
+	}
+	CreateFont();
+	InitMetrics();
+	InitRenderState();
+
+	//	Reset() leaves the viewport covering the whole back buffer.
+	SyncViewportToBackBuffer();
+
+	Debug("[RS2EX Renderer] reset completed\n");
+	return true;
+}
+
 //	--- not yet owned by the backend -------------------------------------------
-//	Filled in by the reset, render-pass and viewport commits.
+//	Filled in by the render-pass and viewport commits.
 
 bool CRS2D3D8Backend::BeginRenderPass(unsigned int clearColor, bool clearColorBuffer){
 	(void)clearColor;
@@ -151,10 +181,6 @@ void CRS2D3D8Backend::EndRenderPass(){
 }
 
 void CRS2D3D8Backend::Present(){
-}
-
-bool CRS2D3D8Backend::Reset(){
-	return false;
 }
 
 void CRS2D3D8Backend::SetViewport(
