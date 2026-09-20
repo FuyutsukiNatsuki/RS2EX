@@ -8,12 +8,23 @@
 /*
  *	The renderer instance
  *
- *	Function-local static: construction is inert, and nothing here runs before
- *	the main window exists.
+ *	Constructed on first use, so construction is inert and nothing here runs
+ *	before the main window exists.
+ *
+ *	Deliberately never deleted.  A plain function-local static would be one of
+ *	the last statics constructed - InitDirect3D() is the first caller - and so
+ *	one of the first destroyed, ahead of theApp and ahead of the texture and
+ *	mesh lists that release D3D resources from their own destructors.  That
+ *	would release the device in the middle of static teardown and leave
+ *	FreeDirect3D() calling into a destroyed object.
+ *
+ *	Letting it outlive static destruction keeps teardown where RailSim II 2.15
+ *	put it: FreeDirect3D(), from ~CApp, before DestroyWindow().  What leaks is
+ *	one object holding a null backend pointer, at process exit.
  */
 CRS2Renderer &GetRS2Renderer(){
-	static CRS2Renderer renderer;
-	return renderer;
+	static CRS2Renderer *renderer = new CRS2Renderer;
+	return *renderer;
 }
 
 CRS2Renderer::CRS2Renderer()
