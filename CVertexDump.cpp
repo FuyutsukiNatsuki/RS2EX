@@ -96,7 +96,7 @@ void CLineDumpTL::PrepareVertex(){
 void CLineDumpTL::Render(
 	bool drawup	//	DrawPrimitiveUp を使用
 ){
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(m_Next) m_Next->Render(drawup);
 	if(drawup){
 		sv3.pDev->SetVertexShader(FVF_TL);
@@ -195,7 +195,7 @@ void CLineDumpL::PrepareVertex(){
 void CLineDumpL::Render(
 	bool drawup	//	DrawPrimitiveUp を使用
 ){
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(drawup){
 		sv3.pDev->SetVertexShader(FVF_L);
 		sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, m_Count, m_Buffer, sizeof(VTX_L));
@@ -294,7 +294,7 @@ void CLineDumpN::PrepareVertex(){
 void CLineDumpN::Render(
 	bool drawup	//	DrawPrimitiveUp を使用
 ){
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(g_HidefCaptureFlag){
 		int bx, by;
 		for(by = 0; by<g_HidefQuality; ++by){
@@ -441,7 +441,7 @@ void CQuadDumpN::PrepareVertex(){
 void CQuadDumpN::Render(
 	bool drawup	//	DrawPrimitiveUp を使用
 ){
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(drawup){
 		sv3.pDev->SetVertexShader(FVF_N);
 		sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, m_Count*2, m_Buffer, sizeof(VTX_N));

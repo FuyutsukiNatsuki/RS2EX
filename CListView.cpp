@@ -69,7 +69,7 @@ void CListElement::RenderDragItem(
 	CStringDrawer *sd = g_StrTex->DrawString(m_String[0].c_str(), 0);
 	int tw = sd->GetWidth()+LV_COL_MARGIN*2;
 	D3DCOLOR fc;
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(m_Selected){
 		Grad2DRect(x, y, x+tw, y+FONT_HEIGHT,
 			g_Skin->m_ListViewData.m_SelectedBaseColor);
@@ -92,7 +92,7 @@ bool CListElement::Render(
 	bool drop		//	ƒhƒƒbƒv
 ){
 	D3DCOLOR fc;
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(m_Selected || drop){
 		Grad2DRect(x, y, x+tw, y+th,
 			g_Skin->m_ListViewData.m_SelectedBaseColor);
@@ -159,7 +159,7 @@ void CIconListElement::RenderDragItem(
 		m_IconRect[0]+m_IconRect[2], m_IconRect[1]+m_IconRect[3]);
 	TexMap2DRect(x+LV_COL_MARGIN, y,
 		x+LV_COL_MARGIN+TILE_UNIT, y+TILE_UNIT, 0xffffffff);
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(m_Selected){
 		Grad2DRect(x, y, x+tw, y+TILE_UNIT,
 			g_Skin->m_ListViewData.m_SelectedBaseColor);
@@ -189,7 +189,7 @@ bool CIconListElement::Render(
 	SetUVMap(m_IconRect[0], m_IconRect[1],
 		m_IconRect[0]+m_IconRect[2]*tiw/TILE_UNIT, m_IconRect[1]+m_IconRect[3]*th/TILE_UNIT);
 	TexMap2DRect(x+LV_COL_MARGIN, y, x+LV_COL_MARGIN+tiw, y+th, 0xffffffff);
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(m_Selected || drop){
 		Grad2DRect(x, y, x+tw, y+th,
 			g_Skin->m_ListViewData.m_SelectedBaseColor);
@@ -814,7 +814,7 @@ void CListView::Render(){
 	CInterface::RenderChild();
 	int i, j, px, py;
 	GetAbsPos(&px, &py);
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	int tx = px;
 	for(j = 0; j<m_Cols; j++){
 		int tw = m_ColHeader[j].GetWidth();
@@ -858,7 +858,7 @@ void CListView::Render(){
 	if(m_Insertable && CDragContainer::GetOwner()==this){
 		POINT pos = g_Cursor.GetPos();
 		if(IsInsideList(pos.x, pos.y)){
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			int insert_row = CalcInsertRow(pos.y);
 			int insert_py = py+(insert_row-ofs)*m_RowHeight+TILE_UNIT;
 			Fill2DRect(px, insert_py-1, px+m_Width-TILE_UNIT, insert_py+1,

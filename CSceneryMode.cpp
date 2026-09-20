@@ -62,7 +62,7 @@ void CSceneryMode::EnterGame(){
  *	モードループ
  */
 void CSceneryMode::SpinGame(){
-	devSetState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+	RS2SetDepthFunc(RS2_COMPARE_LESS_EQUAL);
 	g_ConfigMode->SetTexFilter();
 	//	[RS2EX] The world used to advance once per rendered frame, which tied
 	//	simulation speed to the render rate.  Drive it from real time instead.
@@ -522,7 +522,7 @@ void CCursorSceneryMode::RenderScenery(){
 		(GetButton(DIM_LEFT)|GetButton(DIM_MIDDLE)|GetButton(DIM_RIGHT))>=S_PUSH){
 		VEC3 focus = GetCamera()->GetFocus(), hit, tri[3];
 		DrawFocus(focus);
-		devSetTexture(0, NULL);
+		RS2BindTexture(0, RS2TextureRef());
 		devResetMatrix();
 		if(g_Scene->PickScene(focus, -V3UP, &hit, tri, 1)){
 			DrawTangent(hit, CalcPlaneNormal(tri[0], tri[1], tri[2]), 0xffff0000, NULL);

@@ -183,7 +183,7 @@ void CConfigMode::ScanInputInterface(){
  *	入力チェック
  */
 int CConfigMode::ScanInputWindowDiv(){
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	RS2SetBlend(RS2_BLEND_ALPHA);
 	if(IsWindowDiv() && GetButton(DIM_LEFT)==S_FREE && GetButton(DIM_MIDDLE)==S_FREE && GetButton(DIM_RIGHT)==S_FREE){
 		m_ActiveWindow = m_RootWindow.GetPointWindow(0, 0, g_DispWidth, g_DispHeight, g_Cursor.GetPos());
@@ -206,7 +206,7 @@ void CConfigMode::RenderInterface(){
  *	レンダリング
  */
 void CConfigMode::RenderWindowDiv(){
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	RS2SetBlend(RS2_BLEND_ALPHA);
 	if(m_RootWindow.GetDiv()){
 		m_RootWindow.GetDiv()->RenderInterfaceRecursive(0, 0, g_DispWidth, g_DispHeight);

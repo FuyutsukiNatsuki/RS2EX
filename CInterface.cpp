@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CInterface.h"
 #include "CSkinPlugin.h"
@@ -185,7 +186,7 @@ bool CInterface::IsInside(
 void CInterface::DrawFocusFrame(){
 	int px, py;
 	GetAbsPos(&px, &py);
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	Draw2DRect(px, py, px+m_Width, py+m_Height,
 		g_Skin->m_InterfaceData.m_FocusFrameColor);
 }

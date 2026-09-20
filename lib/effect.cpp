@@ -11,6 +11,7 @@
 #include "vertex.h"
 #include "draw.h"
 #include "effect.h"
+#include "..\RS2MaterialBinding.h"
 
 //	外部グローバル
 extern int g_DispWidth;
@@ -83,7 +84,7 @@ void RenderLensFlare(VEC3 pos, float size, BOOL fWhite){
 	if(angle>0.9f){
 		//	フレアの描画
 		DWORD aplus = (DWORD)(max(0.0f, (angle-0.9f)*FRand2(1400.0f, 2200.0f)))<<24;
-		devSetTexture(0, NULL);
+		RS2BindTexture(0, RS2TextureRef());
 
 		pos -= vDist;
 		devTransBillboard(pos);

@@ -461,7 +461,7 @@ void CProfilePlugin::Dump(
 		if(prev&4) ip->m_TexMapVTemp = v2-(int)v2;
 	}
 	if(prev&2){
-		devSetTexture(0, NULL);
+		RS2BindTexture(0, RS2TextureRef());
 		devSetLineMaterial();
 	}
 	IWireframe iw = m_Wireframe.begin();

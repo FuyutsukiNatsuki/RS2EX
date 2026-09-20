@@ -696,7 +696,7 @@ void CGameMode::RenderCompass(){
  */
 bool CGameMode::RenderDialog(){
 	if(!g_ModalDialog) return false;
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	Fill2DRect(0, 0, g_DispWidth, g_DispHeight, 0x80808080);
 	g_ModalDialog->Render();
 	return true;

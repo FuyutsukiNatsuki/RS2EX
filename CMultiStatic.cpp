@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CMultiStatic.h"
 #include "CSkinPlugin.h"
@@ -119,7 +120,7 @@ void CMultiStatic::Render(){
 	CInterface::RenderChild();
 	int i, px, py;
 	GetAbsPos(&px, &py);
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	px += MULTISTATIC_MARGIN;
 	int ofs = m_ScrollV.GetScroll(), ty = py+MULTISTATIC_MARGIN, by = py+m_Height;
 	list<string>::iterator it = m_LineText.begin();

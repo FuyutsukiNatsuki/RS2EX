@@ -209,14 +209,14 @@ void RS2SetAmbientColorSource(RS2ColorSource source){
 }
 
 /*
- *	Both fog paths, disabled.
+ *	Turn fog off.
  *
- *	2.15 called devSetFog() and devSetPixelFog() one after the other, each
- *	writing FOGENABLE FALSE.  The second write is redundant, but it is what the
- *	startup sequence does, and this version is not the place to prune it.
+ *	One write.  The startup path calls this twice because 2.15 called
+ *	devSetFog() and devSetPixelFog() one after the other, each writing
+ *	FOGENABLE FALSE; the shadow overlay writes it once.  Folding the pair in
+ *	here would have given the overlay a spurious second write.
  */
 void RS2DisableFog(){
-	sv3.pDev->SetRenderState(D3DRS_FOGENABLE, FALSE);
 	sv3.pDev->SetRenderState(D3DRS_FOGENABLE, FALSE);
 }
 
@@ -315,6 +315,8 @@ void RS2ApplyInitialRenderState(){
 	RS2SetCullMode(RS2_CULL_COUNTER_CLOCKWISE);
 	RS2SetDepthTest(true);
 	RS2SetDepthWrite(true);
+	//	Twice: devSetFog() and devSetPixelFog() each wrote FOGENABLE FALSE.
+	RS2DisableFog();
 	RS2DisableFog();
 	RS2SetBlend(RS2_BLEND_ALPHA);
 	RS2SetNormalizeNormals(true);

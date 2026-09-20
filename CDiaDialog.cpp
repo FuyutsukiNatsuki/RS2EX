@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CDiaDialog.h"
 #include "CRailConnector.h"
@@ -514,7 +515,7 @@ void CDiaDialog::ScanInputDiaDialogBase(){
 void CDiaDialog::RenderDiaDialogBase(){
 	CDiaElement *de = GetElement();
 	if(!de) return;
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	D3DCOLOR col = g_Skin->m_InterfaceData.m_StaticFontColor;
 	D3DCOLOR col2 = col&0x00ffffff;
 	if(!col2) col2 = 0x01000000;

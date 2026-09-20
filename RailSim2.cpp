@@ -127,7 +127,7 @@ void Opening(){
 			int gx2 = (g_DispWidth+grphwid)/2, gy2 = g_DispHeight-TILE_UNIT*3+FONT_HEIGHT;
 			D3DCOLOR fcol[4] = {0xffc0c0c0, 0xffc0c0c0, 0xff808080, 0xff808080};
 			D3DCOLOR gcol[4] = {0xc080c0ff, 0xc080c0ff, 0xc0406080, 0xc0406080};
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			Grad2DRect(gx1, gy1, gx2, gy2, fcol);
 			Fill2DRect(gx1+1, gy1+1, gx2-1, gy2-1, 0x80000000);
 			int tw = loading<pitypes ? loading*(grphwid-4)/(pitypes-1) : grphwid-4;

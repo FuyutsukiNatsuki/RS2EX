@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CRadioButton.h"
 #include "CSkinPlugin.h"
@@ -121,7 +122,7 @@ void CRadioButton::Render(){
 		fc, 0, m_Text.c_str(), lim>0 ? lim : 1);
 	CInterface::RenderChild();
 	if(IsFocus()){
-		devSetTexture(0, NULL);
+		RS2BindTexture(0, RS2TextureRef());
 		Draw2DRect(px+TILE_UNIT*5/4, py, px+m_Width, py+m_Height,
 			g_Skin->m_InterfaceData.m_FocusFrameColor);
 	}

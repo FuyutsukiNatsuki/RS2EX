@@ -503,7 +503,7 @@ void CRailEditMode::RenderCursorScenery(){
 				CRailDetectCurve2D::RenderLink();
 				devResetMatrix();
 				RS2SetLighting(false);
-				devSetTexture(0, NULL);
+				RS2BindTexture(0, RS2TextureRef());
 	 			Draw3DPointAs2DRect(CRailDetectCurve2D::GetDetect().m_Pos, 0xff00ffff, 5);
 			}
 			if(m_WarpLinkFrom.m_Link && m_WarpLinkFrom.m_Link->GetScene()==g_Scene){
@@ -513,13 +513,13 @@ void CRailEditMode::RenderCursorScenery(){
 				g_LinkObject.Render();
 				devResetMatrix();
 				RS2SetLighting(false);
-				devSetTexture(0, NULL);
+				RS2BindTexture(0, RS2TextureRef());
 				Draw3DPointAs2DRect(m_WarpLinkFrom.m_Pos, 0xffffff00, 5);
 				if(CRailDetectCurve2D::IsDetected()){
 					CRailLinkTemp linkto = CRailDetectCurve2D::GetDetect();
 					if(m_WarpLinkFrom.m_Link->GetScene()==linkto.m_Link->GetScene()
 						&& m_WarpLinkFrom.m_Link->GetScene()==g_Scene){
-						devSetTexture(0, NULL);
+						RS2BindTexture(0, RS2TextureRef());
 						Draw3DLineWithShadow(m_WarpLinkFrom.m_Pos, linkto.m_Pos, 0xffffff00);
 					}
 				}

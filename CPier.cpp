@@ -241,7 +241,7 @@ void CPier::Render(){
 		&& (m_PierArea<=0.0f || !m_PierPlugin->HasInterval())) return;
 	m_PierPlugin->ResetMapTemp();
 	if(g_ShowPierSelect && m_Selected){
-		devSetTexture(0, NULL);
+		RS2BindTexture(0, RS2TextureRef());
 		RS2SetMaterial(*altmat);
 		devResetMatrix();
 		Dump(1);

@@ -512,7 +512,7 @@ void CSaveFile::RenderScene(
 	}
 	g_Scene->RenderAfter();
 	devResetMatrix();
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	RS2SetDepthTest(false);
 	RS2SetDepthWrite(false);
 	RS2SetLighting(false);

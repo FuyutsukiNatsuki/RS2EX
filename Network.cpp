@@ -1239,7 +1239,7 @@ void RenderNetworkInterface(){
 			int tx = TILE_QUAD, tw = sd->GetWidth();
 			int ty = g_DispHeight-TILE_UNIT*3-TILE_QUAD*2-FONT_HEIGHT*(n-i);
 			if(g_ChatBackground){
-				devSetTexture(0, NULL);
+				RS2BindTexture(0, RS2TextureRef());
 				Fill2DRect(tx, ty, tx+tw, ty+FONT_HEIGHT, 0x80000000);
 			}
 			sd->RenderLeft(tx, ty, itr->color);

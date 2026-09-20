@@ -355,7 +355,7 @@ void CCamera::PrintInfo(
 	int cx = ix+50, cy = iy-TILE_UNIT*2-TILE_HALF;
 	int fx = Round(50*sinf(0.5f*m_FieldOfViewEffect));
 	int fy = Round(50*cosf(0.5f*m_FieldOfViewEffect));
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	D3DCOLOR white = ScaleColor(0xffffffff, alpha), black = ScaleColor(0xff000000, alpha);
 	D3DCOLOR white2 = ScaleColor(0x80ffffff, alpha), black2 = ScaleColor(0x80000000, alpha);
 	int deg;

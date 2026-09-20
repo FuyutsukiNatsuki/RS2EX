@@ -121,7 +121,7 @@ void CRailRenderCurve::FinishTrace(
 				tpos2, R2L(VEC3(up2)), ipos2, icup2);
 		}else{
 			if(use_altmat || m_RailWay->GetParent()){
-				devSetTexture(0, NULL);
+				RS2BindTexture(0, RS2TextureRef());
 				if(use_altmat){
 					RS2SetMaterial(*altmat2);
 					render_mode = 1;
@@ -148,7 +148,7 @@ void CRailRenderCurve::FinishTrace(
 				tpos2, R2L(VEC3(up2)), ipos2, icup2);
 		}else{
 			if(use_altmat || m_RailWay->GetParent()){
-				devSetTexture(0, NULL);
+				RS2BindTexture(0, RS2TextureRef());
 				if(use_altmat){
 					RS2SetMaterial(*altmat2);
 					render_mode = 1;
@@ -175,7 +175,7 @@ void CRailRenderCurve::FinishTrace(
 	}
 	if(m_GirderPlugin && g_MultiTrackDummy==m_GirderPlugin->IsMultiTrack()){
 		if(use_altmat || m_RailWay->GetParent()){
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			if(use_altmat){
 				RS2SetMaterial(*altmat2);
 				render_mode = 1;
@@ -194,7 +194,7 @@ void CRailRenderCurve::FinishTrace(
 			tpos2, right2, R2L(VEC3(up2)), dir2, ipos2, icright2, icup2, terminate, seglen, altmat);
 	}else if(g_MultiTrackDummy){
 		if(g_ShowRailSelect && tmp_selected){
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			RS2SetMaterial(*altmat);
 			devResetMatrix();
 			RS2SetDepthTest(false);

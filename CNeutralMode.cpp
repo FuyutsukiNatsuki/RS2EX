@@ -143,7 +143,7 @@ void CNeutralMode::RenderCursorScenery(){
 		if(m_PointMode){
 			devResetMatrix();
 			RS2SetLighting(false);
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			if(CRailConnector::IsDetected()) CRailConnector::GetDetect()->Render(0, true);
 			//if(m_EditConnector) m_EditConnector->Render(0);
 			RS2SetLighting(false);

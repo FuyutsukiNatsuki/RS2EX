@@ -9,13 +9,13 @@
 void CPartsInst::DrawBox(){
 	BOX8 box = m_Object.GetBox();
 	devResetMatrix();
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	RS2SetLighting(false);
 	RS2SetDepthTest(true);
 	RS2SetDepthWrite(false);
-	devSetState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
+	RS2SetDepthFunc(RS2_COMPARE_ALWAYS);
 	::DrawBox(&box, ScaleColor(0x40ff0000, g_BlinkAlpha));
-	devSetState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+	RS2SetDepthFunc(RS2_COMPARE_LESS_EQUAL);
 	::DrawBox(&box, ScaleColor(0xffff0000, g_BlinkAlpha));
 	RS2SetDepthWrite(true);
 }

@@ -247,7 +247,7 @@ void CEnvPlugin::Render(
 	SetDirLight(-sdir, ACtoCV(directional));
 	if(g_HidefCaptureFlag) g_HidefCapture.Begin(skycolor);
 	else BeginScene(skycolor);
-	devSetState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+	RS2SetDepthFunc(RS2_COMPARE_LESS_EQUAL);
 	RS2SetDepthTest(false);
 	RS2SetDepthWrite(false);
 	RS2SetLighting(false);
@@ -276,7 +276,7 @@ void CEnvPlugin::RenderAfter(){
 	if(!flarealpha) return;
 	V3Norm(&sd, &sd);
 	VEC3 sunpos = vp+sd*100.0f;
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	RS2SetDepthTest(false);
 	RS2SetDepthWrite(false);
 	RS2SetLighting(false);

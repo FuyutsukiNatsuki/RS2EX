@@ -183,7 +183,7 @@ void CStructBuildMode::RenderArrowScenery(){
 	CHeadlight::RenderAll();
 	g_RenderBlink = false;
 	DrawGrid();
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	devResetMatrix();
 	if(m_HitFlag){
 		DrawTangent(m_HitPos, m_HitNorm, 0xffff0000, NULL);

@@ -82,7 +82,7 @@ CPoleLink CPole::ms_Detect;
  */
 bool CPole::RenderLink(){
 	if(ms_MinDist<0.0f) return false;
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	RS2SetLighting(false);
 	devResetMatrix();
 	ms_Detect.Render(0xff00ffff);
@@ -417,7 +417,7 @@ void CLine::Render(){
 	RS2Material *altmat = m_Selected ? &g_MatSelect[m_Selected] : NULL;
 	RS2Material *altmat2 = m_Selected ? &g_MatSelectA[m_Selected] : NULL;
 	if(g_ShowLineSelect && m_Selected){
-		devSetTexture(0, NULL);
+		RS2BindTexture(0, RS2TextureRef());
 		RS2SetMaterial(*altmat2);
 		devResetMatrix();
 		m_LinePlugin->Dump(p1, m_Right, R2L(V3UP), p1, m_Right, R2L(V3UP),

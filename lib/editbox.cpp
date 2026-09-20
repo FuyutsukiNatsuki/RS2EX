@@ -174,7 +174,7 @@ int CEditBox::ScanInput(){
  *	ƒŒƒ“ƒ_ƒŠƒ“ƒO
  */
 void CEditBox::Render(){
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	ms_Active = true;
 	int i, sel1, sel2;
 	if(m_pos<m_selpos){ sel1 = m_pos; sel2 = m_selpos; }

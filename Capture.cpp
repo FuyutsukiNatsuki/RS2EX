@@ -87,7 +87,7 @@ void HidefCapture(CSceneryMode *scenerymode){
 		for(vx = 0; vx<kx; ++vx){
 			g_HidefLeft = (float)vx/kx-0.5f;
 			g_HidefRight = (float)(vx+1)/kx-0.5f;
-			devSetState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+			RS2SetDepthFunc(RS2_COMPARE_LESS_EQUAL);
 			g_ConfigMode->SetTexFilter();
 			scenerymode->ApplyCamera();
 			g_SaveFile->RenderScene(false);

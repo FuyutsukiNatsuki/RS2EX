@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CInterface.h"
 #include "CPopMenu.h"
@@ -209,7 +210,7 @@ void CPopMenu::Render(){
 	int ty = m_PosY+TILE_UNIT/2;
 	while(ptr){
 		if(ptr->m_String=="-"){
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			Draw2DLine(m_PosX+TILE_HALF, ty+TILE_HALF-1,
 				m_PosX+m_Width-TILE_HALF, ty+TILE_HALF-1,
 				g_Skin->m_PopupMenuData.m_DisabledFontColor);
@@ -220,7 +221,7 @@ void CPopMenu::Render(){
 			D3DCOLOR fc, sdw = 0;
 			if(ptr->m_Enabled){
 				if(ptr==m_Pointed){
-					devSetTexture(0, NULL);
+					RS2BindTexture(0, RS2TextureRef());
 					Grad2DRect(m_PosX+MENU_RECT_MARGIN, ty,
 						m_PosX+m_Width-MENU_RECT_MARGIN, ty+TILE_UNIT,
 						g_Skin->m_PopupMenuData.m_SelectedBaseColor);

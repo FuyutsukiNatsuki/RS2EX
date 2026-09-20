@@ -898,7 +898,7 @@ void CTrainGroup::Render(){
 			VEC3 spos = train->GetPos()+train->GetDir()*train->GetLength()*(train->m_Reverse ? -0.5f : 0.5f);
 			devResetMatrix();
 			RS2SetLighting(false);
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			Draw3DPointAs2DRect(spos, 0xff00ffff, 5);
 			RS2SetLighting(true);
 		}

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CRailConnector.h"
 #include "CRailWay.h"
@@ -456,10 +457,10 @@ void CRailConnector::Render(
 	CStringDrawer *sd = g_StrTex->DrawString(m_NetPoint ? lang(Right) : lang(Left), 0xff000000);
 	sd->RenderLeft(ix, iy, color);
 	int w = sd->GetWidth();
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	Fill2DRect(ix-2, iy-2, ix+w+2, iy+FONT_HEIGHT+2, 0x80ffffff);
 	sd->RenderLeft(ix, iy, color, 0xff000000);
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 }
 
 /*

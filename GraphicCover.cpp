@@ -158,7 +158,7 @@ void DrawGrid(
 	D3DXMatrixTranslation(&move, tpos.x, tpos.y, tpos.z);
 	move._11 *= gscale; move._22 *= gscale; move._33 *= gscale;
 	pos = (pos-tpos)/gscale;
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	RS2SetDepthTest(false);
 	RS2SetDepthWrite(false);
 	RS2SetLighting(false);
@@ -230,7 +230,7 @@ void DrawFocus(
 	VEC3 pos	//	’†SÀ•W
 ){
 	devResetMatrix();
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	RS2SetDepthTest(false);
 	RS2SetDepthWrite(false);
 	RS2SetLighting(false);
@@ -309,7 +309,7 @@ void CastShadow(
 void RenderShadow(){
 	if(!g_ShadowNeeded) return;
 	CEnvPlugin *env = g_RSPV ? g_Env : g_Scene->GetEnv();
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	g_ShadowVolume.Render();
 	g_ShadowVolume.Draw(ScaleColor(env->GetShadowColor(), g_DayAlpha));
 }

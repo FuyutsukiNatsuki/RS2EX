@@ -202,7 +202,7 @@ int CTreeFileElement::Render(
 		: g_Skin->m_PluginTreeData.m_DefaultBaseColor;
 	if(m_Width<0) m_Width = sd->GetWidth();
 	if(*bc){
-		devSetTexture(0, NULL);
+		RS2BindTexture(0, RS2TextureRef());
 		Grad2DRect(x+TILE_UNIT+TREE_ICON_OFS, y, x+TILE_UNIT+TREE_ICON_OFS
 			+TREE_ICON_MARGIN*2+m_Width, y+TILE_UNIT, bc);
 	}

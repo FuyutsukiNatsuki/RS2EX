@@ -97,7 +97,7 @@ void CTriDumpS::PrepareVertex(){
 void CTriDumpS::Render(
 	bool drawup	//	DrawPrimitiveUp を使用
 ){
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(drawup){
 		sv3.pDev->SetVertexShader(FVF_S);
 		sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, m_Count, m_Buffer, sizeof(VTX_S));
@@ -226,45 +226,43 @@ void CShadowVolume::AddFaceEdge(
  */
 void CShadowVolume::Render(){
 	//	いろいろ設定
-	devSetState( D3DRS_ZENABLE, TRUE );
-	devSetState( D3DRS_ZWRITEENABLE, FALSE );
-	devSetState( D3DRS_STENCILENABLE, TRUE );
-	devSetState( D3DRS_SHADEMODE, D3DSHADE_FLAT );
+	RS2SetDepthTest(true);
+	RS2SetDepthWrite(false);
+	RS2SetStencilTest(true);
+	RS2SetShadeMode(RS2_SHADE_FLAT);
 
 	//	ステンシルテストは常にパス
-	devSetState( D3DRS_STENCILFUNC, D3DCMP_ALWAYS );
-	devSetState( D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP );
-	devSetState( D3DRS_STENCILFAIL, D3DSTENCILOP_KEEP );
+	RS2SetStencilFunc(RS2_COMPARE_ALWAYS);
+	RS2SetStencilDepthFailOp(RS2_STENCIL_KEEP);
+	RS2SetStencilFailOp(RS2_STENCIL_KEEP);
 
 	//	Z テストがパスするところだけインクリメント
-	devSetState( D3DRS_STENCILREF, 0x1 );
-	devSetState( D3DRS_STENCILMASK, 0xffffffff );
-	devSetState( D3DRS_STENCILWRITEMASK, 0xffffffff );
-	devSetState( D3DRS_STENCILPASS, D3DSTENCILOP_INCR );
+	RS2SetStencilRef(1);
+	RS2SetStencilReadMask(0xffffffff);
+	RS2SetStencilWriteMask(0xffffffff);
+	RS2SetStencilPassOp(RS2_STENCIL_INCREMENT);
 
 	//	フレームバッファには描かない（ステンシルのみ描く）
-	devSetState( D3DRS_ALPHABLENDENABLE, TRUE );
-	devSetState( D3DRS_SRCBLEND, D3DBLEND_ZERO );
-	devSetState( D3DRS_DESTBLEND, D3DBLEND_ONE );
+	RS2SetBlend(RS2_BLEND_COLOR_PRESERVE);
 
 	//	シャドウボリュームの手前面を描画
 	devTransform( &sv3.mtxFront );
 	m_FaceVolume->Render( true );
 
 	//	Z テストがパスするところだけデクリメント
-	devSetState( D3DRS_STENCILPASS, D3DSTENCILOP_DECR );
+	RS2SetStencilPassOp(RS2_STENCIL_DECREMENT);
 
 	//	カリングを逆にして奥面を描画
-	devSetState( D3DRS_CULLMODE, D3DCULL_CW );
+	RS2SetCullMode(RS2_CULL_CLOCKWISE);
 	devTransform( &sv3.mtxFront );
 	m_FaceVolume->Render( true );
 
 	//	設定を戻す
-	devSetState( D3DRS_SHADEMODE, D3DSHADE_GOURAUD );
-	devSetState( D3DRS_CULLMODE, D3DCULL_CCW );
-	devSetState( D3DRS_ZWRITEENABLE, TRUE );
-	devSetState( D3DRS_STENCILENABLE, FALSE );
-	devSetState( D3DRS_ALPHABLENDENABLE, FALSE );
+	RS2SetShadeMode(RS2_SHADE_GOURAUD);
+	RS2SetCullMode(RS2_CULL_COUNTER_CLOCKWISE);
+	RS2SetDepthWrite(true);
+	RS2SetStencilTest(false);
+	RS2SetBlend(RS2_BLEND_DISABLED);
 }
 
 /*
@@ -274,32 +272,25 @@ void CShadowVolume::Draw(
 	D3DCOLOR color	//	shadow color
 ){
 	//	いろいろ設定
-	devSetState( D3DRS_ZENABLE, FALSE );
-	devSetState( D3DRS_STENCILENABLE, TRUE );
-	devSetState( D3DRS_FOGENABLE, FALSE );
-	devSetState( D3DRS_ALPHABLENDENABLE, TRUE );
-	devSetState( D3DRS_SRCBLEND, D3DBLEND_SRCALPHA );
-	devSetState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
+	RS2SetDepthTest(false);
+	RS2SetStencilTest(true);
+	RS2DisableFog();
+	RS2SetBlend(RS2_BLEND_ALPHA);
 
-	devSetTexState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-	devSetTexState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
-	devSetTexState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE );
-	devSetTexState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
-	devSetTexState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE );
-	devSetTexState( 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+	RS2SetBaseTextureCombine();
 
 	//	ステンシルバッファの値が 1 以上のところは影
-	devSetState( D3DRS_STENCILREF, 0x1 );
-	devSetState( D3DRS_STENCILFUNC, D3DCMP_LESSEQUAL );
-	devSetState( D3DRS_STENCILPASS, D3DSTENCILOP_KEEP );
+	RS2SetStencilRef(1);
+	RS2SetStencilFunc(RS2_COMPARE_LESS_EQUAL);
+	RS2SetStencilPassOp(RS2_STENCIL_KEEP);
 
 	//	影部分を暗くする
 	if(g_HidefCaptureFlag) Fill2DRect(0, 0, g_HidefBufferSize, g_HidefBufferSize, color);
 	else Fill2DRect(0, 0, g_DispWidth, g_DispHeight, color);
 
 	//	設定を戻す
-	devSetState( D3DRS_ZENABLE, TRUE );
-	devSetState( D3DRS_STENCILENABLE, FALSE );
+	RS2SetDepthTest(true);
+	RS2SetStencilTest(false);
 	//devSetState( D3DRS_FOGENABLE, TRUE );
-	devSetState( D3DRS_ALPHABLENDENABLE, FALSE );
+	RS2SetBlend(RS2_BLEND_DISABLED);
 }

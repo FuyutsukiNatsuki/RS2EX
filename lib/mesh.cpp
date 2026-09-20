@@ -393,28 +393,28 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 		if((flag&6)==2 || !alpha) continue;
 		if(g_AltMaterial){
 			RS2SetMaterial(*g_AltMaterial);
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
 				DrawSubset(order);
 			}
 		}else{
 			if(flag&8){
-				devSetEnvMap(1, TRUE);
+				RS2SetEnvironmentMapping(1, true);
 				g_Env->SetEnvMapTexture();
-				devSetTexColor(1, D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_CURRENT);
+				RS2SetSecondaryTextureCombine(1, true);
 				//devSetTexAlpha(1, D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_CURRENT);
 			}
 			if(flag&16){
-				devSetTexTrans(0, TRUE);
-				devTexTransform(0, &m_pTexTrans[order].GetMTX4());
+				RS2SetUVTransform(0, true);
+				RS2SetUVMatrix(0, m_pTexTrans[order].GetMTX4());
 			}
 			if(flag&32){
 				RS2SetTextureFilter(0, RS2_FILTER_POINT);
 				RS2SetTextureFilter(1, RS2_FILTER_POINT);
-				devSetState(D3DRS_ALPHATESTENABLE, TRUE);
-				devSetState(D3DRS_ALPHAREF, 0x00);
-				devSetState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+				RS2SetAlphaTest(true);
+				RS2SetAlphaRef(0);
+				RS2SetAlphaFunc(RS2_COMPARE_GREATER);
 			}
 			if(g_RenderBlink) m_pCustomMat[order].Diffuse.a *= g_BlinkAlpha;
 			RS2SetMaterial(m_pCustomMat[order]);
@@ -424,15 +424,15 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 				DrawSubset(order);
 			}
 			if(flag&8){
-				devSetEnvMap(1, FALSE);
-				devSetTexture(1, NULL);
-				devSetTexColor(1, D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_CURRENT);
+				RS2SetEnvironmentMapping(1, false);
+				RS2BindTexture(1, RS2TextureRef());
+				RS2SetSecondaryTextureCombine(1, false);
 				//devSetTexAlpha(1, D3DTOP_DISABLE, D3DTA_TEXTURE, D3DTA_CURRENT);
 			}
-			if(flag&16) devSetTexTrans(0, FALSE);
+			if(flag&16) RS2SetUVTransform(0, false);
 			if(flag&32){
 				g_ConfigMode->SetTexFilter();
-				devSetState(D3DRS_ALPHATESTENABLE, FALSE);
+				RS2SetAlphaTest(false);
 			}
 		}
 	}
@@ -456,7 +456,7 @@ void CMesh::Render(MTX4 *pMtx){
 		float alpha = m_pMat[order].Diffuse.a;
 		if(g_AltMaterial){
 			RS2SetMaterial(*g_AltMaterial);
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
 				DrawSubset(order);
@@ -638,7 +638,7 @@ void CMesh::RenderSC(MTX4 *pMtx, RS2Material *pMat){
 	for(DWORD i = 0;i<m_dwNumMat;i++){
 		DWORD order = m_pMatOrder[i];
 		RS2SetMaterial(*pMat);
-		devSetTexture(0, NULL);
+		RS2BindTexture(0, RS2TextureRef());
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
 			DrawSubset(order);

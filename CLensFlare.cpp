@@ -115,12 +115,12 @@ void CLensFlare::Render(
 		devTransBillboard(tpos);
 		switch(ifl->m_Type){
 		case 0:
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			Fill3DCircle(V3ZERO, ifl->m_Radius,
 				ScaleColor(ifl->m_InnerColor, atn), ScaleColor(ifl->m_OuterColor, atn));
 			break;
 		case 1:
-			devSetTexture(0, NULL);
+			RS2BindTexture(0, RS2TextureRef());
 			Fill3DHex(V3ZERO, ifl->m_Radius,
 				ScaleColor(ifl->m_InnerColor, atn), ScaleColor(ifl->m_OuterColor, atn));
 			break;
@@ -211,7 +211,7 @@ void CHeadlight::InitRenderList(){
  *	‘S‚ÄƒŒƒ“ƒ_ƒŠƒ“ƒO
  */
 void CHeadlight::RenderAll(){
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	//RS2SetDepthTest(false);
 	RS2SetDepthWrite(false);
 	RS2SetLighting(false);

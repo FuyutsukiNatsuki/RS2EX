@@ -173,5 +173,5 @@ void RenderRailMap(){
 	g_LineDumpTL->Render(true);
 	RailMapTextDataList::iterator mtl = g_RailMapTextData.begin();
 	for(; mtl!=g_RailMapTextData.end(); ++mtl) mtl->Draw();
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 }

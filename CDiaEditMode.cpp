@@ -124,7 +124,7 @@ void CDiaEditMode::RenderCursorScenery(){
 	if(ms_PhotoMode) return;
 	devResetMatrix();
 	RS2SetLighting(false);
-	devSetTexture(0, NULL);
+	RS2BindTexture(0, RS2TextureRef());
 	if(CRailConnector::IsDetected()) CRailConnector::GetDetect()->Render(0, g_ManualControl);
 	if(m_EditConnector) m_EditConnector->Render(0, false);
 	RS2SetLighting(false);

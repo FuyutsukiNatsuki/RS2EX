@@ -1231,7 +1231,7 @@ void CRailWay::Render(){
 	devResetMatrix();
 	devResetMaterial();
 	RS2SetLighting(false);
-	devSetState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
+	RS2SetDepthFunc(RS2_COMPARE_ALWAYS);
 	IPGroupEndLocator ipge = m_GroupEnd.begin();
 	for(; ipge!=m_GroupEnd.end(); ipge++){
 		float end = (*ipge)->m_Offset;
@@ -1241,7 +1241,7 @@ void CRailWay::Render(){
 		D3DCOLOR col = side ? 0x80ff0000 : 0x800000ff;
 		Draw3DLine(tmp, tmp+V3UP*10.0f, col, col);
 	}
-	devSetState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+	RS2SetDepthFunc(RS2_COMPARE_LESS_EQUAL);
 	RS2SetLighting(true);
 #endif
 //	if(!g_ShadowNeeded && !g_ShowRailSelect
