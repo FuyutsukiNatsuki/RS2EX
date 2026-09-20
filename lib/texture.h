@@ -5,6 +5,7 @@
 using namespace std;
 
 #include "..\RS2TextureResource.h"
+#include "..\RS2RenderState.h"
 
 #define UDX_TEXTURE_MEASURE (0)
 
@@ -203,10 +204,12 @@ inline void devSetTexAlpha(
  *	D3DTEXF_LINEAR	: 線形補完
  *	etc...
  */
+//	[RS2EX] Shim over RS2SetTextureFilter().  The parameter is still the
+//	D3D constant because the macros below pass it; they migrate with the
+//	Sampler group.
 inline void devSetTexFilter(DWORD stage, DWORD type){
-	devSetTexState(stage, D3DTSS_MAGFILTER, type);
-	devSetTexState(stage, D3DTSS_MINFILTER, type);
-	devSetTexState(stage, D3DTSS_MIPFILTER, type);
+	RS2SetTextureFilter(stage,
+		type==D3DTEXF_LINEAR ? RS2_FILTER_LINEAR : RS2_FILTER_POINT);
 }
 
 #define devTEX_NONE(stage) devSetTexFilter(stage, D3DTEXF_NONE)
@@ -242,10 +245,9 @@ inline void devSetTexAddress(DWORD stage, D3DTEXTUREADDRESS mode){
  *	stage	: テクスチャーステージ
  *	f		: フラグ
  */
+//	[RS2EX] Shim over RS2SetUVTransform().
 inline void devSetTexTrans(DWORD stage, BOOL f){
-	devSetTexState(
-		stage,
-		D3DTSS_TEXTURETRANSFORMFLAGS, f ? D3DTTFF_COUNT2 : D3DTTFF_DISABLE);
+	RS2SetUVTransform(stage, !!f);
 }
 
 /*
@@ -256,9 +258,10 @@ inline void devSetTexTrans(DWORD stage, BOOL f){
  *
  *	※事前にdevSetTexTrans()でTUREを設定すること。
  */
+//	[RS2EX] Shim over RS2SetUVMatrix().  MTX4 converts to const float*
+//	through D3DXMATRIX's own operator, so no cast is written here.
 inline void devTexTransform(DWORD stage, MTX4 *pMtx){
-	sv3.pDev->SetTransform(
-		(D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0+stage), pMtx);
+	RS2SetUVMatrix(stage, *pMtx);
 }
 
 /*
@@ -267,17 +270,10 @@ inline void devTexTransform(DWORD stage, MTX4 *pMtx){
  *	stage	: テクスチャーステージ
  *	f		: フラグ
  */
+//	[RS2EX] Shim over RS2SetEnvironmentMapping().  The environment matrix
+//	and the passthrough coordinate index moved with it.
 inline void devSetEnvMap(DWORD stage, BOOL f){
-	devSetTexTrans(stage, f);
-	devTexTransform(stage, f
-		? &MTX4(
-			0.5f,  0.0f, 0.0f, 0.0f,
-			0.0f, -0.5f, 0.0f, 0.0f,
-			0.5f,  0.5f, 1.0f, 0.0f,
-			0.0f,  0.0f, 0.0f, 1.0f)
-		: &MTX_FRONT);
-	devSetTexState(stage, D3DTSS_TEXCOORDINDEX,
-		f ? D3DTSS_TCI_CAMERASPACENORMAL : D3DTSS_TCI_PASSTHRU);
+	RS2SetEnvironmentMapping(stage, !!f);
 }
 
 //	関数宣言

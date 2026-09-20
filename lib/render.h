@@ -1,6 +1,8 @@
 //	Copyright (c) 2002 Midikyou
 //	Modified for RS2EX on 2026-09-20.
 
+#include "..\RS2RenderState.h"
+
 /*
  *	レンダリング・ステートの設定
  *
@@ -34,8 +36,9 @@ inline void devResetMatrix(){
  *
  *	f	: TRUE＝ライティングを有効、FALSE＝無効
  */
+//	[RS2EX] Shim over RS2SetLighting() while the call sites migrate.
 inline void devSetLighting(BOOL f){
-	devSetState(D3DRS_LIGHTING, f);
+	RS2SetLighting(!!f);
 }
 inline BOOL devGetLighting(){
 	return (BOOL)devGetState(D3DRS_LIGHTING);
@@ -54,8 +57,9 @@ inline void devSetLight(int n, BOOL f){
 /*
  *	アンビエントカラー
  */
+//	[RS2EX] Shim over RS2SetAmbientLight().
 inline void devSetAmbient(D3DCOLOR c){
-	devSetState(D3DRS_AMBIENT, c);
+	RS2SetAmbientLight((RS2PackedColor)c);
 }
 
 //	[RS2EX] devSetMaterial() removed in v0.0.7.  Every caller now goes
@@ -71,7 +75,7 @@ void devSetLineMaterial();
  *	f	: 真理値
  */
 inline void devSetSpecular(BOOL f){
-	devSetState(D3DRS_SPECULARENABLE, f);
+	RS2SetSpecular(!!f);
 }
 
 /*
@@ -80,7 +84,7 @@ inline void devSetSpecular(BOOL f){
  *	f	: 真理値
  */
 inline void devSetCulling(BOOL f){
-	devSetState(D3DRS_CULLMODE, f ? D3DCULL_CCW : D3DCULL_NONE);
+	RS2SetCullMode(f ? RS2_CULL_COUNTER_CLOCKWISE : RS2_CULL_NONE);
 }
 
 /*
@@ -88,8 +92,11 @@ inline void devSetCulling(BOOL f){
  *
  *	m	: D3DSHADE_GOURAUD, D3DSHADE_FLAT
  */
+//	[RS2EX] Shim over RS2SetShadeMode().  The parameter is still the D3D
+//	constant because the two call sites still pass it; they migrate with
+//	the Raster group.
 inline void devSetShading(DWORD m){
-	devSetState(D3DRS_SHADEMODE, m);
+	RS2SetShadeMode(m==D3DSHADE_FLAT ? RS2_SHADE_FLAT : RS2_SHADE_GOURAUD);
 }
 
 /*
@@ -98,14 +105,14 @@ inline void devSetShading(DWORD m){
  *	f	: 真理値
  */
 inline void devSetNormalize(BOOL f){
-	devSetState(D3DRS_NORMALIZENORMALS, f);
+	RS2SetNormalizeNormals(!!f);
 }
 
 /*
  *	Zバッファのクリア
  */
 inline void devClearZ(){
-	sv3.pDev->Clear(0, NULL, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
+	RS2ClearDepth();
 }
 
 /*
@@ -114,7 +121,7 @@ inline void devClearZ(){
  *	f	: TRUE＝読込み有効、FALSE＝無効
  */
 inline void devSetZRead(BOOL f){
-	devSetState(D3DRS_ZENABLE, f);
+	RS2SetDepthTest(!!f);
 }
 inline BOOL devGetZRead(){
 	return (BOOL)devGetState(D3DRS_ZENABLE);
@@ -128,7 +135,7 @@ inline BOOL devGetZRead(){
  *	※半透明物体をレンダリングするときはOFFにしておく
  */
 inline void devSetZWrite(BOOL f){
-	devSetState(D3DRS_ZWRITEENABLE, f);
+	RS2SetDepthWrite(!!f);
 }
 inline BOOL devGetZWrite(){
 	return (BOOL)devGetState(D3DRS_ZWRITEENABLE);
@@ -161,12 +168,17 @@ inline void devSetAlphaTest(BOOL f, D3DCMPFUNC func, DWORD ref){
  *	D3DBLEND_SRCALPHA, D3DBLEND_INVSRCALPHA	: αブレンド
  *	D3DBLEND_ONE, D3DBLEND_ONE				: 加算ブレンド
  */
+//	[RS2EX] Shim over RS2SetBlend().  Only the four combinations below are
+//	reachable - the factor pair was never general in practice.
 inline void devSetBlend(BOOL flag, DWORD src, DWORD dst){
-	devSetState(D3DRS_ALPHABLENDENABLE, flag);
-
-	if(flag){
-		devSetState(D3DRS_SRCBLEND, src);
-		devSetState(D3DRS_DESTBLEND, dst);
+	if(!flag){
+		RS2SetBlend(RS2_BLEND_DISABLED);
+	}else if(src==D3DBLEND_SRCALPHA && dst==D3DBLEND_ONE){
+		RS2SetBlend(RS2_BLEND_ALPHA_ADD);
+	}else if(src==D3DBLEND_ZERO && dst==D3DBLEND_ONE){
+		RS2SetBlend(RS2_BLEND_COLOR_PRESERVE);
+	}else{
+		RS2SetBlend(RS2_BLEND_ALPHA);
 	}
 }
 

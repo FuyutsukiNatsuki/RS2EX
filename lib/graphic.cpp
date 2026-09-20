@@ -133,21 +133,10 @@ void InitMetrics(){
  *	レンダリング・ステートの初期化
  */
 void InitRenderState(){
-	devSetLighting(TRUE);
-	devSetAmbient(0xff808080);
-	devSetSpecular(TRUE);
-	devSetShading(D3DSHADE_GOURAUD);
-	devSetCulling(TRUE);
-	devSetZRead(TRUE);
-	devSetZWrite(TRUE);
-	devSetFog(FALSE, 0, 0, 0);
-	devSetPixelFog(FALSE, 0, 0, 0);
-	devSetBlend(TRUE, D3DBLEND_SRCALPHA, D3DBLEND_INVSRCALPHA);
-	devSetNormalize(TRUE);
-
-	devSetTexColor(0, D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_DIFFUSE);
-	devSetTexAlpha(0, D3DTOP_MODULATE, D3DTA_TEXTURE, D3DTA_DIFFUSE);
-	devSetTexFilter(0, D3DTEXF_POINT);
+	//	[RS2EX] The state itself moved to RS2ApplyInitialRenderState(), which
+	//	sets the same things in the same order.  The buffer clear below stays
+	//	here: it is not render state, and it depends on g_StencilEnabled.
+	RS2ApplyInitialRenderState();
 
 	g_BufferClearMode = D3DCLEAR_ZBUFFER | (g_StencilEnabled ? D3DCLEAR_STENCIL : 0);
 	sv3.pDev->Clear(0, NULL, D3DCLEAR_TARGET|g_BufferClearMode, 0, 1.0f, 0);
