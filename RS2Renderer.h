@@ -74,9 +74,6 @@ private:
 	//	The 2.15 code ends a frame even when BeginScene() failed on a lost
 	//	device, so an unbalanced pass is a legitimate state to be in.
 	bool m_InRenderPass;
-	unsigned int m_BeginPassCount;
-	unsigned int m_EndPassCount;
-	unsigned int m_PresentCount;
 
 public:
 	CRS2Renderer();
@@ -84,7 +81,6 @@ public:
 
 	bool Initialize(int width, int height);
 	void Shutdown();
-	bool IsInitialized() const{ return m_Backend!=NULL; }
 
 	bool BeginRenderPass(unsigned int clearColor, bool clearColorBuffer);
 	void EndRenderPass();
@@ -108,12 +104,6 @@ public:
 	void GetViewportSize(unsigned int *width, unsigned int *height) const;
 
 	const char *GetBackendName() const;
-
-	//	Frame-lifecycle counters, for validation rather than gameplay.
-	unsigned int GetBeginPassCount() const{ return m_BeginPassCount; }
-	unsigned int GetEndPassCount() const{ return m_EndPassCount; }
-	unsigned int GetPresentCount() const{ return m_PresentCount; }
-	void ResetPassCounters(){ m_BeginPassCount = m_EndPassCount = m_PresentCount = 0; }
 };
 
 /*

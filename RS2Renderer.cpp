@@ -18,10 +18,7 @@ CRS2Renderer &GetRS2Renderer(){
 
 CRS2Renderer::CRS2Renderer()
 	: m_Backend(NULL),
-	  m_InRenderPass(false),
-	  m_BeginPassCount(0),
-	  m_EndPassCount(0),
-	  m_PresentCount(0)
+	  m_InRenderPass(false)
 {
 }
 
@@ -42,7 +39,7 @@ bool CRS2Renderer::Initialize(int width, int height){
 	//	selection, no plugin mechanism - see plan section 10.
 	m_Backend = new CRS2D3D8Backend;
 
-	Debug("[RS2EX Renderer] backend = %s\n", m_Backend->GetName());
+	Debug("[RS2EX Renderer] backend = %s\n", GetBackendName());
 	Debug("[RS2EX Renderer] initialize %d x %d\n", width, height);
 
 	if(!m_Backend->Initialize(width, height)){
@@ -88,7 +85,6 @@ bool CRS2Renderer::BeginRenderPass(unsigned int clearColor, bool clearColorBuffe
 	if(!m_Backend->BeginRenderPass(clearColor, clearColorBuffer)) return false;
 
 	m_InRenderPass = true;
-	m_BeginPassCount++;
 	return true;
 }
 
@@ -111,7 +107,6 @@ void CRS2Renderer::EndRenderPass(){
 	m_Backend->EndRenderPass();
 
 	m_InRenderPass = false;
-	m_EndPassCount++;
 }
 
 void CRS2Renderer::Present(){
@@ -122,7 +117,6 @@ void CRS2Renderer::Present(){
 #endif
 
 	m_Backend->Present();
-	m_PresentCount++;
 }
 
 bool CRS2Renderer::Reset(){
