@@ -525,7 +525,8 @@ void CProfilePlugin::Render(
 	V3Norm(&td2, V3Cross(&td2, &r2, &u2));
 	if(g_ShadowNeeded){
 		ms_TempIndex.clear();
-		VEC3 vLight = svl.dir.Direction;
+		const RS2Direction &ld = RS2GetDirectionalLight().direction;
+		VEC3 vLight(ld.x, ld.y, ld.z);
 		V3Norm(&vLight, &vLight);
 		IProfile ip = m_Profile.begin();
 		for(; ip!=m_Profile.end(); ip++){

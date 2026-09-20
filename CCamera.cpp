@@ -34,7 +34,7 @@ extern float g_HidefBottom, g_HidefTop;
 //	内部グローバル
 float g_FovRatio;	//	視野角率
 float g_StereoInterval = 0.0f;
-D3DCOLORVALUE g_LightColor = {1.0f, 1.0f, 1.0f, 0.0f};	//	光源色
+RS2Color4 g_LightColor = {1.0f, 1.0f, 1.0f, 0.0f};	//	光の色
 MTX4 g_BoldLineMtx[8][8];
 
 //	static メンバ
@@ -284,12 +284,15 @@ void CCamera::Apply(
 	if(light){
 		if(m_LightSwitch){
 			RS2SetAmbientLight(0xff808080);
-			SetDirLight(m_LinkLight ? V3LocalToWorld(
-				&m_LightDir, &GetVRight(), &GetVUp(), &GetVDir()) : m_LightDir,
-				g_LightColor = MAKE_CV(1.0f, 1.0f, 1.0f, 0.0f));
+			const VEC3 lit = m_LinkLight
+				? V3LocalToWorld(&m_LightDir, &GetVRight(), &GetVUp(), &GetVDir())
+				: m_LightDir;
+			RS2SetDirectionalLight(RS2MakeDirection(lit.x, lit.y, lit.z),
+				g_LightColor = RS2MakeColor4(1.0f, 1.0f, 1.0f, 0.0f));
 		}else{
 			RS2SetAmbientLight(0xff202020);
-			SetDirLight(V3DIR, g_LightColor = MAKE_CV(0.0f, 0.0f, 0.0f, 1.0f));
+			RS2SetDirectionalLight(RS2MakeDirection(V3DIR.x, V3DIR.y, V3DIR.z),
+				g_LightColor = RS2MakeColor4(0.0f, 0.0f, 0.0f, 1.0f));
 		}
 	}
 	ApplyProjection(CLIP_PLANE_NEAR, tlocal);

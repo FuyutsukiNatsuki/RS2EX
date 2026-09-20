@@ -287,7 +287,6 @@
     <ClCompile Include="lib\font.cpp" />
     <ClCompile Include="lib\graphic.cpp" />
     <ClCompile Include="lib\input.cpp" />
-    <ClCompile Include="lib\light.cpp" />
     <ClCompile Include="lib\main.cpp" />
     <ClCompile Include="lib\mesh.cpp" />
     <ClCompile Include="lib\object.cpp" />
@@ -465,7 +464,6 @@
     <ClInclude Include="lib\headers.h" />
     <ClInclude Include="lib\input.h" />
     <ClInclude Include="lib\libraries.h" />
-    <ClInclude Include="lib\light.h" />
     <ClInclude Include="lib\mesh.h" />
     <ClInclude Include="lib\mutex.h" />
     <ClInclude Include="lib\object.h" />

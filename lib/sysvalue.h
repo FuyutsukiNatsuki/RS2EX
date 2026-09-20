@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-21.
 
 #ifndef SYSVALUE_H
 #define SYSVALUE_H
@@ -12,7 +13,6 @@ int g_DispHeight = 480;	//	âÊñ çÇ
 SYSVALUE_W svw;		//	Window
 SYSVALUE_3D sv3;	//	3D
 SYSVALUE_F svf;		//	Font
-SYSVALUE_L svl;		//	Light
 SYSVALUE_I svi;		//	Input
 SYSVALUE_S svs;		//	Sound
 //SYSVALUE_M svm;		//	Music

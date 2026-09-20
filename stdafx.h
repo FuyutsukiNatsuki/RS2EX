@@ -9,6 +9,7 @@
 #include <algorithm>
 #include "lib\udx.h"
 #include "RS2MaterialBinding.h"
+#include "RS2Lighting.h"
 
 typedef list<string>::iterator Istring;
 

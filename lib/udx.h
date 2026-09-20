@@ -1,6 +1,7 @@
 //	 UDX Library
 //	 Copyright (c) 2002 Midikyou
 //	 http://www.geocities.co.jp/SiliconValley-SanJose/8134/
+//	Modified for RS2EX on 2026-09-21.
 
 #ifndef _UDX_H
 #define _UDX_H
@@ -15,7 +16,8 @@
 #include "graphic.h"
 #include "view.h"
 #include "render.h"
-#include "light.h"
+//	[RS2EX] light.h removed in v0.0.8.  The scene light is RS2Lighting.h;
+//	EnableDirLight() and GetShadowMtx() had no callers and went with it.
 #include "vertex.h"
 #include "draw.h"
 #include "texture.h"

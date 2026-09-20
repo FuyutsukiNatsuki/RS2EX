@@ -150,7 +150,11 @@ void CScene::Enter(
  */
 void CScene::SetGlobalAxis(){
 	VEC3 ldir, lup = V3UP;
-	V3Norm(&ldir, (VEC3*)&svl.dir.Direction);
+	//	[RS2EX] The engine light, not a device read-back.  The order relative
+	//	to the environment update is unchanged - see B-K4 in the audit.
+	const RS2Direction &ld = RS2GetDirectionalLight().direction;
+	VEC3 lv(ld.x, ld.y, ld.z);
+	V3Norm(&ldir, &lv);
 	if(ldir.x==0.0f && ldir.y==0.0f) ldir.z = 1.0f;
 	g_SystemObject[SYS_OBJ_CAMERA].SetPreviewPosture(GetVPos(), GetVDir(), GetVUp());
 	g_SystemObject[SYS_OBJ_LIGHT].SetPreviewPosture(-ldir*1.0e8f, ldir, lup);
@@ -666,7 +670,8 @@ void CScene::RenderScene(){
 		RS2SetDepthTest(true);
 		RS2SetDepthWrite(true);
 		RS2SetLighting(true);
-		SetDirLight(VEC3(-1.0f, -2.0f, -1.0f), MAKE_CV(1.0f, 1.0f, 1.0f, 1.0f));
+		RS2SetDirectionalLight(RS2MakeDirection(-1.0f, -2.0f, -1.0f),
+			RS2MakeColor4(1.0f, 1.0f, 1.0f, 1.0f));
 		if(g_HidefCaptureFlag) g_HidefCapture.Begin();
 		else BeginScene();
 	}

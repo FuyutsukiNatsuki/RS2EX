@@ -588,9 +588,6 @@
     <ClCompile Include="lib\input.cpp">
       <Filter>Source Files\UDX Source</Filter>
     </ClCompile>
-    <ClCompile Include="lib\light.cpp">
-      <Filter>Source Files\UDX Source</Filter>
-    </ClCompile>
     <ClCompile Include="lib\main.cpp">
       <Filter>Source Files\UDX Source</Filter>
     </ClCompile>
@@ -1112,9 +1109,6 @@
       <Filter>Header Files\UDX Header</Filter>
     </ClInclude>
     <ClInclude Include="lib\libraries.h">
-      <Filter>Header Files\UDX Header</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\light.h">
       <Filter>Header Files\UDX Header</Filter>
     </ClInclude>
     <ClInclude Include="lib\mesh.h">

@@ -351,7 +351,8 @@ bool CRS2D3D8Backend::Initialize(int width, int height){
 	InitRenderState();
 
 	//	関連オブジェクトの作成
-	SetDirLight(VEC3(1, -1, 1), MAKE_CV(0.5f, 0.5f, 0.5f, 0.0f));
+	RS2SetDirectionalLight(RS2MakeDirection(1.0f, -1.0f, 1.0f),
+		RS2MakeColor4(0.5f, 0.5f, 0.5f, 0.0f));
 	D3DXCreateSprite(sv3.pDev, &sv3.pSpr);
 	CreateFont(FONT_HEIGHT, 0xffffffff, FW_NORMAL);
 

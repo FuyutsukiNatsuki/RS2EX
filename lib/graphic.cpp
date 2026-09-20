@@ -6,7 +6,6 @@
 #include "window.h"
 #include "graphic.h"
 #include "render.h"
-#include "light.h"
 #include "texture.h"
 #include "font.h"
 #include "frame.h"

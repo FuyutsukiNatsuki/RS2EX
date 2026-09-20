@@ -300,7 +300,8 @@ void CastShadow(
 	CObject *obj	//	オブジェクト
 ){
 	if(!g_ShadowNeeded || g_RenderBlink) return;
-	g_ShadowVolume.BuildFromMesh(obj, VEC3(svl.dir.Direction));
+	const RS2Direction &ld = RS2GetDirectionalLight().direction;
+	g_ShadowVolume.BuildFromMesh(obj, VEC3(ld.x, ld.y, ld.z));
 }
 
 /*

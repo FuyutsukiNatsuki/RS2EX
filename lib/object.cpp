@@ -481,7 +481,8 @@ void CObject::RenderSC(RS2Material *pMat){
 /*
  *	影のレンダリング
  *
- *	pMtx	: 投影行列（GetShadowMtx()で取得）
+ *	pMtx	: 投影行列
+ *		  [RS2EX] GetShadowMtx() removed in v0.0.8 - it had no caller.
  *
  *	更新するデバイスパラメータ	: ワールドマトリクス、マテリアル、テクスチャ
  */

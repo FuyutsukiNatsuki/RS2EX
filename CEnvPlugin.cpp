@@ -244,7 +244,10 @@ void CEnvPlugin::Render(
 		ambient = 0xff808080;
 		skycolor = 0xff000000;
 	}
-	SetDirLight(-sdir, ACtoCV(directional));
+	const VEC3 ldir = -sdir;
+	const D3DCOLORVALUE lcol = ACtoCV(directional);
+	RS2SetDirectionalLight(RS2MakeDirection(ldir.x, ldir.y, ldir.z),
+		RS2MakeColor4(lcol.r, lcol.g, lcol.b, lcol.a));
 	if(g_HidefCaptureFlag) g_HidefCapture.Begin(skycolor);
 	else BeginScene(skycolor);
 	RS2SetDepthFunc(RS2_COMPARE_LESS_EQUAL);
