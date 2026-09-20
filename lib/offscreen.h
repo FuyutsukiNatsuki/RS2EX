@@ -45,6 +45,11 @@ public:
 
 	/*
 	 *	テクスチャーの取得
+	 *
+	 *	[RS2EX] Legacy compatibility exposure, not the ownership path.  One
+	 *	caller: HidefCapture() takes surface level 0 for the CopyRects readback.
+	 *	Readback is category H and deferred.  Returns NULL between a device reset
+	 *	and a successful recreate, so callers must not assume it is valid.
 	 */
 	LPTEX8 GetTexture(){return m_pTex;}
 };
