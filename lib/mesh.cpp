@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 #include "..\stdafx.h"
 
@@ -13,9 +14,8 @@
 #define UDX_MESH_TIMER_RAII(name)
 #endif
 
-#include <rmxfguid.h>
-#include <rmxftmpl.h>
-
+#include "..\RS2LegacyXMeshImporter.h"
+#include "..\RS2D3D8MeshResource.h"
 #include "..\CModelPlugin.h"
 #include "..\CEnvPlugin.h"
 #include "..\CConfigMode.h"
@@ -30,81 +30,6 @@ int g_AncientNightFlag;		//	旧バージョン対応用・夜間発光フラグ
 CMeshList g_MeshList;		//	テクスチャリスト
 MAT8 *g_AltMaterial = NULL;	//	代替マテリアル
 
-/*
- *	コンストラクタ
- */
-CXFile::CXFile(){
-	m_pXF = NULL;
-	m_pPtr = NULL;
-}
-
-/*
- *	デストラクタ
- */
-CXFile::~CXFile(){
-	Close();
-}
-
-/*
- *	ファイル／リソースのオープン
- */
-BOOL CXFile::Open(LPCSTR strSrc, BOOL fRes){
-	HRESULT hr;
-
-	DirectXFileCreate(&m_pXF);
-	m_pXF->RegisterTemplates((LPVOID)D3DRM_XTEMPLATES, D3DRM_XTEMPLATE_BYTES);
-
-	if(fRes){
-		DXFILELOADRESOURCE res;
-
-		res.hModule = NULL;
-		res.lpName = strSrc;
-		res.lpType = "X";
-
-		hr = m_pXF->CreateEnumObject(
-			(LPVOID)&res, DXFILELOAD_FROMRESOURCE, &m_pPtr);
-	}else{
-		hr = m_pXF->CreateEnumObject(
-			(LPVOID)strSrc,	DXFILELOAD_FROMFILE, &m_pPtr);
-	}
-	return hr==DXFILE_OK;
-}
-
-/*
- *	次のデータを取得
- */
-BOOL CXFile::GetNextData(LPDIRECTXFILEDATA *ppDat){
-	HRESULT hr;
-
-	hr = m_pPtr->GetNextDataObject(ppDat);
-
-	return hr==DXFILE_OK;
-}
-
-/*
- *	最上階層のメッシュを取得
- */
-BOOL CXFile::GetTopMesh(LPDIRECTXFILEDATA *ppDat){
-	const GUID *type;
-
-	while(1){
-		if(!GetNextData(ppDat)) return FALSE;
-
-		(*ppDat)->GetType(&type);
-
-		if(*type==TID_D3DRMMesh) break;
-		else RELEASE(*ppDat);	//	メッシュ以外は解放
-	}
-	return TRUE;
-}
-
-/*
- *	クローズ
- */
-void CXFile::Close(){
-	RELEASE(m_pPtr);
-	RELEASE(m_pXF);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

@@ -14,10 +14,12 @@
 static unsigned int s_LiveVertexBuffers = 0;
 static unsigned int s_LiveTextures = 0;
 static unsigned int s_LiveSurfaces = 0;
+static unsigned int s_LiveIndexBuffers = 0;
 
 unsigned int RS2D3D8_GetLiveVertexBufferCount(){ return s_LiveVertexBuffers; }
 unsigned int RS2D3D8_GetLiveTextureCount(){ return s_LiveTextures; }
 unsigned int RS2D3D8_GetLiveSurfaceCount(){ return s_LiveSurfaces; }
+unsigned int RS2D3D8_GetLiveIndexBufferCount(){ return s_LiveIndexBuffers; }
 
 ////////////////////////////////////////////////////////////////////////////////
 //	Vertex buffers
@@ -83,6 +85,54 @@ void RS2D3D8_ReleaseVertexBuffer(LPDIRECT3DVERTEXBUFFER8 *ppVB){
 	(*ppVB)->Release();
 	*ppVB = NULL;
 	if(s_LiveVertexBuffers) s_LiveVertexBuffers--;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//	Index buffers
+////////////////////////////////////////////////////////////////////////////////
+
+/*
+ *	Create an index buffer
+ *
+ *	bytes	: buffer size
+ *	ppOut	: receives the buffer, left NULL on failure
+ *
+ *	[RS2EX] New in v0.0.6.  Managed pool and 16-bit indices, matching the vertex
+ *	buffers: mesh geometry is static, so it stays out of reset handling.
+ */
+BOOL RS2D3D8_CreateIndexBuffer(UINT bytes, LPDIRECT3DINDEXBUFFER8 *ppOut){
+	if(!ppOut) return FALSE;
+	*ppOut = NULL;
+
+	if(!sv3.pDev) return FALSE;
+
+	HRESULT hr = sv3.pDev->CreateIndexBuffer(
+		bytes, 0, D3DFMT_INDEX16, D3DPOOL_MANAGED, ppOut);
+
+	if(FAILED(hr)){
+		Debug("[RS2EX Resource] index buffer %u bytes failed\n", bytes);
+		*ppOut = NULL;
+		return FALSE;
+	}
+	s_LiveIndexBuffers++;
+	return TRUE;
+}
+
+BOOL RS2D3D8_LockIndexBuffer(LPDIRECT3DINDEXBUFFER8 pIB, void **ppData){
+	if(!pIB || !ppData) return FALSE;
+	return SUCCEEDED(pIB->Lock(0, 0/*whole buffer*/, (BYTE **)ppData, 0));
+}
+
+void RS2D3D8_UnlockIndexBuffer(LPDIRECT3DINDEXBUFFER8 pIB){
+	if(pIB) pIB->Unlock();
+}
+
+void RS2D3D8_ReleaseIndexBuffer(LPDIRECT3DINDEXBUFFER8 *ppIB){
+	if(!ppIB || !*ppIB) return;
+
+	(*ppIB)->Release();
+	*ppIB = NULL;
+	if(s_LiveIndexBuffers) s_LiveIndexBuffers--;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

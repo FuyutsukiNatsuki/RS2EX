@@ -34,6 +34,18 @@ void RS2D3D8_UnlockVertexBuffer(LPDIRECT3DVERTEXBUFFER8 pVB);
 void RS2D3D8_ReleaseVertexBuffer(LPDIRECT3DVERTEXBUFFER8 *ppVB);
 
 /*
+ *	Index buffers
+ *
+ *	[RS2EX] Added in v0.0.6 for indexed mesh geometry.  D3DPOOL_MANAGED and
+ *	D3DFMT_INDEX16 to match the vertex buffers above: static mesh data has no
+ *	reason to be default pool, and every measured mesh is 16-bit indexed.
+ */
+BOOL RS2D3D8_CreateIndexBuffer(UINT bytes, LPDIRECT3DINDEXBUFFER8 *ppOut);
+BOOL RS2D3D8_LockIndexBuffer(LPDIRECT3DINDEXBUFFER8 pIB, void **ppData);
+void RS2D3D8_UnlockIndexBuffer(LPDIRECT3DINDEXBUFFER8 pIB);
+void RS2D3D8_ReleaseIndexBuffer(LPDIRECT3DINDEXBUFFER8 *ppIB);
+
+/*
  *	Textures
  *
  *	All D3DPOOL_MANAGED.  The loaders keep D3DX8 internally on purpose: the
@@ -67,5 +79,6 @@ void RS2D3D8_ReleaseSurface(LPSURF8 *ppSurf);
 unsigned int RS2D3D8_GetLiveVertexBufferCount();
 unsigned int RS2D3D8_GetLiveTextureCount();
 unsigned int RS2D3D8_GetLiveSurfaceCount();
+unsigned int RS2D3D8_GetLiveIndexBufferCount();
 
 #endif	//	RS2D3D8RESOURCES_H_INCLUDED

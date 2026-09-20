@@ -202,6 +202,9 @@
     <ClCompile Include="RS2D3D8Backend.cpp" />
     <ClCompile Include="RS2RenderResource.cpp" />
     <ClCompile Include="RS2D3D8Resources.cpp" />
+    <ClCompile Include="RS2MeshData.cpp" />
+    <ClCompile Include="RS2LegacyXMeshImporter.cpp" />
+    <ClCompile Include="RS2D3D8MeshResource.cpp" />
     <ClCompile Include="CSkinSelectMode.cpp" />
     <ClCompile Include="CVideoMode.cpp" />
     <ClCompile Include="C3DPluginMode.cpp" />
@@ -431,6 +434,9 @@
     <ClInclude Include="RS2D3D8Backend.h" />
     <ClInclude Include="RS2RenderResource.h" />
     <ClInclude Include="RS2D3D8Resources.h" />
+    <ClInclude Include="RS2MeshData.h" />
+    <ClInclude Include="RS2LegacyXMeshImporter.h" />
+    <ClInclude Include="RS2D3D8MeshResource.h" />
     <ClInclude Include="Script.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemCover.h" />

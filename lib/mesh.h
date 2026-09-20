@@ -1,22 +1,11 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 class CNamedObject;
 
-/*
- *	X ƒtƒ@ƒCƒ‹
- */
-class CXFile{
-	LPDIRECTXFILE			m_pXF;
-	LPDIRECTXFILEENUMOBJECT	m_pPtr;
+//	[RS2EX] CXFile moved to RS2LegacyXMeshImporter.h.  Reading .x files is
+//	import work, and after v0.0.6 the importer is the only place that does it.
 
-public:
-	CXFile();
-	~CXFile();
-	BOOL Open(LPCSTR strSrc, BOOL fRes = FALSE);
-	BOOL GetNextData(LPDIRECTXFILEDATA *ppDat);
-	BOOL GetTopMesh(LPDIRECTXFILEDATA *ppDat);
-	void Close();
-};
 
 class TTMTX{
 public:
