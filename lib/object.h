@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 class CNamedObject;
 
@@ -71,7 +72,9 @@ public:
 	BOOL IsVisible();
 
 	void ResetMatFlag(DWORD def = 0){ if(m_pMesh) m_pMesh->ResetMatFlag(def); }
-	BOOL IsMeshValid(){ return m_pMesh && m_pMesh->GetObject(); }
+	//	[RS2EX] Was "the D3DX pointer is not null".  Same question, asked of
+	//	the mesh instead of of Direct3D.
+	BOOL IsMeshValid(){ return m_pMesh && m_pMesh->IsValid(); }
 	void SetPos(VEC3 v){ m_mtx._41 = v.x, m_mtx._42 = v.y, m_mtx._43 = v.z; }
 	VEC3 GetPos()		{ return VEC3(m_mtx._41, m_mtx._42, m_mtx._43); }
 	VEC3 GetRight()		{ return VEC3(m_mtx._11, m_mtx._12, m_mtx._13); }

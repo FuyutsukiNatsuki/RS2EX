@@ -90,6 +90,8 @@ void CXFile::Close(){
 CRS2MeshImportResult::CRS2MeshImportResult()
 	: m_Materials(0), m_TextureNames(0), m_MaterialCount(0)
 {
+	boundsMin = VEC3(0, 0, 0);
+	boundsMax = VEC3(0, 0, 0);
 }
 
 CRS2MeshImportResult::~CRS2MeshImportResult(){
@@ -372,6 +374,21 @@ bool RS2ImportLegacyXMesh(BOOL fRes, const char *strName, CRS2MeshImportResult *
 	}
 	RELEASE(pBuf);
 
+	/*
+	 *	Bounds, computed here and not from the extracted geometry.
+	 *
+	 *	2.15 measured the mesh before optimising it, and COMPACT removes vertices
+	 *	that no face uses.  Keeping the original call and the original moment
+	 *	keeps the numbers identical.
+	 */
+	{
+		BYTE *pv = 0;
+		if(SUCCEEDED(pMesh->LockVertexBuffer(D3DLOCK_READONLY, &pv))){
+			D3DXComputeBoundingBox((VOID *)pv, pMesh->GetNumVertices(),
+				pMesh->GetFVF(), &out->boundsMin, &out->boundsMax);
+			pMesh->UnlockVertexBuffer();
+		}
+	}
 	//	Same optimisation as 2.15, and for the same reason: the geometry extracted
 	//	below must be the geometry the game used to render, pick and shadow.
 	if(pAdj){

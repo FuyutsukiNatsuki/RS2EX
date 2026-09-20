@@ -122,6 +122,15 @@ public:
 		unsigned int *faceMaterialIds,	//	adopted, 1 per face
 		unsigned int materialCount);
 
+	/*
+	 *	Take over another instance's buffers.
+	 *
+	 *	An explicit move, because this class is deliberately not copyable: the
+	 *	importer builds geometry into a temporary and the mesh adopts it whole,
+	 *	without duplicating megabytes of vertices.  src is left empty.
+	 */
+	void AdoptFrom(CRS2MeshData &src);
+
 	//	--- geometry ---
 	unsigned int GetVertexCount() const{ return m_VertexCount; }
 	unsigned int GetFaceCount() const{ return m_FaceCount; }

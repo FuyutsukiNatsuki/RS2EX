@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CJobTimer.h"
 #include "CShadowVolume.h"
@@ -143,43 +144,36 @@ void CShadowVolume::BuildFromMesh(
 	CMesh *udxMesh = obj->GetMesh();
 	if(!udxMesh) return;
 	udxMesh->MaskMatFlag(1);
-	LPD3DXMESH pMesh = udxMesh->GetObject();
+	/*
+	 *	[RS2EX] Read geometry from the mesh, not from Direct3D.
+	 *
+	 *	The silhouette logic is unchanged: same light-facing test, same three
+	 *	edges per lit face, same sort and cancellation afterwards.
+	 *
+	 *	The face-to-material mapping matters as much as the positions here - it
+	 *	is what MaskMatFlag(1) above filters on, so NoCastShadow keeps working
+	 *	only because one material ID per face survived the migration intact.
+	 */
+	const CRS2MeshData &mesh = udxMesh->GetMeshData();
 
 	VEC3 vLocal = V3WorldToLocal(&vLight, obj);
 	MTX4 mtxWorld = obj->GetWMatrix();
 
-	UINT fvfSize = D3DXGetFVFVertexSize(pMesh->GetFVF());
+	const unsigned int dwNumFaces = mesh.GetFaceCount();
 
-	BYTE* pVertices = NULL;
-	WORD* pIndices = NULL;
-	DWORD* pAttributes = NULL;
-
-	//	バッファをロック
-	if(FAILED(pMesh->LockVertexBuffer(D3DLOCK_READONLY, (BYTE **)&pVertices))){
-		return;
-	}
-	if(FAILED(pMesh->LockIndexBuffer(D3DLOCK_READONLY, (BYTE **)&pIndices))){
-		pMesh->UnlockVertexBuffer();
-		return;
-	}
-	if(FAILED(pMesh->LockAttributeBuffer(D3DLOCK_READONLY, &pAttributes))){
-		pMesh->UnlockVertexBuffer();
-		pMesh->UnlockIndexBuffer();
-		return;
-	}
-	DWORD dwNumVertices = pMesh->GetNumVertices();
-	DWORD dwNumFaces = pMesh->GetNumFaces();
-
-	DWORD i, j;
+	unsigned int i, j;
 	m_TempIndex.clear();
 	for(i = 0; i<dwNumFaces; i++){
-		if(udxMesh->GetMatFlag(pAttributes[i])) continue;
-		WORD wFace0 = pIndices[3*i+0];
-		WORD wFace1 = pIndices[3*i+1];
-		WORD wFace2 = pIndices[3*i+2];
-		VEC3 v0 = *(VEC3 *)(pVertices+fvfSize*wFace0);
-		VEC3 v1 = *(VEC3 *)(pVertices+fvfSize*wFace1);
-		VEC3 v2 = *(VEC3 *)(pVertices+fvfSize*wFace2);
+		if(udxMesh->GetMatFlag(mesh.GetFaceMaterialId(i))) continue;
+
+		WORD wFace0 = (WORD)mesh.GetIndex(i, 0);
+		WORD wFace1 = (WORD)mesh.GetIndex(i, 1);
+		WORD wFace2 = (WORD)mesh.GetIndex(i, 2);
+
+		VEC3 v0, v1, v2;
+		mesh.GetPosition(wFace0, &v0);
+		mesh.GetPosition(wFace1, &v1);
+		mesh.GetPosition(wFace2, &v2);
 
 		VEC3 vNormal;
 		V3Cross(&vNormal, &(v2-v1), &(v1-v0));
@@ -189,7 +183,6 @@ void CShadowVolume::BuildFromMesh(
 			m_TempIndex.push_back(CEdgeIndex(wFace2, wFace0));
 		}
 	}
-
 	sort(m_TempIndex.begin(), m_TempIndex.end());
 
 	DWORD dwNumEdges = m_TempIndex.size();
@@ -202,8 +195,9 @@ void CShadowVolume::BuildFromMesh(
 			cnt += cmp;
 		}
 		if(!cnt) continue;
-		VEC3 v1, tv1 = *(VEC3 *)(pVertices+fvfSize*edge.m_Index1);
-		VEC3 v2, tv2 = *(VEC3 *)(pVertices+fvfSize*edge.m_Index2);
+		VEC3 v1, tv1, v2, tv2;
+		mesh.GetPosition(edge.m_Index1, &tv1);
+		mesh.GetPosition(edge.m_Index2, &tv2);
 		if(cnt<0){
 			cnt = -cnt;
 			D3DXVec3TransformCoord(&v2, &tv1, &mtxWorld);
@@ -215,10 +209,6 @@ void CShadowVolume::BuildFromMesh(
 		for(j = 0; j<cnt; j++) m_FaceVolume->Add(v1, v2, vLight*SHADOW_INF_DIST);
 	}
 
-	//	バッファのロックを解除
-	pMesh->UnlockVertexBuffer();
-	pMesh->UnlockIndexBuffer();
-	pMesh->UnlockAttributeBuffer();
 }
 
 /*

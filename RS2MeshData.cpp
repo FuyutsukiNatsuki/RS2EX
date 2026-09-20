@@ -149,6 +149,38 @@ bool CRS2MeshData::Build(
 }
 
 /*
+ *	Take over another instance's buffers.
+ *
+ *	src	: donor, left empty
+ */
+void CRS2MeshData::AdoptFrom(CRS2MeshData &src){
+	if(&src==this) return;
+
+	Free();
+
+	m_VertexBytes = src.m_VertexBytes;
+	m_VertexCount = src.m_VertexCount;
+	m_Layout = src.m_Layout;
+	m_Indices = src.m_Indices;
+	m_FaceCount = src.m_FaceCount;
+	m_FaceMaterialIds = src.m_FaceMaterialIds;
+	m_Subsets = src.m_Subsets;
+	m_SubsetCount = src.m_SubsetCount;
+	m_MaterialCount = src.m_MaterialCount;
+
+	//	Detach without freeing - ownership moved, it was not copied.
+	src.m_VertexBytes = 0;
+	src.m_Indices = 0;
+	src.m_FaceMaterialIds = 0;
+	src.m_Subsets = 0;
+	src.m_VertexCount = 0;
+	src.m_FaceCount = 0;
+	src.m_SubsetCount = 0;
+	src.m_MaterialCount = 0;
+	src.m_Layout.Clear();
+}
+
+/*
  *	Read one vertex position.
  *
  *	vertexIndex	: 0..GetVertexCount()-1

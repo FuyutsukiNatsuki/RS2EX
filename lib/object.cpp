@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 //#include "headers.h"
 //#include "debug.h"
@@ -614,68 +615,46 @@ BOOL CObject::Pick(VEC3 pos, VEC3 dir, VEC3 *hit, VEC3 tri[3], int inv){
 	D3DXVec3TransformNormal(&pos, &lpos, &mi);
 	pos2 -= pos;
 
-	//	メッシュをロックしてポリゴン単位で判定
-	LPD3DXMESH pMesh = m_pMesh->GetObject();
+	/*
+	 *	[RS2EX] Read geometry from the mesh, not from Direct3D.
+	 *
+	 *	The intersection test itself is untouched - same triangles in the same
+	 *	order, same front/back handling, same nearest-in-front-of-us rule.  What
+	 *	changed is only where the vertices come from, so picking no longer needs
+	 *	a device, a lock, or an FVF.
+	 *
+	 *	Index width is no longer a caller problem either: CRS2MeshData stores one
+	 *	width, so the old prim_size branch and its "UNEXPECTED INDEX BUFFER
+	 *	FORMAT" failure have nothing left to report.  The disabled 32-bit branch
+	 *	is recorded as a known limitation, not silently declared solved: no
+	 *	32-bit content has been validated.
+	 */
+	const CRS2MeshData &mesh = m_pMesh->GetMeshData();
 
-	LPDIRECT3DVERTEXBUFFER8 pVB;
-	LPDIRECT3DINDEXBUFFER8 pIB;
-	pMesh->GetVertexBuffer(&pVB);
-	pMesh->GetIndexBuffer(&pIB);
-
-	BYTE* pIndTmp;
-	BYTE* pVtx;
-	pIB->Lock(0, 0, (BYTE **)&pIndTmp, D3DLOCK_READONLY);
-	pVB->Lock(0, 0, (BYTE **)&pVtx, D3DLOCK_READONLY);
-
-	UINT fvfSize = D3DXGetFVFVertexSize(pMesh->GetFVF());
-//	Dialog("fvf = %d\nfvfSize = %d", pMesh->GetFVF(), fvfSize);
-	DWORD dwNumFaces = pMesh->GetNumFaces();
-	DWORD i, dwCount = 0;
-
-	D3DINDEXBUFFER_DESC ib_desc;
-	pIB->GetDesc(&ib_desc);
-	int prim_size = ib_desc.Size/(dwNumFaces*3);
+	const unsigned int dwNumFaces = mesh.GetFaceCount();
+	unsigned int i;
+	DWORD dwCount = 0;
 
 	VEC3 v0, v1, v2, tmp;
 	float t, u, v;
 
-	#define PROC_FACES( ) \
-		do { \
-			for(i = 0; i<dwNumFaces; i++){ \
-				v0 = *(VEC3 *)(pVtx+fvfSize*pInd[3*i+0]); \
-				v1 = *(VEC3 *)(pVtx+fvfSize*pInd[3*i+1]); \
-				v2 = *(VEC3 *)(pVtx+fvfSize*pInd[3*i+2]); \
-				if((inv&1) && IntersectTriangle(pos2, dir2, v0, v1, v2, &t, &u, &v) \
-					|| (inv&2) && IntersectTriangle(pos2, dir2, v0, v2, v1, &t, &v, &u)){ \
-					tmp = (v1-v0)*u+(v2-v0)*v+v0; \
-					/* 進行方向の最近点を選択 */ \
-					if(D3DXVec3Dot(&dir2, &(tmp-pos2))>=0.0f && (!dwCount || \
-						D3DXVec3Length(&(tmp-pos2))<D3DXVec3Length(&(*hit-pos2)))){ \
-						*hit = tmp; \
-						if(tri){ tri[0] = v0; tri[1] = v1; tri[2] = v2; } \
-						dwCount++; \
-					} \
-				} \
-			} \
-		} while(false)
-	if(prim_size==2){
-		WORD* pInd = (WORD*)pIndTmp;
-		PROC_FACES();
-/*	}else if(prim_size==4){
-		DWORD* pInd = (DWORD*)pIndTmp;
-	//	ErrorDialog("%d %d %d\n%d %d %d\n%d %d %d\n%d %d %d\n%d %d %d\n%d %d %d\n...",
-	//		pInd[0+0],  pInd[0+1],  pInd[0+2],  pInd[3+0],  pInd[3+1],  pInd[3+2],
-	//		pInd[6+0],  pInd[6+1],  pInd[6+2],  pInd[9+0],  pInd[9+1],  pInd[9+2],
-	//		pInd[12+0], pInd[12+1], pInd[12+2], pInd[15+0], pInd[15+1], pInd[15+2]);
-		PROC_FACES();*/
-	}else{
-		ErrorDialog("UNEXPECTED INDEX BUFFER FORMAT: %d", prim_size);
-	}
-	pVB->Unlock();
-	pIB->Unlock();
-	pVB->Release();
-	pIB->Release();
+	for(i = 0; i<dwNumFaces; i++){
+		mesh.GetPosition(mesh.GetIndex(i, 0), &v0);
+		mesh.GetPosition(mesh.GetIndex(i, 1), &v1);
+		mesh.GetPosition(mesh.GetIndex(i, 2), &v2);
 
+		if((inv&1) && IntersectTriangle(pos2, dir2, v0, v1, v2, &t, &u, &v)
+			|| (inv&2) && IntersectTriangle(pos2, dir2, v0, v2, v1, &t, &v, &u)){
+			tmp = (v1-v0)*u+(v2-v0)*v+v0;
+			/* 進行方向の最近点を選択 */
+			if(D3DXVec3Dot(&dir2, &(tmp-pos2))>=0.0f && (!dwCount ||
+				D3DXVec3Length(&(tmp-pos2))<D3DXVec3Length(&(*hit-pos2)))){
+				*hit = tmp;
+				if(tri){ tri[0] = v0; tri[1] = v1; tri[2] = v2; }
+				dwCount++;
+			}
+		}
+	}
 	if(dwCount>0){
 		D3DXVec3TransformNormal(&tmp, hit, &mw);
 		*hit = tmp+lpos;

@@ -70,6 +70,18 @@ private:
 public:
 	CRS2MeshData geometry;
 
+	/*
+	 *	Bounding box of the mesh *before* optimisation.
+	 *
+	 *	Deliberately not derived from the geometry above.  2.15 computed bounds
+	 *	before D3DXMESHOPT_COMPACT ran, and COMPACT drops vertices no face
+	 *	references - measured: one bundled mesh, Landscape.x, actually loses an
+	 *	extreme vertex that way.  Recomputing afterwards would silently tighten
+	 *	its bounds and change culling, so the original value is carried out.
+	 */
+	VEC3 boundsMin;
+	VEC3 boundsMax;
+
 	CRS2MeshImportResult();
 	~CRS2MeshImportResult();
 

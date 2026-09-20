@@ -38,7 +38,6 @@ MAT8 *g_AltMaterial = NULL;	//	代替マテリアル
  *	コンストラクタ
  */
 CMesh::CMesh(){
-	m_pMesh = NULL;
 	m_pMatFlag = NULL;
 	m_pMatOrder = NULL;
 	m_pMat = NULL;
@@ -65,47 +64,24 @@ BOOL CMesh::Load(
 	int nMipLv			//	ミップマップ LV
 ){
 	//	既存なら解放
-	if(m_pMesh) Free();
+	Free();
 
 	Debug("load(%s) ... ", strName);
+
+	/*
+	 *	[RS2EX] D3DX imports, RailSim owns.
+	 *
+	 *	The importer loads and optimises a temporary ID3DXMesh, copies the
+	 *	optimised geometry into RS2 memory and releases it before returning.
+	 *	Nothing is committed to this object until that has succeeded.
+	 */
+	CRS2MeshImportResult import;
+	if(!RS2ImportLegacyXMesh(fRes, strName, &import)) return FALSE;
+
 	m_strName = strName;
-
-	LPD3DXBUFFER pBuf = 0;
-	LPD3DXBUFFER pAdj = 0;
-	HRESULT hr;
-
-	if(fRes){
-		//	リソース読込み
-		CXFile xfile;
-		if(!xfile.Open(strName, TRUE)){
-			Debug("open failed.\n");
-			return FALSE;
-		}
-		LPDIRECTXFILEDATA pDat;
-		if(!xfile.GetTopMesh(&pDat)){
-			Debug("mesh is not found.\n");
-			return FALSE;
-		}
-		hr = D3DXLoadMeshFromXof(pDat, D3DXMESH_SYSTEMMEM,
-			sv3.pDev, &pAdj, &pBuf, &m_dwNumMat, &m_pMesh);
-		RELEASE(pDat);
-		xfile.Close();
-	}else{
-		//	ファイル読込み
-		hr = D3DXLoadMeshFromX(
-			strName, D3DXMESH_SYSTEMMEM/*Lock等を考えるとこれがベスト*/,
-			sv3.pDev, &pAdj, &pBuf, &m_dwNumMat, &m_pMesh);
-	}
-
-	if(FAILED(hr)){
-		Debug("failed.\n");
-		return FALSE;
-	}
-	Debug("ok.\n");
+	m_dwNumMat = import.GetMaterialCount();
 
 	//	マテリアルの取得、テクスチャーのロード
-	D3DXMATERIAL *pMat = (D3DXMATERIAL *)pBuf->GetBufferPointer();
-
 	m_pMatFlag = new DWORD[m_dwNumMat];
 	m_pMat = new MAT8[m_dwNumMat];
 	m_pCustomMat = new MAT8[m_dwNumMat];
@@ -115,16 +91,18 @@ BOOL CMesh::Load(
 
 	DWORD i, j;
 	for(i = 0; i<m_dwNumMat; i++){
-		m_pMat[i] = pMat[i].MatD3D;
+		const RS2ImportedMaterial &src = import.GetMaterial(i);
+
+		m_pMat[i] = src.material;
+		//	[RS2EX] RailSim behaviour, not an import artefact: keep it here.
 		m_pMat[i].Ambient = m_pMat[i].Diffuse;
 		m_pTex[i] = NULL;
 
-		if(!pMat[i].pTextureFilename) continue;
+		if(!src.textureFileName) continue;
 
 		//	リストにあれば参照、なければロードして追加
-		m_pTex[i] = g_TexList.Get(fRes, pMat[i].pTextureFilename, cTrans, nMipLv);
+		m_pTex[i] = g_TexList.Get(fRes, src.textureFileName, cTrans, nMipLv);
 	}
-	RELEASE(pBuf);
 
 	m_pMatOrder = new DWORD[m_dwNumMat];
 	for(i = 0; i<m_dwNumMat; i++) m_pMatOrder[i] = i;
@@ -139,22 +117,24 @@ BOOL CMesh::Load(
 		}
 	}
 
-	//	境界の計算
-	ComputeBoundary();
+	//	[RS2EX] Adopt the geometry, then upload it.  A failed upload leaves
+	//	nothing half-built: Free() clears the materials loaded above too.
+	m_Data.AdoptFrom(import.geometry);
 
-	//	メッシュの最適化
-	LPD3DXMESH pMeshOpt = NULL;
-	DWORD *pAdjBuf = (DWORD *)pAdj->GetBufferPointer();
-	hr = m_pMesh->Optimize(
-		D3DXMESHOPT_ATTRSORT|D3DXMESHOPT_COMPACT|D3DXMESHOPT_VERTEXCACHE,
-		pAdjBuf, NULL, NULL, NULL, &pMeshOpt);
-	if(SUCCEEDED(hr)){
-		m_pMesh->Release();
-		m_pMesh = pMeshOpt;
-	}else{
-		Debug("optimization failed (%x).\n", hr);
+	if(!m_Resource.Create(m_Data)){
+		Debug("[RS2EX Mesh] GPU upload failed for %s\n", strName);
+		Free();
+		return FALSE;
 	}
-	RELEASE(pAdj);
+
+	//	境界の計算
+	//	[RS2EX] Taken from the importer rather than recomputed: 2.15 measured the
+	//	mesh before optimisation, and COMPACT can drop an unreferenced extreme
+	//	vertex.  The centre and radius formulas are unchanged.
+	m_min = import.boundsMin;
+	m_max = import.boundsMax;
+	m_center = 0.5f*(m_min+m_max);
+	m_radius = 0.5f*V3Len(&(m_max-m_min));
 	return TRUE;
 }
 
@@ -167,12 +147,9 @@ BOOL CMesh::Load(
  */
 BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, D3DCOLORVALUE cv){
 	//	既存なら解放
-	if(m_pMesh) Free();
+	Free();
 
-	if(FAILED(D3DXCreateSphere(sv3.pDev, r, sl, st, &m_pMesh, NULL))){
-		Debug("D3DXCreateSphere\n");
-		return FALSE;
-	}
+	if(!RS2ImportLegacySphere(r, sl, st, &m_Data)) return FALSE;
 	m_strName = "";
 
 	m_dwNumMat = 1;
@@ -187,6 +164,13 @@ BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, D3DCOLORVALUE cv){
 	m_pMat[0].Specular = m_pMat[0].Emissive = MAKE_CV(0, 0, 0, 0);
 	m_pMat[0].Power = 0.0f;
 	m_pTex[0] = NULL;
+
+	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
+	//	backend gets a copy.  No ID3DXMesh survives the generator.
+	if(!m_Resource.Create(m_Data)){
+		Free();
+		return FALSE;
+	}
 
 	ComputeBoundary();
 	return TRUE;
@@ -202,12 +186,9 @@ BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, D3DCOLORVALUE cv){
  */
 BOOL CMesh::CreateBox(float x, float y, float z, D3DCOLORVALUE cv){
 	//	既存なら解放
-	if(m_pMesh) Free();
+	Free();
 
-	if(FAILED(D3DXCreateBox(sv3.pDev, x, y, z, &m_pMesh, NULL))){
-		Debug("D3DXCreateSphere\n");
-		return FALSE;
-	}
+	if(!RS2ImportLegacyBox(x, y, z, &m_Data)) return FALSE;
 	m_strName = "";
 
 	m_dwNumMat = 1;
@@ -222,6 +203,13 @@ BOOL CMesh::CreateBox(float x, float y, float z, D3DCOLORVALUE cv){
 	m_pMat[0].Specular = m_pMat[0].Emissive = MAKE_CV(0, 0, 0, 0);
 	m_pMat[0].Power = 0.0f;
 	m_pTex[0] = NULL;
+
+	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
+	//	backend gets a copy.  No ID3DXMesh survives the generator.
+	if(!m_Resource.Create(m_Data)){
+		Free();
+		return FALSE;
+	}
 
 	ComputeBoundary();
 	return TRUE;
@@ -237,12 +225,9 @@ BOOL CMesh::CreateBox(float x, float y, float z, D3DCOLORVALUE cv){
  */
 BOOL CMesh::CreateTeapot(D3DCOLORVALUE cv){
 	//	既存なら解放
-	if(m_pMesh) Free();
+	Free();
 
-	if(FAILED(D3DXCreateTeapot(sv3.pDev, &m_pMesh, NULL))){
-		Debug("D3DXCreateTeapot\n");
-		return FALSE;
-	}
+	if(!RS2ImportLegacyTeapot(&m_Data)) return FALSE;
 	m_strName = "";
 
 	m_dwNumMat = 1;
@@ -257,6 +242,13 @@ BOOL CMesh::CreateTeapot(D3DCOLORVALUE cv){
 	m_pMat[0].Specular = m_pMat[0].Emissive = MAKE_CV(0, 0, 0, 0);
 	m_pMat[0].Power = 0.0f;
 	m_pTex[0] = NULL;
+
+	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
+	//	backend gets a copy.  No ID3DXMesh survives the generator.
+	if(!m_Resource.Create(m_Data)){
+		Free();
+		return FALSE;
+	}
 
 	ComputeBoundary();
 	return TRUE;
@@ -279,25 +271,72 @@ void CMesh::Free(){
 	DELETE_A(m_pTex);
 	DELETE_A(m_pCustomTex);
 	DELETE_A(m_pTexTrans);
-	RELEASE(m_pMesh);
+
+	//	[RS2EX] Geometry last, and safe to repeat.
+	m_Resource.Free();
+	m_Data.Free();
+	m_dwNumMat = 0;
 }
 
 /*
  *	境界ボックス／球の計算
  */
 void CMesh::ComputeBoundary(){
-	LPBYTE	pVertex;
-	DWORD	nVertex, fvf;
+	//	[RS2EX] Read from RS2 geometry instead of locking a D3DX buffer.
+	//	
+	//	Only the primitive generators reach this now - imported meshes take their
+	//	bounds from the importer, measured before optimisation.  Primitives are
+	//	never optimised, so computing from their geometry is exactly equivalent.
+	//	
+	//	The sphere is still derived from the box rather than fitted: a tighter
+	//	sphere would change culling and picking pre-tests everywhere.
+	const unsigned int n = m_Data.GetVertexCount();
 
-	m_pMesh->LockVertexBuffer(D3DLOCK_READONLY|D3DLOCK_NOSYSLOCK, &pVertex);
-	nVertex = m_pMesh->GetNumVertices();
-	fvf = m_pMesh->GetFVF();
+	if(!n){
+		m_min = m_max = m_center = VEC3(0, 0, 0);
+		m_radius = 0.0f;
+		return;
+	}
 
-	D3DXComputeBoundingBox((VOID *)pVertex, nVertex, fvf, &m_min, &m_max);
-	//D3DXComputeBoundingSphere((VOID *)pVertex, nVertex, fvf, &m_center, &m_radius);
+	VEC3 v;
+	m_Data.GetPosition(0, &v);
+	m_min = m_max = v;
+
+	unsigned int i;
+	for(i = 1; i<n; i++){
+		m_Data.GetPosition(i, &v);
+
+		if(v.x<m_min.x) m_min.x = v.x;
+		if(v.y<m_min.y) m_min.y = v.y;
+		if(v.z<m_min.z) m_min.z = v.z;
+		if(v.x>m_max.x) m_max.x = v.x;
+		if(v.y>m_max.y) m_max.y = v.y;
+		if(v.z>m_max.z) m_max.z = v.z;
+	}
 	m_center = 0.5f*(m_min+m_max);
 	m_radius = 0.5f*V3Len(&(m_max-m_min));
-	m_pMesh->UnlockVertexBuffer();
+}
+
+/*
+ *	[RS2EX] Draw every face belonging to one material.
+ *
+ *	materialId	: material to draw
+ *
+ *	Replaces ID3DXMesh::DrawSubset(materialId).  A material owning no faces
+ *	draws nothing, which is normal rather than an error.  More than one range
+ *	per material is handled because the subset table does not assume that
+ *	ATTRSORT made them contiguous.
+ */
+void CMesh::DrawSubset(DWORD materialId){
+	const unsigned int n = m_Data.GetSubsetCount();
+	unsigned int i;
+
+	for(i = 0; i<n; i++){
+		const RS2MeshSubset &s = m_Data.GetSubset(i);
+
+		if(s.materialId!=materialId) continue;
+		m_Resource.DrawRange(s.firstIndex, s.primitiveCount);
+	}
 }
 
 /*
@@ -326,7 +365,7 @@ void CMesh::MaskMatFlag(
  *	更新するデバイスパラメータ	: ワールドマトリクス、マテリアル、テクスチャ
  */
 void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
-	if(!m_pMesh) return;
+	if(!IsValid()) return;
 	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
@@ -354,7 +393,7 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 			devSetTexture(0, NULL);
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
-				m_pMesh->DrawSubset(order);
+				DrawSubset(order);
 			}
 		}else{
 			if(flag&8){
@@ -379,7 +418,7 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 			devSetTexture(0, m_pCustomTex[order]);
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
-				m_pMesh->DrawSubset(order);
+				DrawSubset(order);
 			}
 			if(flag&8){
 				devSetEnvMap(1, FALSE);
@@ -404,7 +443,7 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
  *	更新するデバイスパラメータ	: ワールドマトリクス、マテリアル、テクスチャ
  */
 void CMesh::Render(MTX4 *pMtx){
-	if(!m_pMesh) return;
+	if(!IsValid()) return;
 	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
@@ -417,7 +456,7 @@ void CMesh::Render(MTX4 *pMtx){
 			devSetTexture(0, NULL);
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
-				m_pMesh->DrawSubset(order);
+				DrawSubset(order);
 			}
 		}else{
 			if(g_AncientNightFlag){
@@ -446,7 +485,7 @@ void CMesh::Render(MTX4 *pMtx){
 			devSetTexture(0, m_pTex[order]);
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
-				m_pMesh->DrawSubset(order);
+				DrawSubset(order);
 			}
 			m_pMat[order].Diffuse.a = alpha;
 		}
@@ -459,7 +498,7 @@ void CMesh::Render(MTX4 *pMtx){
  *	pMtx	: 座標変換行列
  */
 void CMesh::RenderAmb(MTX4 *pMtx){
-	if(!m_pMesh) return;
+	if(!IsValid()) return;
 	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
@@ -472,7 +511,7 @@ void CMesh::RenderAmb(MTX4 *pMtx){
 		devSetTexture(0, m_pTex[order]);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
-			m_pMesh->DrawSubset(order);
+			DrawSubset(order);
 		}
 		dif = tdif;
 	}
@@ -485,7 +524,7 @@ void CMesh::RenderAmb(MTX4 *pMtx){
  *	pTex	: テクスチャ
  */
 void CMesh::RenderT(MTX4 *pMtx, LPTEX8 pTex){
-	if(!m_pMesh) return;
+	if(!IsValid()) return;
 	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
@@ -496,7 +535,7 @@ void CMesh::RenderT(MTX4 *pMtx, LPTEX8 pTex){
 		devSetTexture(0, pTex);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
-			m_pMesh->DrawSubset(order);
+			DrawSubset(order);
 		}
 	}
 }
@@ -508,7 +547,7 @@ void CMesh::RenderT(MTX4 *pMtx, LPTEX8 pTex){
  *	alpha : アルファ値
  */
 void CMesh::RenderA(MTX4 *pMtx, float altalpha){
-	if(!m_pMesh) return;
+	if(!IsValid()) return;
 	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
@@ -542,7 +581,7 @@ void CMesh::RenderA(MTX4 *pMtx, float altalpha){
 		devSetTexture(0, m_pTex[order]);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
-			m_pMesh->DrawSubset(order);
+			DrawSubset(order);
 		}
 		m_pMat[order].Diffuse.a = alpha;
 	}
@@ -555,7 +594,7 @@ void CMesh::RenderA(MTX4 *pMtx, float altalpha){
  *	aplus	: α加算値
  */
 void CMesh::RenderAP(MTX4 *pMtx, float aplus){
-	if(!m_pMesh) return;
+	if(!IsValid()) return;
 	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
@@ -573,7 +612,7 @@ void CMesh::RenderAP(MTX4 *pMtx, float aplus){
 		devSetTexture(0, m_pTex[order]);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
-			m_pMesh->DrawSubset(order);
+			DrawSubset(order);
 		}
 
 		//	α値を復元
@@ -588,7 +627,7 @@ void CMesh::RenderAP(MTX4 *pMtx, float aplus){
  *	mat	: マテリアル
  */
 void CMesh::RenderSC(MTX4 *pMtx, MAT8 *pMat){
-	if(!m_pMesh) return;
+	if(!IsValid()) return;
 	UDX_MESH_TIMER_RAII("CMesh::Render");
 
 	devTransform(pMtx);
@@ -599,7 +638,7 @@ void CMesh::RenderSC(MTX4 *pMtx, MAT8 *pMat){
 		devSetTexture(0, NULL);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
-			m_pMesh->DrawSubset(order);
+			DrawSubset(order);
 		}
 	}
 }

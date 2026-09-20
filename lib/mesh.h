@@ -3,6 +3,9 @@
 
 class CNamedObject;
 
+#include "..\RS2MeshData.h"
+#include "..\RS2D3D8MeshResource.h"
+
 //	[RS2EX] CXFile moved to RS2LegacyXMeshImporter.h.  Reading .x files is
 //	import work, and after v0.0.6 the importer is the only place that does it.
 
@@ -27,7 +30,12 @@ public:
  *	メッシュ
  */
 class CMesh{
-	LPD3DXMESH m_pMesh;		//	メッシュ本体
+	//	[RS2EX] Geometry, owned by RailSim rather than by D3DX.
+	//	The CPU copy answers picking, shadow silhouettes and bounds without a
+	//	device; the GPU resource draws.  Both are geometry only - materials,
+	//	textures and flags below stay exactly where the customizers expect them.
+	CRS2MeshData m_Data;
+	CRS2D3D8MeshResource m_Resource;
 	DWORD *m_pMatFlag;		//	マテリアルフラグ (1: rendered)
 	DWORD *m_pMatOrder;		//	マテリアル順序
 	MAT8 *m_pMat;			//	マテリアルリスト
@@ -57,6 +65,13 @@ public:
 	void Free();
 	void ComputeBoundary();
 
+	//	[RS2EX] Replaces "the D3DX pointer is not null".  Means usable geometry
+	//	is loaded, which is what every caller actually wanted to know.
+	BOOL IsValid() const{ return m_Data.IsValid() && m_Resource.IsValid(); }
+
+	//	[RS2EX] Read-only geometry, for picking and shadow-volume generation.
+	const CRS2MeshData &GetMeshData() const{ return m_Data; }
+
 	bool CheckMatNum(DWORD i){ return 0<=i && i<m_dwNumMat; }
 	void ResetMatFlag(DWORD);
 	void MaskMatFlag(DWORD);
@@ -75,10 +90,10 @@ public:
 	void RenderAP(MTX4 *pMtx, float aplus);
 	void RenderSC(MTX4 *pMtx, MAT8 *pMat);
 
-	/*
-	 *	オブジェクトの取得
-	 */
-	LPD3DXMESH GetObject(){ return m_pMesh; }
+private:
+	//	[RS2EX] Replaces ID3DXMesh::DrawSubset(materialId): draw every face whose
+	//	material ID matches, and nothing if the material owns none.
+	void DrawSubset(DWORD materialId);
 };
 
 //	メッシュリストの要素
