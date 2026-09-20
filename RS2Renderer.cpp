@@ -47,6 +47,11 @@ bool CRS2Renderer::Initialize(int width, int height){
 
 	if(!m_Backend->Initialize(width, height)){
 		Debug("[RS2EX Renderer] initialize failed\n");
+
+		//	A failed Initialize() can still have created the Direct3D object or
+		//	the device.  RailSim II 2.15 released those from FreeDirect3D() at
+		//	teardown; doing it here instead is the same release, just earlier.
+		m_Backend->Shutdown();
 		delete m_Backend;
 		m_Backend = NULL;
 		return false;

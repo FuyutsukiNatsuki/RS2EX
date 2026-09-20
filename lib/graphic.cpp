@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 #include "headers.h"
 #include "debug.h"
@@ -10,6 +11,7 @@
 #include "font.h"
 #include "frame.h"
 #include "..\Const.h"
+#include "..\RS2Renderer.h"
 
 //	内部定数
 extern const float CLIP_PLANE_NEAR = 0.5f;		//	前方クリップ面
@@ -28,93 +30,27 @@ DWORD g_BufferClearMode;
 
 /*
  *	Direct3Dの初期化
+ *
+ *	[RS2EX] Compatibility entry point.  Device lifecycle now belongs to the
+ *	renderer backend - see RS2D3D8Backend.cpp.
  */
 BOOL InitDirect3D(){
 	DebugHL();
 	Debug("InitDirect3D\n");
 
-	//	Direct3Dの作成
-	sv3.pD3D = Direct3DCreate8(D3D_SDK_VERSION);
-
-	ASSERT("Direct3Dの初期化に失敗しました.", sv3.pD3D); 
-
-	//	デバイスの作成
-	if(!Create3DDevice(g_DispWidth, g_DispHeight)) return FALSE;
-
-	GetDeviceCaps();	//	デバイス能力の取得
-
-	//	環境設定
-	InitMetrics();
-	InitRenderState();
-
-	//	関連オブジェクトの作成
-	SetDirLight(VEC3(1, -1, 1), MAKE_CV(0.5f, 0.5f, 0.5f, 0.0f));
-	D3DXCreateSprite(sv3.pDev, &sv3.pSpr);
-	CreateFont(FONT_HEIGHT, 0xffffffff, FW_NORMAL);
-
-	return TRUE;
+	return GetRS2Renderer().Initialize(g_DispWidth, g_DispHeight) ? TRUE : FALSE;
 }
 
 /*
  *	Direct3Dの解放
+ *
+ *	[RS2EX] Compatibility entry point - see RS2D3D8Backend.cpp.
  */
 void FreeDirect3D(){
 	DebugHL();
 	Debug("FreeDirect3D\n");
 
-	FreeFont();
-	RELEASE(sv3.pSpr);
-	RELEASE(sv3.pDev);
-	RELEASE(sv3.pD3D);
-}
-
-/*
- *	3Dデバイスの作成
- *
- *	width	: ビューポート横幅
- *	height: ビューポート縦幅
- */
-BOOL Create3DDevice(int width, int height){
-	sv3.width = width;
-	sv3.height = height;
-
-	SelectDisplayAdapter();	//	ディスプレイアダプタの選択(sv3.iAdapter)
-	SetPresentParam();		//	デバイスパラメータの指定(sv3.d3dpp)
-
-	//	ウインドウモードならウインドウを表示する
-	if(sv3.fWindowed){
-		ShowWindow(svw.hWnd, SW_SHOW);
-		UpdateWindow(svw.hWnd);
-	}
-	HRESULT hr;
-
-	//	TnL HAL Device
-	strcpy(sv3.type, "TnLHAL");
-
-	hr = sv3.pD3D->CreateDevice(
-		sv3.iAdapter, D3DDEVTYPE_HAL, svw.hWnd,
-		D3DCREATE_HARDWARE_VERTEXPROCESSING, &sv3.d3dpp, &sv3.pDev);
-
-	if(FAILED(hr)){
-		//	HAL Device
-		strcpy(sv3.type, "HAL");
-
-		hr = sv3.pD3D->CreateDevice(
-			sv3.iAdapter, D3DDEVTYPE_HAL, svw.hWnd,
-			D3DCREATE_SOFTWARE_VERTEXPROCESSING, &sv3.d3dpp, &sv3.pDev);
-
-		if(FAILED(hr)){
-			//	REF Device
-			strcpy(sv3.type, "REF");
-
-			hr = sv3.pD3D->CreateDevice(
-				sv3.iAdapter, D3DDEVTYPE_REF, svw.hWnd,
-				D3DCREATE_SOFTWARE_VERTEXPROCESSING, &sv3.d3dpp, &sv3.pDev);
-			FAILED_ASSERT("3Dデバイスが作成できません.", hr);
-		}
-	}
-	Debug("デバイスタイプ = %s\n", sv3.type);
-	return TRUE;
+	GetRS2Renderer().Shutdown();
 }
 
 /*

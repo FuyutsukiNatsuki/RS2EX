@@ -32,6 +32,7 @@ private:
 	unsigned int m_ViewportWidth;
 	unsigned int m_ViewportHeight;
 
+	bool CreateDevice(int width, int height);
 	void SyncViewportToBackBuffer();
 
 public:

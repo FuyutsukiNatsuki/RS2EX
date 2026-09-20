@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 #define SQRT2	1.41421356f	//	Å„2
 //	ÉŒÇÕD3DX_PIÇégópÇ∑ÇÈ
@@ -64,7 +65,6 @@ extern SYSVALUE_3D sv3;
 
 BOOL InitDirect3D();
 void FreeDirect3D();
-BOOL Create3DDevice(int width, int height);
 void SelectDisplayAdapter();
 BOOL SetPresentParam();
 D3DFORMAT FindDepthStencilFormat(D3DFORMAT form);
