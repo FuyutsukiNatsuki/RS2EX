@@ -1,5 +1,6 @@
 //	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
+#include "RS2Renderer.h"
 #include "CCamera.h"
 #include "CInterface.h"
 #include "CScene.h"
@@ -301,8 +302,11 @@ void CCamera::ApplyProjection(
 	float nearclip,	//	近距離クリップ
 	CObject *tlocal	//	ローカル系直接指定
 ){
-	D3DVIEWPORT8 vp;
-	sv3.pDev->GetViewport(&vp);
+	//	[RS2EX] Only the aspect ratio is wanted here, and reading it back from
+	//	the device has no equivalent in an explicit API.  The renderer owns the
+	//	viewport it submitted, so ask it instead.
+	unsigned int viewportW, viewportH;
+	GetRS2Renderer().GetViewportSize(&viewportW, &viewportH);
 
 	m_FieldOfViewEffect = (GetFocusInst() || tlocal) && m_AutoZoom
 		? 2.0f*atanf(m_AutoZoomBaseDist*tanf(0.5f*m_FieldOfView)
@@ -313,7 +317,7 @@ void CCamera::ApplyProjection(
 	float zn = nearclip*cliptmp, zf = CLIP_PLANE_FAR*cliptmp;
 	if(g_HidefCaptureFlag){
 		float vph = 2.0f*zn*tanf(0.5f*m_FieldOfViewEffect);
-		float vpw = (vph*vp.Width)/vp.Height;
+		float vpw = (vph*viewportW)/viewportH;
 		D3DXMatrixPerspectiveOffCenterLH(&sv3.mtxProj,
 			g_HidefLeft*vpw, g_HidefRight*vpw, g_HidefBottom*vph, g_HidefTop*vph, zn, zf);
 		int bx, by;
@@ -330,7 +334,7 @@ void CCamera::ApplyProjection(
 		}
 	}else{
 		D3DXMatrixPerspectiveFovLH(&sv3.mtxProj, m_FieldOfViewEffect,
-			(float)vp.Width/vp.Height, zn, zf);
+			(float)viewportW/viewportH, zn, zf);
 	}
 	sv3.pDev->SetTransform(D3DTS_PROJECTION, &sv3.mtxProj);
 }

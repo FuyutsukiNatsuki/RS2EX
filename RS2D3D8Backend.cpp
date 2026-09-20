@@ -248,9 +248,13 @@ void CRS2D3D8Backend::Present(){
 	sv3.pDev->Present(NULL, NULL, NULL, NULL);
 }
 
-//	--- not yet owned by the backend -------------------------------------------
-//	Filled in by the viewport commit.
-
+/*
+ *	GPU viewport submission
+ *
+ *	[RS2EX] The D3DVIEWPORT8 half of lib/view.cpp SetViewport().  The
+ *	engine-side viewport matrix used by WorldToScreen/ScreenToWorld is a
+ *	different job and stays there.
+ */
 void CRS2D3D8Backend::SetViewport(
 	unsigned int x,
 	unsigned int y,
@@ -259,12 +263,17 @@ void CRS2D3D8Backend::SetViewport(
 	float minZ,
 	float maxZ
 ){
-	(void)x;
-	(void)y;
-	(void)width;
-	(void)height;
-	(void)minZ;
-	(void)maxZ;
+	D3DVIEWPORT8 vp;
+	vp.X = x;
+	vp.Y = y;
+	vp.Width = width;
+	vp.Height = height;
+	vp.MinZ = minZ;
+	vp.MaxZ = maxZ;
+	sv3.pDev->SetViewport(&vp);
+
+	m_ViewportWidth = width;
+	m_ViewportHeight = height;
 }
 
 void CRS2D3D8Backend::GetViewportSize(unsigned int *width, unsigned int *height) const{

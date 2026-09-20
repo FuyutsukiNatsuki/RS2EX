@@ -65,6 +65,26 @@ void COffScreen::Free(){
 }
 
 /*
+ *	[RS2EX] Tell the renderer which viewport the device is really on.
+ *
+ *	SetRenderTarget() silently resets the viewport to the full size of the
+ *	new target, so an offscreen pass changes it without anyone asking.
+ *	Re-submitting the same values is a no-op for the device and keeps the
+ *	renderer's tracked viewport true - which is what CCamera reads.
+ *
+ *	Deliberately not the global SetViewport(): that would also rewrite
+ *	sv3.mtxVPort, which 2.15 leaves alone across an offscreen pass.
+ */
+static void SyncRendererViewport(LPSURF8 surface){
+	if(!surface) return;
+
+	D3DSURFACE_DESC desc;
+	if(FAILED(surface->GetDesc(&desc))) return;
+
+	GetRS2Renderer().SetViewport(0, 0, desc.Width, desc.Height);
+}
+
+/*
  *	レンダリング開始
  */
 BOOL COffScreen::Begin(D3DCOLOR c){
@@ -79,6 +99,8 @@ BOOL COffScreen::Begin(D3DCOLOR c){
 
 	if(FAILED(sv3.pDev->SetRenderTarget(m_pRT, m_pZB)))
 		return FALSE;
+
+	SyncRendererViewport(m_pRT);
 
 	//	シーンの開始
 	if(!BeginScene(c)) return FALSE;
@@ -100,6 +122,7 @@ void COffScreen::End(){
 	RELEASE(m_pRT);
 
 	sv3.pDev->SetRenderTarget(m_pOldRT, m_pOldZB);
+	SyncRendererViewport(m_pOldRT);
 	RELEASE(m_pOldRT);
 	RELEASE(m_pOldZB);
 }

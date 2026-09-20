@@ -1,10 +1,12 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 #include "headers.h"
 #include "debug.h"
 #include "window.h"
 #include "graphic.h"
 #include "view.h"
+#include "..\RS2Renderer.h"
 
 //	外部グローバル
 extern int g_DispWidth;
@@ -90,14 +92,9 @@ void SetView(VEC3 pos, VEC3 dir, VEC3 up){
  *	ビューポート設定
  */
 void SetViewport(DWORD x, DWORD y, DWORD w, DWORD h, float znear, float zfar){
-	D3DVIEWPORT8 vp;
-	vp.X = x;
-	vp.Y = y;
-	vp.Width = w;
-	vp.Height = h;
-	vp.MinZ = znear;
-	vp.MaxZ = zfar;
-	sv3.pDev->SetViewport(&vp);
+	//	[RS2EX] GPU submission belongs to the renderer backend; the viewport
+	//	matrix below is engine math and stays here.
+	GetRS2Renderer().SetViewport(x, y, w, h, znear, zfar);
 
 	//ビューポート行列の作成(ワールド→スクリーン座標変換用)
 	sv3.mtxVPort = MTX4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
