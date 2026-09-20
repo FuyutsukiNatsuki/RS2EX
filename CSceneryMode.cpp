@@ -1,5 +1,6 @@
 //	Modified for RS2EX on 2026-09-19, 2026-09-20.
 #include "stdafx.h"
+#include "RS2Renderer.h"
 #include "HighTimer.h"
 #include "CPixelbit.h"
 #include "Capture.h"
@@ -93,13 +94,13 @@ void CSceneryMode::SpinGame(){
 		g_StereoInterval = -0.5f*interval;
 		ApplyCamera();
 		g_SaveFile->RenderScene(!ms_PhotoMode);
-		sv3.pDev->EndScene();
+		GetRS2Renderer().EndRenderPass();
 		// right
 		SetViewport(sv3.width/2, 0, sv3.width/2, sv3.height);
 		g_StereoInterval = 0.5f*interval;
 		ApplyCamera();
 		g_SaveFile->RenderScene(!ms_PhotoMode);
-		sv3.pDev->EndScene();
+		GetRS2Renderer().EndRenderPass();
 		// reset
 		//SetViewport(0, 0, sv3.width, sv3.height);
 		//g_StereoInterval = 0.0f;
@@ -115,7 +116,7 @@ void CSceneryMode::SpinGame(){
 		BeginScene(0);
 		g_ConfigMode->RenderWindowDiv();
 		if(active_wnd){
-			sv3.pDev->EndScene();
+			GetRS2Renderer().EndRenderPass();
 			g_Scene = active_wnd->GetScene();
 			*g_Scene->GetCamera() = *active_wnd->GetCamera();
 			active_wnd->ApplyViewportAndCamera();
@@ -169,7 +170,7 @@ void CSceneryMode::SpinGame(){
 #endif
 
 	if(active_wnd){
-		sv3.pDev->EndScene();
+		GetRS2Renderer().EndRenderPass();
 		g_Scene = active_wnd->GetScene();
 		active_wnd->ApplyViewportAndCamera();
 		BeginScene(0);

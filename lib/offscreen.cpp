@@ -1,10 +1,12 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 #include "headers.h"
 #include "debug.h"
 #include "graphic.h"
 #include "texture.h"
 #include "offscreen.h"
+#include "..\RS2Renderer.h"
 
 /*
  *	コンストラクタ
@@ -85,12 +87,16 @@ BOOL COffScreen::Begin(D3DCOLOR c){
 
 /*
  *	レンダリング終了
+ *
+ *	[RS2EX] Ends the pass through the renderer and never presents it: an
+ *	offscreen target must not reach the swap chain.  The render-target and
+ *	depth-surface resources below stay native for now.
  */
 void COffScreen::End(){
 	if(!m_fRender) return;
 
 	//	シーンの終了、スクリーン設定の復元
-	sv3.pDev->EndScene();
+	GetRS2Renderer().EndRenderPass();
 	RELEASE(m_pRT);
 
 	sv3.pDev->SetRenderTarget(m_pOldRT, m_pOldZB);

@@ -1,4 +1,6 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
+#include "RS2Renderer.h"
 #include "CWindowDivInfo.h"
 #include "CConfigMode.h"
 #include "CSceneryMode.h"
@@ -54,7 +56,7 @@ void CWindowInfo::RenderScene(int x, int y, int w, int h, CSceneryMode* mode, in
 		ApplyViewportAndCamera();
 		m_Scene = g_Scene;
 		g_SaveFile->RenderScene(opt);
-		sv3.pDev->EndScene();
+		GetRS2Renderer().EndRenderPass();
 	}
 }
 
