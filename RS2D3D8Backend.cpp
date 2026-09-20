@@ -8,6 +8,7 @@
 #include "stdafx.h"
 #include "RS2Renderer.h"
 #include "RS2D3D8Backend.h"
+#include "RS2RenderResource.h"
 
 //	Owned by lib/graphic.cpp; the clear mask depends on the depth/stencil
 //	format the backend picked at start-up.
@@ -387,6 +388,10 @@ void CRS2D3D8Backend::Shutdown(){
  */
 bool CRS2D3D8Backend::Reset()
 {
+	//	[RS2EX] Default-pool resources must be gone before Reset() - and so must
+	//	any borrowed swap-chain surface, or Reset() fails outright.
+	GetRS2ResetRegistry().NotifyBeforeReset();
+
 	FreeFont();
 	HRESULT hr = sv3.pDev->Reset(&sv3.d3dpp);
 	if(FAILED(hr))
@@ -398,6 +403,11 @@ bool CRS2D3D8Backend::Reset()
 	CreateFont();
 	InitMetrics();
 	InitRenderState();
+
+	//	[RS2EX] Rebuilt only now, because a participant may need renderer state
+	//	(back-buffer format, depth format) to recreate itself.  Not called at all
+	//	when Reset() failed: there is no healthy device to build on.
+	GetRS2ResetRegistry().NotifyAfterReset();
 
 	//	Reset() leaves the viewport covering the whole back buffer.
 	SyncViewportToBackBuffer();

@@ -330,6 +330,12 @@
     <ClCompile Include="RS2D3D8Backend.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
+    <ClCompile Include="RS2RenderResource.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
+    <ClCompile Include="RS2D3D8Resources.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
     <ClCompile Include="CSkinSelectMode.cpp">
       <Filter>Source Files\RS2 Source\Mode Class Source\SystemMode Class Source</Filter>
     </ClCompile>
@@ -995,6 +1001,12 @@
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2D3D8Backend.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
+    <ClInclude Include="RS2RenderResource.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
+    <ClInclude Include="RS2D3D8Resources.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RSPV.H">
