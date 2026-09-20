@@ -18,27 +18,27 @@
 void RS2SetMaterial(const RS2Material &material){
 	D3DMATERIAL8 mat;
 
-	mat.Diffuse.r = material.diffuse.r;
-	mat.Diffuse.g = material.diffuse.g;
-	mat.Diffuse.b = material.diffuse.b;
-	mat.Diffuse.a = material.diffuse.a;
+	mat.Diffuse.r = material.Diffuse.r;
+	mat.Diffuse.g = material.Diffuse.g;
+	mat.Diffuse.b = material.Diffuse.b;
+	mat.Diffuse.a = material.Diffuse.a;
 
-	mat.Ambient.r = material.ambient.r;
-	mat.Ambient.g = material.ambient.g;
-	mat.Ambient.b = material.ambient.b;
-	mat.Ambient.a = material.ambient.a;
+	mat.Ambient.r = material.Ambient.r;
+	mat.Ambient.g = material.Ambient.g;
+	mat.Ambient.b = material.Ambient.b;
+	mat.Ambient.a = material.Ambient.a;
 
-	mat.Specular.r = material.specular.r;
-	mat.Specular.g = material.specular.g;
-	mat.Specular.b = material.specular.b;
-	mat.Specular.a = material.specular.a;
+	mat.Specular.r = material.Specular.r;
+	mat.Specular.g = material.Specular.g;
+	mat.Specular.b = material.Specular.b;
+	mat.Specular.a = material.Specular.a;
 
-	mat.Emissive.r = material.emissive.r;
-	mat.Emissive.g = material.emissive.g;
-	mat.Emissive.b = material.emissive.b;
-	mat.Emissive.a = material.emissive.a;
+	mat.Emissive.r = material.Emissive.r;
+	mat.Emissive.g = material.Emissive.g;
+	mat.Emissive.b = material.Emissive.b;
+	mat.Emissive.a = material.Emissive.a;
 
-	mat.Power = material.power;
+	mat.Power = material.Power;
 
 	sv3.pDev->SetMaterial(&mat);
 }

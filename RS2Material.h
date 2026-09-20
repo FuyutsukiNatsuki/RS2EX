@@ -9,11 +9,23 @@
 //	game's own vocabulary, and a different renderer could not be introduced
 //	without touching all of it.
 //
-//	This is the same five fields with the same meanings, owned by RailSim.  It is
-//	deliberately a plain value: customizers copy it, edit single components and
-//	assign it back, and some of them use out-of-range values as "not specified"
-//	sentinels.  Nothing here validates or normalises, because that behaviour is
-//	part of the content contract.
+//	This is the same five fields with the same meanings, owned by RailSim.
+//
+//	Two deliberate decisions:
+//
+//	Both types are plain aggregates, with no constructors.  The selection
+//	material tables, the shadow material and the AncientNight light material are
+//	all brace-initialised, CMesh copies its material table with memcpy(), and
+//	CMaterialChanger zeroes its member with ZeroMemory().  A constructor would
+//	break the first and quietly change the meaning of the other two.
+//
+//	The field names keep their historical spelling.  Renaming Diffuse to diffuse
+//	would touch every material expression in the tree without changing anything,
+//	and these are the names the customizer scripts and the content documentation
+//	use.  What v0.0.7 removes is the Direct3D type, not the vocabulary.
+//
+//	Nothing here validates or normalises: customizers store out-of-range values
+//	as "not specified" sentinels, and that is part of the content contract.
 
 #ifndef RS2MATERIAL_H_INCLUDED
 #define RS2MATERIAL_H_INCLUDED
@@ -21,17 +33,22 @@
 /*
  *	An RGBA colour.
  *
- *	Not clamped.  Customizer scripts rely on being able to store negative values
- *	to mean "this field was not given".
+ *	Not clamped.  See the sentinel note above.
  */
 struct RS2Color4
 {
 	float r, g, b, a;
-
-	RS2Color4() : r(0.0f), g(0.0f), b(0.0f), a(0.0f){}
-	RS2Color4(float red, float green, float blue, float alpha)
-		: r(red), g(green), b(blue), a(alpha){}
 };
+
+inline RS2Color4 RS2MakeColor4(float r, float g, float b, float a){
+	RS2Color4 c;
+
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
 
 /*
  *	A fixed-function material.
@@ -41,13 +58,11 @@ struct RS2Color4
  */
 struct RS2Material
 {
-	RS2Color4 diffuse;
-	RS2Color4 ambient;
-	RS2Color4 specular;
-	RS2Color4 emissive;
-	float power;
-
-	RS2Material() : power(0.0f){}
+	RS2Color4 Diffuse;
+	RS2Color4 Ambient;
+	RS2Color4 Specular;
+	RS2Color4 Emissive;
+	float Power;
 };
 
 #endif	//	RS2MATERIAL_H_INCLUDED

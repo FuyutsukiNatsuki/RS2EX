@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 /*
  *	レンダリング・ステートの設定
@@ -57,12 +58,9 @@ inline void devSetAmbient(D3DCOLOR c){
 	devSetState(D3DRS_AMBIENT, c);
 }
 
-/*
- *	マテリアルの設定
- */
-inline void devSetMaterial(MAT8 *pMat){
-	sv3.pDev->SetMaterial(pMat);
-}
+//	[RS2EX] devSetMaterial() removed in v0.0.7.  Every caller now goes
+//	through RS2SetMaterial(); keeping a native material binder that nothing
+//	calls would only invite new ones.
 
 void devResetMaterial();
 void devSetLineMaterial();

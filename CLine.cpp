@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CLine.h"
 #include "CScene.h"
@@ -7,8 +8,8 @@
 //	外部グローバル
 extern bool g_ShowPoleSelect;
 extern bool g_ShowLineSelect;
-extern MAT8 g_MatSelect[];
-extern MAT8 g_MatSelectA[];
+extern RS2Material g_MatSelect[];
+extern RS2Material g_MatSelectA[];
 
 /*
  *	コンストラクタ
@@ -413,11 +414,11 @@ void CLine::Render(){
 	VEC3 p1 = m_Link[0].GetPos()-m_LinePlugin->m_Height*V3UP;
 	VEC3 p2 = m_Link[1].GetPos()-m_LinePlugin->m_Height*V3UP;
 	float seglen = V3Len(&(p2-p1));
-	MAT8 *altmat = m_Selected ? &g_MatSelect[m_Selected] : NULL;
-	MAT8 *altmat2 = m_Selected ? &g_MatSelectA[m_Selected] : NULL;
+	RS2Material *altmat = m_Selected ? &g_MatSelect[m_Selected] : NULL;
+	RS2Material *altmat2 = m_Selected ? &g_MatSelectA[m_Selected] : NULL;
 	if(g_ShowLineSelect && m_Selected){
 		devSetTexture(0, NULL);
-		devSetMaterial(altmat2);
+		RS2SetMaterial(*altmat2);
 		devResetMatrix();
 		m_LinePlugin->Dump(p1, m_Right, R2L(V3UP), p1, m_Right, R2L(V3UP),
 			p2, m_Right, R2L(V3UP), p2, m_Right, R2L(V3UP), seglen, 1);

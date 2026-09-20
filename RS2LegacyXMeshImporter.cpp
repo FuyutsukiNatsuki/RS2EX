@@ -124,8 +124,30 @@ bool CRS2MeshImportResult::AllocMaterials(unsigned int count){
 	return true;
 }
 
+/*
+ *	Convert one material as D3DX reports it.
+ *
+ *	D3DXLoadMeshFromX hands back D3DMATERIAL8, so this file is where that
+ *	type legitimately appears - the .x format is a Direct3D format.  The
+ *	values are copied unchanged; the import must not reinterpret content.
+ */
+static RS2Material RS2FromD3DMaterial(const D3DMATERIAL8 &src){
+	RS2Material dst;
+
+	dst.Diffuse = RS2MakeColor4(
+		src.Diffuse.r, src.Diffuse.g, src.Diffuse.b, src.Diffuse.a);
+	dst.Ambient = RS2MakeColor4(
+		src.Ambient.r, src.Ambient.g, src.Ambient.b, src.Ambient.a);
+	dst.Specular = RS2MakeColor4(
+		src.Specular.r, src.Specular.g, src.Specular.b, src.Specular.a);
+	dst.Emissive = RS2MakeColor4(
+		src.Emissive.r, src.Emissive.g, src.Emissive.b, src.Emissive.a);
+	dst.Power = src.Power;
+	return dst;
+}
+
 void CRS2MeshImportResult::SetMaterial(
-	unsigned int i, const MAT8 &mat, const char *textureFileName
+	unsigned int i, const RS2Material &mat, const char *textureFileName
 ){
 	if(i>=m_MaterialCount) return;
 
@@ -362,7 +384,7 @@ bool RS2ImportLegacyXMesh(BOOL fRes, const char *strName, CRS2MeshImportResult *
 	}
 	Debug("ok.\n");
 
-	//	Legacy material metadata.  The MAT8 values are passed through untouched;
+	//	Legacy material metadata.  The values are passed through untouched;
 	//	RailSim's own rules about them stay in CMesh.
 	if(numMat && pBuf){
 		const D3DXMATERIAL *pMat = (const D3DXMATERIAL *)pBuf->GetBufferPointer();
@@ -370,7 +392,8 @@ bool RS2ImportLegacyXMesh(BOOL fRes, const char *strName, CRS2MeshImportResult *
 
 		DWORD i;
 		for(i = 0; i<numMat; i++)
-			out->SetMaterial(i, pMat[i].MatD3D, pMat[i].pTextureFilename);
+			out->SetMaterial(
+				i, RS2FromD3DMaterial(pMat[i].MatD3D), pMat[i].pTextureFilename);
 	}
 	RELEASE(pBuf);
 

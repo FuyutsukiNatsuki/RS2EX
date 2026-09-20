@@ -15,6 +15,7 @@
 #endif
 
 #include "..\RS2LegacyXMeshImporter.h"
+#include "..\RS2MaterialBinding.h"
 #include "..\RS2D3D8MeshResource.h"
 #include "..\CModelPlugin.h"
 #include "..\CEnvPlugin.h"
@@ -26,9 +27,9 @@ extern float g_BlinkAlpha;
 extern CEnvPlugin *g_Env;
 
 //	内部グローバル
-int g_AncientNightFlag;		//	旧バージョン対応用・夜間発光フラグ
-CMeshList g_MeshList;		//	テクスチャリスト
-MAT8 *g_AltMaterial = NULL;	//	代替マテリアル
+int g_AncientNightFlag;				//	旧バージョン対応用・夜間発光フラグ
+CMeshList g_MeshList;				//	テクスチャリスト
+RS2Material *g_AltMaterial = NULL;	//	代替マテリアル
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,8 +84,8 @@ BOOL CMesh::Load(
 
 	//	マテリアルの取得、テクスチャーのロード
 	m_pMatFlag = new DWORD[m_dwNumMat];
-	m_pMat = new MAT8[m_dwNumMat];
-	m_pCustomMat = new MAT8[m_dwNumMat];
+	m_pMat = new RS2Material[m_dwNumMat];
+	m_pCustomMat = new RS2Material[m_dwNumMat];
 	m_pTex = new LPTEX8[m_dwNumMat];
 	m_pCustomTex = new LPTEX8[m_dwNumMat];
 	m_pTexTrans = new TTMTX[m_dwNumMat];
@@ -145,7 +146,7 @@ BOOL CMesh::Load(
  *	st	: スタック数
  *	cv	: 色
  */
-BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, D3DCOLORVALUE cv){
+BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, RS2Color4 cv){
 	//	既存なら解放
 	Free();
 
@@ -154,14 +155,14 @@ BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, D3DCOLORVALUE cv){
 
 	m_dwNumMat = 1;
 	m_pMatFlag = new DWORD[m_dwNumMat];
-	m_pMat = new MAT8[m_dwNumMat];
-	m_pCustomMat = new MAT8[m_dwNumMat];
+	m_pMat = new RS2Material[m_dwNumMat];
+	m_pCustomMat = new RS2Material[m_dwNumMat];
 	m_pTex = new LPTEX8[m_dwNumMat];
 	m_pCustomTex = new LPTEX8[m_dwNumMat];
 	m_pTexTrans = new TTMTX[m_dwNumMat];
 
 	m_pMat[0].Diffuse = m_pMat[0].Ambient = cv;
-	m_pMat[0].Specular = m_pMat[0].Emissive = MAKE_CV(0, 0, 0, 0);
+	m_pMat[0].Specular = m_pMat[0].Emissive = RS2MakeColor4(0, 0, 0, 0);
 	m_pMat[0].Power = 0.0f;
 	m_pTex[0] = NULL;
 
@@ -184,7 +185,7 @@ BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, D3DCOLORVALUE cv){
  *	z		: Zサイズ
  *	cv	: 色
  */
-BOOL CMesh::CreateBox(float x, float y, float z, D3DCOLORVALUE cv){
+BOOL CMesh::CreateBox(float x, float y, float z, RS2Color4 cv){
 	//	既存なら解放
 	Free();
 
@@ -193,14 +194,14 @@ BOOL CMesh::CreateBox(float x, float y, float z, D3DCOLORVALUE cv){
 
 	m_dwNumMat = 1;
 	m_pMatFlag = new DWORD[m_dwNumMat];
-	m_pMat = new MAT8[m_dwNumMat];
-	m_pCustomMat = new MAT8[m_dwNumMat];
+	m_pMat = new RS2Material[m_dwNumMat];
+	m_pCustomMat = new RS2Material[m_dwNumMat];
 	m_pTex = new LPTEX8[m_dwNumMat];
 	m_pCustomTex = new LPTEX8[m_dwNumMat];
 	m_pTexTrans = new TTMTX[m_dwNumMat];
 
 	m_pMat[0].Diffuse = m_pMat[0].Ambient = cv;
-	m_pMat[0].Specular = m_pMat[0].Emissive = MAKE_CV(0, 0, 0, 0);
+	m_pMat[0].Specular = m_pMat[0].Emissive = RS2MakeColor4(0, 0, 0, 0);
 	m_pMat[0].Power = 0.0f;
 	m_pTex[0] = NULL;
 
@@ -223,7 +224,7 @@ BOOL CMesh::CreateBox(float x, float y, float z, D3DCOLORVALUE cv){
  *	z		: Zサイズ
  *	cv	: 色
  */
-BOOL CMesh::CreateTeapot(D3DCOLORVALUE cv){
+BOOL CMesh::CreateTeapot(RS2Color4 cv){
 	//	既存なら解放
 	Free();
 
@@ -232,14 +233,14 @@ BOOL CMesh::CreateTeapot(D3DCOLORVALUE cv){
 
 	m_dwNumMat = 1;
 	m_pMatFlag = new DWORD[m_dwNumMat];
-	m_pMat = new MAT8[m_dwNumMat];
-	m_pCustomMat = new MAT8[m_dwNumMat];
+	m_pMat = new RS2Material[m_dwNumMat];
+	m_pCustomMat = new RS2Material[m_dwNumMat];
 	m_pTex = new LPTEX8[m_dwNumMat];
 	m_pCustomTex = new LPTEX8[m_dwNumMat];
 	m_pTexTrans = new TTMTX[m_dwNumMat];
 
 	m_pMat[0].Diffuse = m_pMat[0].Ambient = cv;
-	m_pMat[0].Specular = m_pMat[0].Emissive = MAKE_CV(0, 0, 0, 0);
+	m_pMat[0].Specular = m_pMat[0].Emissive = RS2MakeColor4(0, 0, 0, 0);
 	m_pMat[0].Power = 0.0f;
 	m_pTex[0] = NULL;
 
@@ -380,7 +381,7 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 	 *	0x20 (32): AlphaZeroTest
 	 */
 
-	memcpy(m_pCustomMat, m_pMat, m_dwNumMat*sizeof(MAT8));
+	memcpy(m_pCustomMat, m_pMat, m_dwNumMat*sizeof(RS2Material));
 	memcpy(m_pCustomTex, m_pTex, m_dwNumMat*sizeof(LPTEX8));
 	nobj->SetMaterial(this);
 	for(DWORD i = 0; i<m_dwNumMat; i++){
@@ -389,7 +390,7 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 		int flag = m_pMatFlag[order];
 		if((flag&6)==2 || !alpha) continue;
 		if(g_AltMaterial){
-			sv3.pDev->SetMaterial(g_AltMaterial);
+			RS2SetMaterial(*g_AltMaterial);
 			devSetTexture(0, NULL);
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
@@ -414,7 +415,7 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 				devSetState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
 			}
 			if(g_RenderBlink) m_pCustomMat[order].Diffuse.a *= g_BlinkAlpha;
-			sv3.pDev->SetMaterial(&m_pCustomMat[order]);
+			RS2SetMaterial(m_pCustomMat[order]);
 			devSetTexture(0, m_pCustomTex[order]);
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
@@ -452,7 +453,7 @@ void CMesh::Render(MTX4 *pMtx){
 		DWORD order = m_pMatOrder[i];
 		float alpha = m_pMat[order].Diffuse.a;
 		if(g_AltMaterial){
-			sv3.pDev->SetMaterial(g_AltMaterial);
+			RS2SetMaterial(*g_AltMaterial);
 			devSetTexture(0, NULL);
 			{
 				UDX_MESH_TIMER_RAII("DrawSubset");
@@ -461,26 +462,26 @@ void CMesh::Render(MTX4 *pMtx){
 		}else{
 			if(g_AncientNightFlag){
 				if(!alpha){
-					MAT8 matTmp = m_pMat[order];
+					RS2Material matTmp = m_pMat[order];
 					matTmp.Diffuse.a = g_RenderBlink ? g_BlinkAlpha : 1.0f;
-					sv3.pDev->SetMaterial(&matTmp);
+					RS2SetMaterial(matTmp);
 				}else if(alpha==0.5f){
-					static MAT8 matLight = {
+					static RS2Material matLight = {
 						{1.0f, 0.8f, 0.5f, 0.7f},
 						{1.0f, 0.8f, 0.5f, 0.7f},
 						{1.0f, 0.8f, 0.5f, 1.0f},
 						{1.0f, 0.8f, 0.5f, 1.0f},
 						1.0f};
 					matLight.Diffuse.a = g_RenderBlink ? g_BlinkAlpha*0.7f : 0.7f;
-					sv3.pDev->SetMaterial(&matLight);
+					RS2SetMaterial(matLight);
 				}else{
 					if(g_RenderBlink) m_pMat[order].Diffuse.a *= g_BlinkAlpha;
-					sv3.pDev->SetMaterial(&m_pMat[order]);
+					RS2SetMaterial(m_pMat[order]);
 				}
 			}else{
 				if(!alpha) continue;
 				if(g_RenderBlink) m_pMat[order].Diffuse.a *= g_BlinkAlpha;
-				sv3.pDev->SetMaterial(&m_pMat[order]);
+				RS2SetMaterial(m_pMat[order]);
 			}
 			devSetTexture(0, m_pTex[order]);
 			{
@@ -505,9 +506,9 @@ void CMesh::RenderAmb(MTX4 *pMtx){
 
 	for(DWORD i = 0;i<m_dwNumMat;i++){
 		DWORD order = m_pMatOrder[i];
-		D3DCOLORVALUE &dif = m_pMat[order].Diffuse, tdif = dif;
+		RS2Color4 &dif = m_pMat[order].Diffuse, tdif = dif;
 		dif.r = dif.g = dif.b = 0.0f;
-		sv3.pDev->SetMaterial(&m_pMat[order]);
+		RS2SetMaterial(m_pMat[order]);
 		devSetTexture(0, m_pTex[order]);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
@@ -531,7 +532,7 @@ void CMesh::RenderT(MTX4 *pMtx, LPTEX8 pTex){
 
 	for(DWORD i = 0;i<m_dwNumMat;i++){
 		DWORD order = m_pMatOrder[i];
-		sv3.pDev->SetMaterial(&m_pMat[order]);
+		RS2SetMaterial(m_pMat[order]);
 		devSetTexture(0, pTex);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
@@ -557,26 +558,26 @@ void CMesh::RenderA(MTX4 *pMtx, float altalpha){
 		float alpha = m_pMat[order].Diffuse.a;
 		if(g_AncientNightFlag){
 			if(!alpha){
-				MAT8 matTmp = m_pMat[order];
+				RS2Material matTmp = m_pMat[order];
 				matTmp.Diffuse.a = altalpha*(g_RenderBlink ? g_BlinkAlpha : 1.0f);
-				sv3.pDev->SetMaterial(&matTmp);
+				RS2SetMaterial(matTmp);
 			}else if(alpha==0.5f){
-				static MAT8 matLight = {
+				static RS2Material matLight = {
 					{1.0f, 0.8f, 0.5f, 0.7f},
 					{1.0f, 0.8f, 0.5f, 0.7f},
 					{1.0f, 0.8f, 0.5f, 1.0f},
 					{1.0f, 0.8f, 0.5f, 1.0f},
 					1.0f};
 				matLight.Diffuse.a = altalpha*(g_RenderBlink ? g_BlinkAlpha*0.7f : 0.7f);
-				sv3.pDev->SetMaterial(&matLight);
+				RS2SetMaterial(matLight);
 			}else{
 				m_pMat[order].Diffuse.a *= altalpha*(g_RenderBlink ? g_BlinkAlpha : 1.0f);
-				sv3.pDev->SetMaterial(&m_pMat[order]);
+				RS2SetMaterial(m_pMat[order]);
 			}
 		}else{
 			if(!alpha) continue;
 			m_pMat[order].Diffuse.a *= altalpha*(g_RenderBlink ? g_BlinkAlpha : 1.0f);
-			sv3.pDev->SetMaterial(&m_pMat[order]);
+			RS2SetMaterial(m_pMat[order]);
 		}
 		devSetTexture(0, m_pTex[order]);
 		{
@@ -599,7 +600,7 @@ void CMesh::RenderAP(MTX4 *pMtx, float aplus){
 
 	devTransform(pMtx);
 
-	D3DCOLORVALUE c1, c2;
+	RS2Color4 c1, c2;
 
 	for(DWORD i = 0;i<m_dwNumMat;i++){
 		DWORD order = m_pMatOrder[i];
@@ -608,7 +609,7 @@ void CMesh::RenderAP(MTX4 *pMtx, float aplus){
 		c2.a = max(-1.0f, min(1.0f, c2.a*aplus));
 		m_pMat[order].Diffuse = m_pMat[order].Ambient = c2;
 
-		sv3.pDev->SetMaterial(&m_pMat[order]);
+		RS2SetMaterial(m_pMat[order]);
 		devSetTexture(0, m_pTex[order]);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");
@@ -626,7 +627,7 @@ void CMesh::RenderAP(MTX4 *pMtx, float aplus){
  *	pMtx	: 座標変換行列
  *	mat	: マテリアル
  */
-void CMesh::RenderSC(MTX4 *pMtx, MAT8 *pMat){
+void CMesh::RenderSC(MTX4 *pMtx, RS2Material *pMat){
 	if(!IsValid()) return;
 	UDX_MESH_TIMER_RAII("CMesh::Render");
 
@@ -634,7 +635,7 @@ void CMesh::RenderSC(MTX4 *pMtx, MAT8 *pMat){
 
 	for(DWORD i = 0;i<m_dwNumMat;i++){
 		DWORD order = m_pMatOrder[i];
-		sv3.pDev->SetMaterial(pMat);
+		RS2SetMaterial(*pMat);
 		devSetTexture(0, NULL);
 		{
 			UDX_MESH_TIMER_RAII("DrawSubset");

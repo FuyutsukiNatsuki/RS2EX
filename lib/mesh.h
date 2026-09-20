@@ -38,8 +38,8 @@ class CMesh{
 	CRS2D3D8MeshResource m_Resource;
 	DWORD *m_pMatFlag;		//	マテリアルフラグ (1: rendered)
 	DWORD *m_pMatOrder;		//	マテリアル順序
-	MAT8 *m_pMat;			//	マテリアルリスト
-	MAT8 *m_pCustomMat;		//	代替マテリアルリスト
+	RS2Material *m_pMat;		//	マテリアルリスト
+	RS2Material *m_pCustomMat;	//	代替マテリアルリスト
 	LPTEX8 *m_pTex;			//	テクスチャリスト
 	LPTEX8 *m_pCustomTex;	//	代替テクスチャリスト
 	TTMTX *m_pTexTrans;		//	テクスチャ変換リスト
@@ -59,9 +59,9 @@ public:
 	~CMesh();
 
 	BOOL Load(BOOL fRes, char *strFile, D3DCOLOR cTrans = 0, int nMipLv = 1);
-	BOOL CreateSphere(float r, UINT sl, UINT st, D3DCOLORVALUE cv);
-	BOOL CreateBox(float x, float y, float z, D3DCOLORVALUE cv);
-	BOOL CreateTeapot(D3DCOLORVALUE cv);
+	BOOL CreateSphere(float r, UINT sl, UINT st, RS2Color4 cv);
+	BOOL CreateBox(float x, float y, float z, RS2Color4 cv);
+	BOOL CreateTeapot(RS2Color4 cv);
 	void Free();
 	void ComputeBoundary();
 
@@ -77,8 +77,8 @@ public:
 	void MaskMatFlag(DWORD);
 	DWORD GetMatFlag(DWORD i){ return m_pMatFlag[i]; }
 	void SetMatFlag(DWORD i, DWORD v){ m_pMatFlag[i] |= v; }
-	MAT8 GetDefaultMaterial(DWORD i){ return m_pMat[i]; }
-	void SetCustomMaterial(DWORD i, MAT8 &mat){ m_pCustomMat[i] = mat; }
+	RS2Material GetDefaultMaterial(DWORD i){ return m_pMat[i]; }
+	void SetCustomMaterial(DWORD i, RS2Material &mat){ m_pCustomMat[i] = mat; }
 	void SetCustomTexture(DWORD i, LPTEX8 tex){ m_pCustomTex[i] = tex; }
 	void SetTexTrans(DWORD i, TTMTX &mtx){ m_pTexTrans[i] = mtx; }
 
@@ -88,7 +88,7 @@ public:
 	void RenderT(MTX4 *pMtx, LPTEX8 pTex);
 	void RenderA(MTX4 *pMtx, float alpha);
 	void RenderAP(MTX4 *pMtx, float aplus);
-	void RenderSC(MTX4 *pMtx, MAT8 *pMat);
+	void RenderSC(MTX4 *pMtx, RS2Material *pMat);
 
 private:
 	//	[RS2EX] Replaces ID3DXMesh::DrawSubset(materialId): draw every face whose

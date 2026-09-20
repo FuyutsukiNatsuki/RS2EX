@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 #include <io.h>
 #include <direct.h>
@@ -49,11 +50,16 @@ typedef D3DXVECTOR2		VEC2;
 typedef D3DXVECTOR3		VEC3;
 typedef D3DXVECTOR4		VEC4;
 typedef D3DXMATRIX		MTX4;
-typedef D3DMATERIAL8	MAT8;
+//	[RS2EX] MAT8 removed in v0.0.7.  Materials are RS2Material, below;
+//	D3DMATERIAL8 survives only where it legitimately arrives or departs:
+//	the .x importer and the Direct3D 8 binder.
 typedef D3DXQUATERNION	QUAT;
 
 typedef LPDIRECT3DTEXTURE8 LPTEX8;
 typedef LPDIRECT3DSURFACE8 LPSURF8;
+
+//	[RS2EX] RailSim-owned material values, replacing MAT8.
+#include "..\RS2Material.h"
 
 typedef LPDIRECTSOUNDBUFFER		LPSNDBUF;
 typedef LPDIRECTSOUNDBUFFER8	LPSNDBUF8;

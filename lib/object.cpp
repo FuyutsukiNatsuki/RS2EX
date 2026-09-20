@@ -15,7 +15,7 @@ extern int g_DispWidth;
 extern int g_DispHeight;
 
 //	内部グローバル
-MAT8 CObject::matShadow = {{0, 0, 0, 0.5f}};
+RS2Material CObject::matShadow = {{0, 0, 0, 0.5f}};
 
 /*
  *	コンストラクタ
@@ -53,7 +53,7 @@ void CObject::SetMesh(CMesh *pM, VEC3 p, float s){
  *
  *	cv	: 色
  */
-void CObject::SetShadowColor(D3DCOLORVALUE cv){
+void CObject::SetShadowColor(RS2Color4 cv){
 	matShadow.Diffuse = cv;
 }
 
@@ -471,7 +471,7 @@ void CObject::RenderAP(float alphaplus){
  *
  *	更新するデバイスパラメータ	: ワールドマトリクス、マテリアル、テクスチャ
  */
-void CObject::RenderSC(MAT8 *pMat){
+void CObject::RenderSC(RS2Material *pMat){
 	if(m_pMesh){
 		if(m_pParent) m_pMesh->RenderSC(&GetWMatrix(), pMat);
 		else m_pMesh->RenderSC(&m_mtx, pMat);

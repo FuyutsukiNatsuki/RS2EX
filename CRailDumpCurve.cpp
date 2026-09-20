@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CRailDetectCurve.h"
@@ -20,13 +21,13 @@ extern VEC2 g_RailMapOffset;
 
 //	内部グローバル
 // diffuse, ambient, specular, emissive
-MAT8 g_MatSelect[5] = {												//	選択マテリアル (不透明)
+RS2Material g_MatSelect[5] = {										//	選択マテリアル (不透明)
 	{{0,0,0,1}, {0,0,0,1}, {0,0,0,1}, {1,1,1,1}, 1.0f},				//	非選択
 	{{0,0,0,1}, {0,0,0,1}, {0,0,0,1}, {1,0,0,1}, 1.0f},				//	ハイライト
 	{{0,0,0,1}, {0,0,0,1}, {0,0,0,1}, {0,1,0,1}, 1.0f},				//	選択
 	{{0,0,0,1}, {0,0,0,1}, {0,0,0,1}, {1,1,0,1}, 1.0f},				//	選択+ハイライト
 	{{0,0,0,1}, {0,0,0,1}, {0,0,0,1}, {1,0.5f,0,1}, 1.0f}};			//	薄いハイライト
-MAT8 g_MatSelectA[5] = {											//	選択マテリアル (半透明)
+RS2Material g_MatSelectA[5] = {										//	選択マテリアル (半透明)
 	{{0,0,0,0.75f}, {0,0,0,1}, {0,0,0,1}, {1,1,1,1}, 1.0f},			//	非選択
 	{{0,0,0,0.75f}, {0,0,0,1}, {0,0,0,1}, {1,0,0,1}, 1.0f},			//	ハイライト
 	{{0,0,0,0.75f}, {0,0,0,1}, {0,0,0,1}, {0,1,0,1}, 1.0f},			//	選択
@@ -107,8 +108,8 @@ void CRailRenderCurve::FinishTrace(
 		tmp_selected = 4;
 	}
 	bool use_altmat = g_ShowRailSelect && tmp_selected;
-	MAT8 *altmat = use_altmat ? &g_MatSelect[tmp_selected] : NULL;
-	MAT8 *altmat2 = use_altmat ? &g_MatSelectA[tmp_selected] : NULL;
+	RS2Material *altmat = use_altmat ? &g_MatSelect[tmp_selected] : NULL;
+	RS2Material *altmat2 = use_altmat ? &g_MatSelectA[tmp_selected] : NULL;
 	int render_mode;
 	if(m_RailPlugin){
 		if(g_MultiTrackDummy){
@@ -122,7 +123,7 @@ void CRailRenderCurve::FinishTrace(
 			if(use_altmat || m_RailWay->GetParent()){
 				devSetTexture(0, NULL);
 				if(use_altmat){
-					devSetMaterial(altmat2);
+					RS2SetMaterial(*altmat2);
 					render_mode = 1;
 				}else{
 					render_mode = 7;
@@ -149,7 +150,7 @@ void CRailRenderCurve::FinishTrace(
 			if(use_altmat || m_RailWay->GetParent()){
 				devSetTexture(0, NULL);
 				if(use_altmat){
-					devSetMaterial(altmat2);
+					RS2SetMaterial(*altmat2);
 					render_mode = 1;
 				}else{
 					render_mode = 7;
@@ -176,7 +177,7 @@ void CRailRenderCurve::FinishTrace(
 		if(use_altmat || m_RailWay->GetParent()){
 			devSetTexture(0, NULL);
 			if(use_altmat){
-				devSetMaterial(altmat2);
+				RS2SetMaterial(*altmat2);
 				render_mode = 1;
 			}else{
 				render_mode = 7;
@@ -194,7 +195,7 @@ void CRailRenderCurve::FinishTrace(
 	}else if(g_MultiTrackDummy){
 		if(g_ShowRailSelect && tmp_selected){
 			devSetTexture(0, NULL);
-			devSetMaterial(altmat);
+			RS2SetMaterial(*altmat);
 			devResetMatrix();
 			devSetZRead(FALSE);
 			int i;

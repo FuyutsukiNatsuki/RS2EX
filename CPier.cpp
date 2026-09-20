@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CScene.h"
 #include "CPier.h"
@@ -12,8 +13,8 @@ extern const float TAPER_DIV_RATIO = 0.2f;	//	テーパ分割係数
 
 //	外部グローバル
 extern bool g_ShowPierSelect;
-extern MAT8 g_MatSelect[];
-extern MAT8 g_MatSelectA[];
+extern RS2Material g_MatSelect[];
+extern RS2Material g_MatSelectA[];
 
 //	static メンバ
 CPier **CPier::ms_Root = NULL;
@@ -213,7 +214,7 @@ void CPier::Dump(
  */
 void CPier::Render(){
 	if(!m_PierPlugin) return;
-	MAT8 *altmat = m_Selected ? &g_MatSelect[m_Selected] : NULL;
+	RS2Material *altmat = m_Selected ? &g_MatSelect[m_Selected] : NULL;
 	if(m_JointObject.IsMeshValid()){
 		if(g_ShowPierSelect && m_Selected) m_JointObject.RenderSC(altmat);
 		else m_JointObject.Render();
@@ -241,7 +242,7 @@ void CPier::Render(){
 	m_PierPlugin->ResetMapTemp();
 	if(g_ShowPierSelect && m_Selected){
 		devSetTexture(0, NULL);
-		devSetMaterial(altmat);
+		RS2SetMaterial(*altmat);
 		devResetMatrix();
 		Dump(1);
 	}

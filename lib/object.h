@@ -17,13 +17,13 @@ class CObject{
 	BOX8		m_box;			//	境界ボックス（トランスフォーム前）
 
 public:
-	static MAT8 matShadow;
+	static RS2Material matShadow;
 
 	CObject();
 	virtual ~CObject();
 
 	void SetMesh(CMesh *pM, VEC3 p = VEC3(0, 0, 0), float s = 1.0f);
-	void SetShadowColor(D3DCOLORVALUE cv);
+	void SetShadowColor(RS2Color4 cv);
 	void Scale(float s);
 	void SetScale(float s);
 	void SetScale(float sx, float sy, float sz);
@@ -59,7 +59,7 @@ public:
 	void RenderT(LPTEX8);
 	void RenderA(float);
 	void RenderAP(float);
-	void RenderSC(MAT8 *);
+	void RenderSC(RS2Material *);
 	void RenderShadow(MTX4 *pMtx);
 
 	float GetRadius();

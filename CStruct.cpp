@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CListView.h"
 #include "CSimpleDialog.h"
@@ -7,8 +8,8 @@
 #include "CStructEditMode.h"
 
 //	外部グローバル
-extern MAT8 *g_AltMaterial;
-extern MAT8 g_MatSelect[];
+extern RS2Material *g_AltMaterial;
+extern RS2Material g_MatSelect[];
 
 //	static メンバ
 CStruct **CStruct::ms_Root = NULL;

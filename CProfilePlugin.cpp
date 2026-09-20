@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CShadowVolume.h"
 #include "CCamera.h"
@@ -506,7 +507,7 @@ void CProfilePlugin::Render(
 	VEC3 &ip2, VEC3 &ir2, VEC3 &iu2,		//	非カント終点 (正規化済)
 	int close,		//	閉鎖 (1: begin, 2: end)
 	float len,		//	テクスチャ延長長さ
-	MAT8 *altmat	//	代替マテリアル
+	RS2Material *altmat	//	代替マテリアル
 ){
 	float sx1, sy1, sx2, sy2;
 	float taperz = GetTaperZ(), sz = 1.0;

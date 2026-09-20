@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CPROFILEPLUGIN_H_INCLUDED
 #define CPROFILEPLUGIN_H_INCLUDED
 
@@ -200,7 +201,7 @@ public:
 		VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, float, int);
 	void Render(VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &,
 		VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &,
-		int, float, MAT8 *altmat = NULL);
+		int, float, RS2Material *altmat = NULL);
 	virtual void BeforeDump(VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &){}
 	virtual void AfterDump(VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &){}
 	void ResetMapTemp();

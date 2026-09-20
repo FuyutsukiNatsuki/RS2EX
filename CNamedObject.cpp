@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CListView.h"
 #include "CModelInst.h"
@@ -9,8 +10,8 @@
 const int SYSTEM_OBJECT_NUM = 4;	//	システムスイッチ数
 
 //	外部グローバル
-extern MAT8 *g_AltMaterial;
-extern MAT8 g_MatSelect[];
+extern RS2Material *g_AltMaterial;
+extern RS2Material g_MatSelect[];
 
 //	内部グローバル
 bool g_PreSimulationFlag;

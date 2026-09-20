@@ -41,13 +41,13 @@ public:
 /*
  *	What one imported material carries into CMesh.
  *
- *	MAT8 and the texture file name stay legacy on purpose - the material and
- *	texture-binding boundary is a later version, and pulling it in here would
- *	mean rewriting every customizer at the same time.
+ *	The material is an RS2Material from v0.0.7 on.  The texture file name is
+ *	still a name rather than a reference, because acquiring it is CMesh's
+ *	decision - the importer does not know the cache or the mip policy.
  */
 struct RS2ImportedMaterial
 {
-	MAT8 material;
+	RS2Material material;
 	const char *textureFileName;	//	owned by the import result, may be NULL
 };
 
@@ -88,7 +88,8 @@ public:
 	void Free();
 
 	bool AllocMaterials(unsigned int count);
-	void SetMaterial(unsigned int i, const MAT8 &mat, const char *textureFileName);
+	void SetMaterial(
+		unsigned int i, const RS2Material &mat, const char *textureFileName);
 
 	unsigned int GetMaterialCount() const{ return m_MaterialCount; }
 	const RS2ImportedMaterial &GetMaterial(unsigned int i) const{ return m_Materials[i]; }

@@ -12,6 +12,7 @@
 #include "frame.h"
 #include "..\Const.h"
 #include "..\RS2Renderer.h"
+#include "..\RS2MaterialBinding.h"
 
 //	内部定数
 extern const float CLIP_PLANE_NEAR = 0.5f;		//	前方クリップ面
@@ -237,28 +238,28 @@ D3DCOLOR GetXRGB32(DWORD d, D3DFORMAT fmt){
  *	マテリアルの初期化
  */
 void devResetMaterial(){
-	MAT8 mat;
+	RS2Material mat;
 
-	mat.Diffuse = MAKE_CV(0.8f, 0.8f, 0.8f, 1.0f);
-	mat.Ambient = MAKE_CV(0.8f, 0.8f, 0.8f, 1.0f);
-	mat.Specular = MAKE_CV(0.0f, 0.0f, 0.0f, 0.0f);
-	mat.Emissive = MAKE_CV(0.0f, 0.0f, 0.0f, 0.0f);
+	mat.Diffuse = RS2MakeColor4(0.8f, 0.8f, 0.8f, 1.0f);
+	mat.Ambient = RS2MakeColor4(0.8f, 0.8f, 0.8f, 1.0f);
+	mat.Specular = RS2MakeColor4(0.0f, 0.0f, 0.0f, 0.0f);
+	mat.Emissive = RS2MakeColor4(0.0f, 0.0f, 0.0f, 0.0f);
 	mat.Power = 0.0f;
 
-	devSetMaterial(&mat);
+	RS2SetMaterial(mat);
 }
 
 /*
  *	ワイヤフレーム用マテリアル
  */
 void devSetLineMaterial(){
-	MAT8 mat;
+	RS2Material mat;
 
-	mat.Diffuse = MAKE_CV(1.0f, 1.0f, 1.0f, 1.0f);
-	mat.Ambient = MAKE_CV(0.4f, 0.4f, 0.4f, 1.0f);
-	mat.Specular = MAKE_CV(0.0f, 0.0f, 0.0f, 0.0f);
-	mat.Emissive = MAKE_CV(0.0f, 0.0f, 0.0f, 0.0f);
+	mat.Diffuse = RS2MakeColor4(1.0f, 1.0f, 1.0f, 1.0f);
+	mat.Ambient = RS2MakeColor4(0.4f, 0.4f, 0.4f, 1.0f);
+	mat.Specular = RS2MakeColor4(0.0f, 0.0f, 0.0f, 0.0f);
+	mat.Emissive = RS2MakeColor4(0.0f, 0.0f, 0.0f, 0.0f);
 	mat.Power = 0.0f;
 
-	devSetMaterial(&mat);
+	RS2SetMaterial(mat);
 }

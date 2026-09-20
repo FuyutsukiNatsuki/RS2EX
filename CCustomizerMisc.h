@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #ifndef CCUSTOMIZERMISC_H_INCLUDED
 #define CCUSTOMIZERMISC_H_INCLUDED
 
@@ -122,7 +123,7 @@ public:
 class CMaterialChanger: public CCustomizerBase{
 private:
 	vector<int> m_MaterialID;	//	マテリアル番号
-	MAT8 m_Material;			//	マテリアル
+	RS2Material m_Material;		//	マテリアル
 public:
 	CCustomizerBase *Duplicate(){ return new CMaterialChanger(*this); }
 	char *Read(char *);

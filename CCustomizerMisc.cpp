@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #include "stdafx.h"
 #include "CCustomizerMisc.h"
 #include "CNamedObject.h"
@@ -385,7 +386,7 @@ void CAlphaChanger::ApplyCustomizer(
 ){
 	if(!mesh->CheckMatNum(m_MaterialID)) return;
 	float altalpha = m_AltAlpha;
-	MAT8 mat = mesh->GetDefaultMaterial(m_MaterialID);
+	RS2Material mat = mesh->GetDefaultMaterial(m_MaterialID);
 	if(m_AltAlpha==-1.0f) mat.Diffuse.a = g_DayAlpha;
 	else if(m_AltAlpha==-2.0f) mat.Diffuse.a = g_NightAlpha;
 	else mat.Diffuse.a = m_AltAlpha;
@@ -415,7 +416,7 @@ char *CMaterialChanger::Read(
 		m_MaterialID.push_back(id);
 	}
 	if(!(str = Character2(eee = str, ';'))) throw CSynErr(eee);
-	ZeroMemory(&m_Material, sizeof(MAT8));
+	ZeroMemory(&m_Material, sizeof(RS2Material));
 	m_Material.Diffuse.a = m_Material.Ambient.a =
 		m_Material.Specular.a = m_Material.Emissive.a = 1.0f;
 	if(tmp = AsgnFloat(str, "Diffuse", (float *)&m_Material.Diffuse, 4, false)) str = tmp;
@@ -442,7 +443,7 @@ void CMaterialChanger::ApplyCustomizer(
 	for(i = 0; i<mn; i++){
 		int tmp = m_MaterialID[i];
 		if(!mesh->CheckMatNum(tmp)) continue;
-		MAT8 mat = mesh->GetDefaultMaterial(tmp);
+		RS2Material mat = mesh->GetDefaultMaterial(tmp);
 		if(m_Material.Diffuse.a>=0.0f) mat.Diffuse = m_Material.Diffuse;
 		if(m_Material.Ambient.a>=0.0f) mat.Ambient = m_Material.Ambient;
 		if(m_Material.Specular.a>=0.0f) mat.Specular = m_Material.Specular;

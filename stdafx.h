@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-20.
 #pragma warning (disable: 4786)
 
 #include <string>
@@ -7,6 +8,7 @@
 #include <map>
 #include <algorithm>
 #include "lib\udx.h"
+#include "RS2MaterialBinding.h"
 
 typedef list<string>::iterator Istring;
 
