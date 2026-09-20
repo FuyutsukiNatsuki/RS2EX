@@ -9,11 +9,14 @@
 //	choice and release order have a single owner.  Replacing the backend means
 //	replacing this file, not auditing the whole tree again.
 //
-//	Unlike RS2Renderer.h and RS2RenderResource.h this header is Direct3D 8 specific
-//	by design, and says so in its name.  The handles below are the same LPTEX8 /
-//	LPVB8 / LPSURF8 the callers already use: v0.0.5 moves ownership, not the handle
-//	type.  Changing the handle type would drag CMesh and the fixed-function state
-//	code into this release - see docs/v0.0.5-resource-inventory.md section 3.
+//	Unlike RS2Renderer.h and RS2RenderResource.h this header is Direct3D 8
+//	specific by design, and says so in its name.  The handles are the same ones
+//	the callers already use: v0.0.5 moves ownership, not the handle type.
+//	Changing the handle type would drag CMesh and the fixed-function state code
+//	into this release - see docs/v0.0.5-resource-inventory.md section 3.
+//
+//	The vertex-buffer alias LPVB8 belongs to lib/vertex.h, which not every
+//	caller of this header includes, so its underlying type is spelled out.
 
 #ifndef RS2D3D8RESOURCES_H_INCLUDED
 #define RS2D3D8RESOURCES_H_INCLUDED
@@ -24,11 +27,11 @@
  *	D3DPOOL_MANAGED, so the runtime restores them across a device reset and they
  *	are not reset participants.
  */
-BOOL RS2D3D8_CreateVertexBuffer(UINT bytes, DWORD fvf, LPVB8 *ppOut);
-BOOL RS2D3D8_UploadVertexBuffer(LPVB8 pVB, const void *pSrc, UINT bytes);
-BOOL RS2D3D8_LockVertexBuffer(LPVB8 pVB, void **ppData);
-void RS2D3D8_UnlockVertexBuffer(LPVB8 pVB);
-void RS2D3D8_ReleaseVertexBuffer(LPVB8 *ppVB);
+BOOL RS2D3D8_CreateVertexBuffer(UINT bytes, DWORD fvf, LPDIRECT3DVERTEXBUFFER8 *ppOut);
+BOOL RS2D3D8_UploadVertexBuffer(LPDIRECT3DVERTEXBUFFER8 pVB, const void *pSrc, UINT bytes);
+BOOL RS2D3D8_LockVertexBuffer(LPDIRECT3DVERTEXBUFFER8 pVB, void **ppData);
+void RS2D3D8_UnlockVertexBuffer(LPDIRECT3DVERTEXBUFFER8 pVB);
+void RS2D3D8_ReleaseVertexBuffer(LPDIRECT3DVERTEXBUFFER8 *ppVB);
 
 /*
  *	Textures

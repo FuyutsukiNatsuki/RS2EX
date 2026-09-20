@@ -33,7 +33,7 @@ unsigned int RS2D3D8_GetLiveSurfaceCount(){ return s_LiveSurfaces; }
  *	[RS2EX] Moved from CVertex::Create().  D3DPOOL_MANAGED and usage 0 are the
  *	original choices and are what keeps vertex buffers out of reset handling.
  */
-BOOL RS2D3D8_CreateVertexBuffer(UINT bytes, DWORD fvf, LPVB8 *ppOut){
+BOOL RS2D3D8_CreateVertexBuffer(UINT bytes, DWORD fvf, LPDIRECT3DVERTEXBUFFER8 *ppOut){
 	if(!ppOut) return FALSE;
 	*ppOut = NULL;
 
@@ -54,7 +54,7 @@ BOOL RS2D3D8_CreateVertexBuffer(UINT bytes, DWORD fvf, LPVB8 *ppOut){
 /*
  *	Fill a vertex buffer from system memory
  */
-BOOL RS2D3D8_UploadVertexBuffer(LPVB8 pVB, const void *pSrc, UINT bytes){
+BOOL RS2D3D8_UploadVertexBuffer(LPDIRECT3DVERTEXBUFFER8 pVB, const void *pSrc, UINT bytes){
 	if(!pVB || !pSrc) return FALSE;
 
 	void *pDst;
@@ -68,16 +68,16 @@ BOOL RS2D3D8_UploadVertexBuffer(LPVB8 pVB, const void *pSrc, UINT bytes){
 /*
  *	Lock a whole vertex buffer
  */
-BOOL RS2D3D8_LockVertexBuffer(LPVB8 pVB, void **ppData){
+BOOL RS2D3D8_LockVertexBuffer(LPDIRECT3DVERTEXBUFFER8 pVB, void **ppData){
 	if(!pVB || !ppData) return FALSE;
 	return SUCCEEDED(pVB->Lock(0, 0/*whole buffer*/, (BYTE **)ppData, 0));
 }
 
-void RS2D3D8_UnlockVertexBuffer(LPVB8 pVB){
+void RS2D3D8_UnlockVertexBuffer(LPDIRECT3DVERTEXBUFFER8 pVB){
 	if(pVB) pVB->Unlock();
 }
 
-void RS2D3D8_ReleaseVertexBuffer(LPVB8 *ppVB){
+void RS2D3D8_ReleaseVertexBuffer(LPDIRECT3DVERTEXBUFFER8 *ppVB){
 	if(!ppVB || !*ppVB) return;
 
 	(*ppVB)->Release();
