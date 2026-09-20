@@ -32,6 +32,10 @@ private:
 	unsigned int m_ViewportWidth;
 	unsigned int m_ViewportHeight;
 
+	//	Edge trigger for the zero-size log line only.  It gates logging and
+	//	nothing else, so it can never swallow a resize.
+	bool m_ZeroSizeLogged;
+
 	bool CreateDevice(int width, int height);
 	void SyncViewportToBackBuffer();
 

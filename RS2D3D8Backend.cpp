@@ -249,7 +249,8 @@ static void GetDeviceCaps(){
 CRS2D3D8Backend::CRS2D3D8Backend()
 	: m_Initialized(false),
 	  m_ViewportWidth(1),
-	  m_ViewportHeight(1)
+	  m_ViewportHeight(1),
+	  m_ZeroSizeLogged(false)
 {
 }
 
@@ -444,8 +445,27 @@ bool CRS2D3D8Backend::BeginRenderPass(
 	//	SendWM_CLOSE();
 		if(!Reset()) return false;
 	}
+	else if(svw.winW<=0 || svw.winH<=0)
+	{
+		//	[RS2EX] Zero-size guard - an intentional behaviour change.
+		//
+		//	OnSize() runs for every WM_SIZE including minimise, and
+		//	GetClientRect() on a minimised window reports 0 x 0.  The resize
+		//	branch below would then set a 0 x 0 back buffer, and
+		//	AffectWindowSize() would divide by zero building the projection.
+		//
+		//	Skipping is all this does.  d3dpp keeps the size it had, so the
+		//	frame renders into the existing back buffer and the ordinary
+		//	mismatch test below resumes on the first frame with a real size.
+		//	No state is latched and no resize can be lost.
+		if(!m_ZeroSizeLogged){
+			Debug("[RS2EX Renderer] window has zero size: skipping resize\n");
+			m_ZeroSizeLogged = true;
+		}
+	}
 	else if(sv3.d3dpp.BackBufferWidth!=svw.winW || sv3.d3dpp.BackBufferHeight!=svw.winH)
 	{
+		m_ZeroSizeLogged = false;
 		Debug("バッファサイズを変更します.\n");
 		sv3.d3dpp.BackBufferWidth	= svw.winW;
 		sv3.d3dpp.BackBufferHeight	= svw.winH;
@@ -454,6 +474,8 @@ bool CRS2D3D8Backend::BeginRenderPass(
 		AffectWindowSize();
 		if(!Reset()) return false;
 	}
+	else m_ZeroSizeLogged = false;
+
 	//	シーン開始
 	if(FAILED(sv3.pDev->BeginScene())) return false;
 
