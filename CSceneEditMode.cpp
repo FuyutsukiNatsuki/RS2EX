@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CScene.h"
@@ -280,8 +281,8 @@ CModelInst *CSceneEditMode::ScanInputModelPlugin(){
 void CSceneEditMode::RenderModelPlugin(){
 	if(CPlugin::IsPreview()){
 		CSurfacePlugin::RenderPreview();
-		devSetZRead(FALSE);
-		devSetZWrite(FALSE);
+		RS2SetDepthTest(false);
+		RS2SetDepthWrite(false);
 		RenderCompass();
 	}
 }

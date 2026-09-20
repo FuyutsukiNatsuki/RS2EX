@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CSkinPlugin.h"
@@ -183,7 +184,7 @@ void CConfigMode::ScanInputInterface(){
  */
 int CConfigMode::ScanInputWindowDiv(){
 	devSetTexture(0, NULL);
-	devBLEND_ALPHA();
+	RS2SetBlend(RS2_BLEND_ALPHA);
 	if(IsWindowDiv() && GetButton(DIM_LEFT)==S_FREE && GetButton(DIM_MIDDLE)==S_FREE && GetButton(DIM_RIGHT)==S_FREE){
 		m_ActiveWindow = m_RootWindow.GetPointWindow(0, 0, g_DispWidth, g_DispHeight, g_Cursor.GetPos());
 	}
@@ -206,7 +207,7 @@ void CConfigMode::RenderInterface(){
  */
 void CConfigMode::RenderWindowDiv(){
 	devSetTexture(0, NULL);
-	devBLEND_ALPHA();
+	RS2SetBlend(RS2_BLEND_ALPHA);
 	if(m_RootWindow.GetDiv()){
 		m_RootWindow.GetDiv()->RenderInterfaceRecursive(0, 0, g_DispWidth, g_DispHeight);
 	}
@@ -474,11 +475,11 @@ bool CConfigMode::Save(){
  */
 void CConfigMode::SetTexFilter(){
 	if(m_LinearFilter.GetCheck()){
-		devTEX_LINEAR(0);
-		devTEX_LINEAR(1);
+		RS2SetTextureFilter(0, RS2_FILTER_LINEAR);
+		RS2SetTextureFilter(1, RS2_FILTER_LINEAR);
 	}else{
-		devTEX_POINT(0);
-		devTEX_POINT(1);
+		RS2SetTextureFilter(0, RS2_FILTER_POINT);
+		RS2SetTextureFilter(1, RS2_FILTER_POINT);
 	}
 }
 

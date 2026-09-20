@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CJobTimer.h"
 #include "CRailDetectCurve.h"
@@ -662,16 +663,16 @@ void CScene::RenderScene(){
 	if(m_EnvPlugin){
 		m_EnvPlugin->Render();
 	}else{
-		devSetZRead(TRUE);
-		devSetZWrite(TRUE);
-		devSetLighting(TRUE);
+		RS2SetDepthTest(true);
+		RS2SetDepthWrite(true);
+		RS2SetLighting(true);
 		SetDirLight(VEC3(-1.0f, -2.0f, -1.0f), MAKE_CV(1.0f, 1.0f, 1.0f, 1.0f));
 		if(g_HidefCaptureFlag) g_HidefCapture.Begin();
 		else BeginScene();
 	}
 	Render();
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_VERTEX);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_VERTEX);
 	{
 		TIMER_RAII("profile RenderAll()");
 		g_RailPluginList->RenderAll();
@@ -680,9 +681,9 @@ void CScene::RenderScene(){
 		g_PierPluginList->RenderAll();
 		g_LinePluginList->RenderAll();
 	}
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL);
-	devSetLighting(TRUE);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_MATERIAL);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_MATERIAL);
+	RS2SetLighting(true);
 	{
 		TIMER_RAII("railway");
 		CRailWay *way = m_RailWay;
@@ -731,8 +732,8 @@ void CScene::RenderScene(){
 			strct = strct->Next();
 		}
 	}
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_VERTEX);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_VERTEX);
 }
 
 /*

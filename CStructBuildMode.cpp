@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CScene.h"
 #include "CStruct.h"
@@ -171,9 +172,9 @@ void CStructBuildMode::Build(){
  */
 void CStructBuildMode::RenderArrowScenery(){
 	ms_StructWindow.SetColor(m_ArrowMode ? 0x80ffffff : 0xffffffff);
-	devSetZRead(TRUE);
-	devSetZWrite(TRUE);
-	devSetLighting(TRUE);
+	RS2SetDepthTest(true);
+	RS2SetDepthWrite(true);
+	RS2SetLighting(true);
 	g_RenderBlink = true;
 	CNamedObject::InitAfterRenderList();
 	CHeadlight::InitRenderList();

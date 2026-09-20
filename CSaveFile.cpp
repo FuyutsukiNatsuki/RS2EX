@@ -487,8 +487,8 @@ void CSaveFile::RenderScene(
 	CHeadlight::InitRenderList();
 	ResetSwitch();
 	g_Scene->RenderScene();
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_MATERIAL);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_MATERIAL);
 	{
 		TIMER_RAII("train group");
 		CTrainGroup *group = m_GroupList;
@@ -497,14 +497,14 @@ void CSaveFile::RenderScene(
 			group = group->Next();
 		}
 	}
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_VERTEX);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_VERTEX);
 	RenderShadow();
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_MATERIAL);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_MATERIAL);
 	CNamedObject::AfterRenderAll();
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_VERTEX);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_VERTEX);
 	{
 		TIMER_RAII("effect");
 		CParticle::RenderAll();
@@ -513,9 +513,9 @@ void CSaveFile::RenderScene(
 	g_Scene->RenderAfter();
 	devResetMatrix();
 	devSetTexture(0, NULL);
-	devSetZRead(FALSE);
-	devSetZWrite(FALSE);
-	devSetLighting(FALSE);
+	RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
+	RS2SetLighting(false);
 	if(option&1){
 		CRailWay *warp = m_WarpList;
 		while(warp){
@@ -523,9 +523,9 @@ void CSaveFile::RenderScene(
 			warp = warp->Next();
 		}
 	}
-	devSetZRead(TRUE);
-	devSetZWrite(TRUE);
-	devSetLighting(TRUE);
+	RS2SetDepthTest(true);
+	RS2SetDepthWrite(true);
+	RS2SetLighting(true);
 
 	//SetWindowText(svw.hWnd, FlashIn("g_GroupEndCount = %d", g_GroupEndCount));
 	//g_GroupEndCount = 0;

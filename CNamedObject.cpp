@@ -126,7 +126,7 @@ void CNamedObject::InitAfterRenderList(){
  *	‘S‚ÄƒŒƒ“ƒ_ƒŠƒ“ƒO
  */
 void CNamedObject::AfterRenderAll(){
-	devBLEND_ALPHA();
+	RS2SetBlend(RS2_BLEND_ALPHA);
 	INamedObjectAfterRenderer inoar;
 	inoar = ms_AfterRenderList.begin();
 	for(; inoar!=ms_AfterRenderList.end(); inoar++) inoar->Render(1);

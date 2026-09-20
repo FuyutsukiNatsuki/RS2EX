@@ -372,11 +372,11 @@ void CArrowSceneryMode::DrawGrid(){
 	if(ms_Grid.GetCheck()){
 		::DrawGrid(m_SnapPos);
 	}else{
-		devSetZRead(FALSE);
-		devSetZWrite(FALSE);
-		devSetLighting(FALSE);
-		devTEX_POINT(0);
-		devTEX_POINT(1);
+		RS2SetDepthTest(false);
+		RS2SetDepthWrite(false);
+		RS2SetLighting(false);
+		RS2SetTextureFilter(0, RS2_FILTER_POINT);
+		RS2SetTextureFilter(1, RS2_FILTER_POINT);
 	}
 }
 
@@ -444,14 +444,14 @@ void CArrowSceneryMode::ScanInputScenery(){
 void CArrowSceneryMode::RenderScenery(){
 	ms_OptionWindow.SetColor(m_ArrowMode ? 0x80ffffff : 0xffffffff);
 	RenderArrowScenery();
-	devSetZRead(FALSE);
-	devSetZWrite(FALSE);
+	RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
 	RenderRailMap();
-	devSetLighting(TRUE);
+	RS2SetLighting(true);
 	RenderCompass();
-	devSetLighting(FALSE);
-	devTEX_POINT(0);
-	devTEX_POINT(1);
+	RS2SetLighting(false);
+	RS2SetTextureFilter(0, RS2_FILTER_POINT);
+	RS2SetTextureFilter(1, RS2_FILTER_POINT);
 	if(ms_PhotoMode) return;
 	m_Interface.Render();
 	GetCamera()->PrintInfo();
@@ -533,14 +533,14 @@ void CCursorSceneryMode::RenderScenery(){
 			Draw3DLine(hit, focus, 0xffff0000, 0x80ff0000);
 		}
 	}
-	devSetZRead(FALSE);
-	devSetZWrite(FALSE);
+	RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
 	RenderRailMap();
-	devSetLighting(TRUE);
+	RS2SetLighting(true);
 	RenderCompass();
-	devSetLighting(FALSE);
-	devTEX_POINT(0);
-	devTEX_POINT(1);
+	RS2SetLighting(false);
+	RS2SetTextureFilter(0, RS2_FILTER_POINT);
+	RS2SetTextureFilter(1, RS2_FILTER_POINT);
 	if(ms_PhotoMode) return;
 	if(ms_NeedResetViewport) ResetViewport();
 	RenderCursorSceneryFull();

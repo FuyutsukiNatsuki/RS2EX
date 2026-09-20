@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CRailConnector.h"
 #include "CRailWay.h"
@@ -141,11 +142,11 @@ void CNeutralMode::RenderCursorScenery(){
 	if(ms_PhotoMode<2){
 		if(m_PointMode){
 			devResetMatrix();
-			devSetLighting(FALSE);
+			RS2SetLighting(false);
 			devSetTexture(0, NULL);
 			if(CRailConnector::IsDetected()) CRailConnector::GetDetect()->Render(0, true);
 			//if(m_EditConnector) m_EditConnector->Render(0);
-			devSetLighting(FALSE);
+			RS2SetLighting(false);
 		}
 		if(GetFocusInst() && GetFocusInst()->GetScene()==g_Scene){
 			if(ms_PhotoMode<1) m_FocusInfo.GetPartsInst()->DrawBox();

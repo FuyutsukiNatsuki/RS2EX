@@ -897,10 +897,10 @@ void CTrainGroup::Render(){
 		if(idx++==m_SplitPos){
 			VEC3 spos = train->GetPos()+train->GetDir()*train->GetLength()*(train->m_Reverse ? -0.5f : 0.5f);
 			devResetMatrix();
-			devSetLighting(FALSE);
+			RS2SetLighting(false);
 			devSetTexture(0, NULL);
 			Draw3DPointAs2DRect(spos, 0xff00ffff, 5);
-			devSetLighting(TRUE);
+			RS2SetLighting(true);
 		}
 		train = train->Next();
 	}

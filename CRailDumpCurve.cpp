@@ -197,7 +197,7 @@ void CRailRenderCurve::FinishTrace(
 			devSetTexture(0, NULL);
 			RS2SetMaterial(*altmat);
 			devResetMatrix();
-			devSetZRead(FALSE);
+			RS2SetDepthTest(false);
 			int i;
 			for(i = 0; i<g_DummyTrackNum; i++){
 				VEC3 p11 = tpos1+right1*((i-0.5f*g_DummyTrackNum)*g_DummyTrackInterval);
@@ -211,7 +211,7 @@ void CRailRenderCurve::FinishTrace(
 				Draw3DLine(p11, p12, 0xffffffff, 0xffffffff);
 				Draw3DLine(p21, p22, 0xffffffff, 0xffffffff);
 			}
-			devSetZRead(TRUE);
+			RS2SetDepthTest(true);
 		}
 	}
 }

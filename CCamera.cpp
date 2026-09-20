@@ -283,12 +283,12 @@ void CCamera::Apply(
 //	RotVZ(m_Bank);
 	if(light){
 		if(m_LightSwitch){
-			devSetAmbient(0xff808080);
+			RS2SetAmbientLight(0xff808080);
 			SetDirLight(m_LinkLight ? V3LocalToWorld(
 				&m_LightDir, &GetVRight(), &GetVUp(), &GetVDir()) : m_LightDir,
 				g_LightColor = MAKE_CV(1.0f, 1.0f, 1.0f, 0.0f));
 		}else{
-			devSetAmbient(0xff202020);
+			RS2SetAmbientLight(0xff202020);
 			SetDirLight(V3DIR, g_LightColor = MAKE_CV(0.0f, 0.0f, 0.0f, 1.0f));
 		}
 	}

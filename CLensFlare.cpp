@@ -101,7 +101,7 @@ void CLensFlare::Render(
 	V3Norm(&vCamera, &vCamera);
 	float angle = V3Dot(&dir, &-toward);
 	if(angle<=m_StartAngle) return;
-	devBLEND_ADD2();	//	加算モードに設定
+	RS2SetBlend(RS2_BLEND_ALPHA_ADD);	//	加算モードに設定
 	float alpha = vol*(angle-m_StartAngle)/(1.0f-m_StartAngle);
 	float shift = 0.0f, bl = alpha*FRand2(1.0f-m_Twinkle, 1.0f);
 	IFlareElement ifl = m_Flare.begin();
@@ -137,7 +137,7 @@ void CLensFlare::Render(
 		}
 		shift = dist;
 	}
-	devBLEND_ALPHA();	//	半透明モードに戻す
+	RS2SetBlend(RS2_BLEND_ALPHA);	//	半透明モードに戻す
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -212,15 +212,15 @@ void CHeadlight::InitRenderList(){
  */
 void CHeadlight::RenderAll(){
 	devSetTexture(0, NULL);
-	//devSetZRead(FALSE);
-	devSetZWrite(FALSE);
-	devSetLighting(FALSE);
+	//RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
+	RS2SetLighting(false);
 	IHeadlightInst ihi = ms_RenderList.begin();
 	for(; ihi!=ms_RenderList.end(); ihi++) ihi->m_Headlight->Render(&*ihi);
 	ms_RenderList.clear();
-	//devSetZRead(TRUE);
-	devSetZWrite(TRUE);
-	devSetLighting(TRUE);
+	//RS2SetDepthTest(true);
+	RS2SetDepthWrite(true);
+	RS2SetLighting(true);
 }
 
 /*

@@ -47,9 +47,9 @@ void CParticleInst::Render(){
 	float si = sinf(m_Angle)*radius, co = cosf(m_Angle)*radius;
 	D3DCOLOR col = ScaleColor(m_Color, m_Alpha);
 	if(m_Emitter->m_BlendMode){
-		devBLEND_ADD2();
+		RS2SetBlend(RS2_BLEND_ALPHA_ADD);
 	}else{
-		devBLEND_ALPHA();
+		RS2SetBlend(RS2_BLEND_ALPHA);
 		col = MultiplyColor(g_NoLightColor, col);
 	}
 	SetUVMap(0.0f, 0.0f, 1.0f, 1.0f);
@@ -123,17 +123,17 @@ void CParticle::InitRenderList(){
 void CParticle::RenderAll(){
 	if(!g_ConfigMode->GetMiscParticle()) return;
 	devResetMaterial();
-	//devSetZRead(FALSE);
-	devSetZWrite(FALSE);
-	devSetLighting(FALSE);
+	//RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
+	RS2SetLighting(false);
 	IParticleInst ipi;
 	for(ipi = ms_RenderList.begin(); ipi!=ms_RenderList.end(); ipi++) ipi->CalcDist();
 	ms_RenderList.sort();
 	for(ipi = ms_RenderList.begin(); ipi!=ms_RenderList.end(); ipi++) ipi->Render();
-	//devSetZRead(TRUE);
-	devSetZWrite(TRUE);
-	devSetLighting(TRUE);
-	devBLEND_ALPHA();
+	//RS2SetDepthTest(true);
+	RS2SetDepthWrite(true);
+	RS2SetLighting(true);
+	RS2SetBlend(RS2_BLEND_ALPHA);
 }
 
 /*

@@ -125,9 +125,9 @@ void CJobTimer::DrawResult(){
 	const int number_width = 50;
 	int pos_y = area_y;
 	devResetMatrix();
-	devSetLighting(false);
+	RS2SetLighting(false);
 	devSetTexture(0, 0);
-	devBLEND_ALPHA();
+	RS2SetBlend(RS2_BLEND_ALPHA);
 	Fill2DRect(area_x, area_y-area_height, area_x+area_width, area_y, 0x80000000);
 	for(i = 0; i<frame_data.m_ObjList.size(); ++i){
 		CTimerObj* obj = frame_data.m_ObjList[i];

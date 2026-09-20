@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #ifndef CCONFIGMODE_H_INCLUDED
 #define CCONFIGMODE_H_INCLUDED
 
@@ -88,7 +89,7 @@ public:
 	void SetShadow(int s){ m_Shadow.SetCheck(s); }
 	void SetTexFilter();
 	int GetEnvMap(){ return m_EnvMap.GetCheck(); }
-	void SetSpecularLight(){ devSetSpecular(m_SpecularLight.GetCheck()); }
+	void SetSpecularLight(){ RS2SetSpecular(!!m_SpecularLight.GetCheck()); }
 	int GetSunLensFlare(){ return m_SunLensFlare.GetCheck(); }
 	int GetSunWhiteout(){ return m_SunWhiteout.GetCheck(); }
 	int GetMiscLensFlare(){ return m_MiscLensFlare.GetCheck(); }

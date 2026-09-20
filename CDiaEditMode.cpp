@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CScene.h"
@@ -122,9 +123,9 @@ void CDiaEditMode::ScanInputCursorScenery(){
 void CDiaEditMode::RenderCursorScenery(){
 	if(ms_PhotoMode) return;
 	devResetMatrix();
-	devSetLighting(FALSE);
+	RS2SetLighting(false);
 	devSetTexture(0, NULL);
 	if(CRailConnector::IsDetected()) CRailConnector::GetDetect()->Render(0, g_ManualControl);
 	if(m_EditConnector) m_EditConnector->Render(0, false);
-	devSetLighting(FALSE);
+	RS2SetLighting(false);
 }

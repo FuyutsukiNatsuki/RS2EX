@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CRailPlugin.h"
 #include "CLinePlugin.h"
@@ -39,7 +40,7 @@ void CLinePlugin::RenderPreview(){
 			do{
 				ip1 = p1 = VEC3(x, 0.0f, tmp)+g_Line->m_TrolleyAlt*u1;
 				ip2 = p2 = p1+g_Line->m_MaxInterval*V3DIR;
-				devSetLighting(TRUE);
+				RS2SetLighting(true);
 				if(p_flag) g_Pole->Preview(p1+g_Line->m_Height*u1);
 				devResetMatrix();
 				if(j<tnum) g_Line->Dump(p1, r1, u1, ip1, r1, u1,

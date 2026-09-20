@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CRailPlugin.h"
 #include "CTiePlugin.h"
@@ -45,8 +46,8 @@ void CRailPlugin::RenderPreview(){
 			bool g_flag = g_Girder && (g_Girder->IsMultiTrack() ? j==tnum : j<tnum);
 			devResetMatrix();
 			devResetMaterial();
-			devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-			devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+			RS2SetDiffuseColorSource(RS2_COLOR_FROM_VERTEX);
+			RS2SetAmbientColorSource(RS2_COLOR_FROM_VERTEX);
 			if(g_Rail){
 				if(j<tnum){
 					g_Rail->Dump(p1, r1, u1, ip1, r1, u1, p2, r2, u2, ip2, r2, u2, len, 7);
@@ -66,8 +67,8 @@ void CRailPlugin::RenderPreview(){
 			if(g_flag) g_Girder->Dump(
 				p1, r1, u1, ip1, r1, u1, p2, r2, u2, ip2, r2, u2, len, 7);
 			p1 = ip1 = op1; p2 = ip2 = op2;
-			devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
-			devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL);
+			RS2SetDiffuseColorSource(RS2_COLOR_FROM_MATERIAL);
+			RS2SetAmbientColorSource(RS2_COLOR_FROM_MATERIAL);
 			if(g_Rail){
 				if(j<tnum){
 					g_Rail->Render(
@@ -88,8 +89,8 @@ void CRailPlugin::RenderPreview(){
 			}
 			if(g_flag) g_Girder->Render(
 				p1, r1, u1, d1, ip1, r1, u1, p2, r2, u2, d2, ip2, r2, u2, 3, len);
-			devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-			devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+			RS2SetDiffuseColorSource(RS2_COLOR_FROM_VERTEX);
+			RS2SetAmbientColorSource(RS2_COLOR_FROM_VERTEX);
 		}
 	}
 }

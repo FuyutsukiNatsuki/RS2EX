@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CRailSplitCurve.h"
 #include "CRailDumpCurve.h"
@@ -1229,7 +1230,7 @@ void CRailWay::Render(){
 #if 0
 	devResetMatrix();
 	devResetMaterial();
-	devSetLighting(FALSE);
+	RS2SetLighting(false);
 	devSetState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
 	IPGroupEndLocator ipge = m_GroupEnd.begin();
 	for(; ipge!=m_GroupEnd.end(); ipge++){
@@ -1241,7 +1242,7 @@ void CRailWay::Render(){
 		Draw3DLine(tmp, tmp+V3UP*10.0f, col, col);
 	}
 	devSetState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
-	devSetLighting(TRUE);
+	RS2SetLighting(true);
 #endif
 //	if(!g_ShadowNeeded && !g_ShowRailSelect
 //		&& !(m_RailPlugin && m_RailPlugin->HasInterval())

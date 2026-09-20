@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-21.
 
 #include "headers.h"
 #include "debug.h"
@@ -63,7 +64,7 @@ D3DCOLOR GetPixelColor(int x, int y){
  *	更新するデバイスパラメータ：ワールド変換行列、ブレンドモード、テクスチャー
  */
 void RenderLensFlare(VEC3 pos, float size, BOOL fWhite){
-	devBLEND_ADD2();	//	加算モード
+	RS2SetBlend(RS2_BLEND_ALPHA_ADD);	//	加算モード
 
 	//	光源のレンダリング
 	//devTransBillboard(pos);
@@ -108,7 +109,7 @@ void RenderLensFlare(VEC3 pos, float size, BOOL fWhite){
 		devTransBillboard(pos);
 		Fill3DCircle(VEC3(0, 0, 0), size/5, 0x00000000, 0x00002000+aplus);
 
-		devBLEND_ALPHA();	//	半透明モード
+		RS2SetBlend(RS2_BLEND_ALPHA);	//	半透明モード
 
 		//	ホワイトアウト
 		if(fWhite && angle>0.9f){
@@ -116,6 +117,6 @@ void RenderLensFlare(VEC3 pos, float size, BOOL fWhite){
 			Fill2DRect(0, 0, g_DispWidth, g_DispHeight, aplus|0x00ffffff);
 		}
 	}else{
-		devBLEND_ALPHA();	//	半透明モード
+		RS2SetBlend(RS2_BLEND_ALPHA);	//	半透明モード
 	}
 }

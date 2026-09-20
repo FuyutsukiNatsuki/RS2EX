@@ -389,7 +389,7 @@ void CProfilePlugin::Dump(
 	BeforeDump(p1, r1, u1, p2, r2, u2);
 	IProfile ip = m_Profile.begin();
 	if(prev&2){
-		devSetLighting(TRUE);
+		RS2SetLighting(true);
 		devResetMaterial();
 	}
 	for(; ip!=m_Profile.end(); ip++){
@@ -715,7 +715,7 @@ void CProfilePlugin::PrepareVertex(){
 void CProfilePlugin::RenderAll(){
 	IProfile ip = m_Profile.begin();
 	IWireframe iw = m_Wireframe.begin();
-	devSetLighting(TRUE);
+	RS2SetLighting(true);
 	devResetMaterial();
 	for(; ip!=m_Profile.end(); ip++){
 		MapPtrValue<CQuadDumpN> &dump_n = ip->m_DumpN[g_Scene];

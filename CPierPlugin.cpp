@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CRailPlugin.h"
 #include "CTiePlugin.h"
@@ -21,7 +22,7 @@ extern bool g_RailMipMap;
 void CPierPlugin::RenderPreview(){
 	if(!ms_PreviewState || !g_Pier) return;
 	if(g_Pier){
-		devSetLighting(TRUE);
+		RS2SetLighting(true);
 		bool multi = CRailwayMode::IsMultiTrack();
 		int tnum = multi ? CRailwayMode::GetTrackNum() : 1;
 		float tint = multi ? CRailwayMode::GetTrackInterval() : 0.0f;

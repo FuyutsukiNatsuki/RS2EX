@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CScene.h"
 #include "CStructEditMode.h"
@@ -101,7 +102,7 @@ void CStructEditMode::RenderCursorScenery(){
 	if(ms_PhotoMode) return;
 	if(g_NetworkInitialized){
 		devResetMatrix();
-		devSetLighting(FALSE);
+		RS2SetLighting(false);
 		g_StrTex->RenderCenter(g_DispWidth/2, g_DispHeight/3,
 			ScaleColor(0xffffffff, g_BlinkAlpha), ScaleColor(0xff000000, g_BlinkAlpha),
 			lang(CannotEditInNetMode));

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CVertexDump.h"
@@ -152,7 +153,7 @@ void RailMapText(VEC3 pos, char *text, D3DCOLOR color){
  */
 void RenderRailMap(){
 	if(!g_MapDrawNeeded) return;
-	devSetLighting(FALSE);
+	RS2SetLighting(false);
 	CCamera *camera = CCamera::GetCurrentCamera();
 	float fov = camera->GetFieldOfView();
 	VEC3 vpos = GetVPos();

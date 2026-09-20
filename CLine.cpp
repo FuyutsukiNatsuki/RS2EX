@@ -83,7 +83,7 @@ CPoleLink CPole::ms_Detect;
 bool CPole::RenderLink(){
 	if(ms_MinDist<0.0f) return false;
 	devSetTexture(0, NULL);
-	devSetLighting(FALSE);
+	RS2SetLighting(false);
 	devResetMatrix();
 	ms_Detect.Render(0xff00ffff);
 	return true;

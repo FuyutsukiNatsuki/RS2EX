@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "HighTimer.h"
 #include "CModelPlugin.h"
@@ -96,11 +97,11 @@ void C3DPluginMode::ScanInputPlugin(){
  *	レンダリング
  */
 void C3DPluginMode::RenderPlugin(){
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
-	devSetZRead(TRUE);
-	devSetZWrite(TRUE);
-	devSetLighting(TRUE);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_VERTEX);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_VERTEX);
+	RS2SetDepthTest(true);
+	RS2SetDepthWrite(true);
+	RS2SetLighting(true);
 	InitShadow();
 	CNamedObject::InitAfterRenderList();
 	CHeadlight::InitRenderList();
@@ -109,11 +110,11 @@ void C3DPluginMode::RenderPlugin(){
 	RenderShadow();
 	CNamedObject::AfterRenderAll();
 	CHeadlight::RenderAll();
-	devSetZRead(FALSE);
-	devSetZWrite(FALSE);
-	devSetLighting(FALSE);
-	devTEX_POINT(0);
-	devTEX_POINT(1);
+	RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
+	RS2SetLighting(false);
+	RS2SetTextureFilter(0, RS2_FILTER_POINT);
+	RS2SetTextureFilter(1, RS2_FILTER_POINT);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -201,9 +202,9 @@ void CModelPluginMode::ScanInput3DPlugin(){
  *	レンダリング
  */
 void CModelPluginMode::Render3DPlugin(){
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_MATERIAL);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_MATERIAL);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_MATERIAL);
 	RenderModelPlugin();
-	devSetState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+	RS2SetDiffuseColorSource(RS2_COLOR_FROM_VERTEX);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_VERTEX);
 }

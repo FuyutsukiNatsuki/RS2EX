@@ -248,22 +248,22 @@ void CEnvPlugin::Render(
 	if(g_HidefCaptureFlag) g_HidefCapture.Begin(skycolor);
 	else BeginScene(skycolor);
 	devSetState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
-	devSetZRead(FALSE);
-	devSetZWrite(FALSE);
-	devSetLighting(FALSE);
-	devBLEND_ADD2();
+	RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
+	RS2SetLighting(false);
+	RS2SetBlend(RS2_BLEND_ALPHA_ADD);
 	m_SunObject.RenderAP(1.0f);
-	devSetAmbient(0xffffffff);
+	RS2SetAmbientLight(0xffffffff);
 	IMoon im = m_Moon.begin();
 	for(; im!=m_Moon.end(); im++) im->Render(abstime, m_Latitude, sdir, rot);
-	devSetLighting(TRUE);
-	devBLEND_ALPHA();
-	devSetAmbient(g_NoLightColor = MaxColor(directional, ambient));
+	RS2SetLighting(true);
+	RS2SetBlend(RS2_BLEND_ALPHA);
+	RS2SetAmbientLight(g_NoLightColor = MaxColor(directional, ambient));
 	m_LandscapeObject.SetPos(GetVPos());
 	m_LandscapeObject.RenderAmb();
-	devSetZRead(TRUE);
-	devSetZWrite(TRUE);
-	devSetAmbient(ambient);
+	RS2SetDepthTest(true);
+	RS2SetDepthWrite(true);
+	RS2SetAmbientLight(ambient);
 }
 
 /*
@@ -277,13 +277,13 @@ void CEnvPlugin::RenderAfter(){
 	V3Norm(&sd, &sd);
 	VEC3 sunpos = vp+sd*100.0f;
 	devSetTexture(0, NULL);
-	devSetZRead(FALSE);
-	devSetZWrite(FALSE);
-	devSetLighting(FALSE);
+	RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
+	RS2SetLighting(false);
 	if(g_ConfigMode->GetSunLensFlare())
 		m_SunLensFlare.Render(sunpos, -sd, GetVDir(), flarealpha, -1.0f);
 	if(g_ConfigMode->GetSunWhiteout()) m_SunWhiteout.Render(-sd, flarealpha);
-	devSetZRead(TRUE);
-	devSetZWrite(TRUE);
-	devSetLighting(TRUE);
+	RS2SetDepthTest(true);
+	RS2SetDepthWrite(true);
+	RS2SetLighting(true);
 }

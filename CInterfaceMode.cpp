@@ -134,11 +134,11 @@ void CInterfaceMode::SpinGame(){
 	if(!DrawBackground()){
 		devResetMatrix();
 		devResetMaterial();
-		devSetZRead(FALSE);
-		devSetZWrite(FALSE);
-		devSetLighting(FALSE);
-		devTEX_POINT(0);
-		devTEX_POINT(1);
+		RS2SetDepthTest(false);
+		RS2SetDepthWrite(false);
+		RS2SetLighting(false);
+		RS2SetTextureFilter(0, RS2_FILTER_POINT);
+		RS2SetTextureFilter(1, RS2_FILTER_POINT);
 		g_Skin->DrawBackground(m_Camera ? m_Camera->IsLightOn() : true);
 	}
 	SpinSound();

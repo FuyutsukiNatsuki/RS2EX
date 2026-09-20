@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CRailPlugin.h"
@@ -346,22 +347,22 @@ void CStationPlugin::SetPreview(){
  *	ƒvƒŒƒrƒ…[
  */
 void CStationPlugin::PreviewStruct(){
-	devSetZRead(FALSE);
-	devSetZWrite(FALSE);
+	RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
 	devResetMaterial();
 	devResetMatrix();
-	devSetLighting(FALSE);
-	devTEX_POINT(0);
-	devTEX_POINT(1);
+	RS2SetLighting(false);
+	RS2SetTextureFilter(0, RS2_FILTER_POINT);
+	RS2SetTextureFilter(1, RS2_FILTER_POINT);
 	CLineDumpL dump(256);
 	MTX4 mtx = g_SystemObject[SYS_OBJ_LOCAL].GetPreviewObject()->GetMatrix();
 	CPlatform::ResetPlatformPlugin();
 	IPlatform ip = m_Platform.begin();
 	for(; ip!=m_Platform.end(); ip++) ip->Preview(&mtx, &dump);
 	dump.Render(true);
-	devSetZRead(TRUE);
-	devSetZWrite(TRUE);
-	devSetLighting(TRUE);
+	RS2SetDepthTest(true);
+	RS2SetDepthWrite(true);
+	RS2SetLighting(true);
 	g_ConfigMode->SetTexFilter();
 }
 

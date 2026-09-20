@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CPopMenu.h"
 #include "CSimpleDialog.h"
@@ -476,7 +477,7 @@ void CRailEditMode::RenderCursorScenery(){
 	if(ms_PhotoMode) return;
 	if(g_NetworkInitialized){
 		devResetMatrix();
-		devSetLighting(FALSE);
+		RS2SetLighting(false);
 		g_StrTex->RenderCenter(g_DispWidth/2, g_DispHeight/3,
 			ScaleColor(0xffffffff, g_BlinkAlpha), ScaleColor(0xff000000, g_BlinkAlpha),
 			lang(CannotEditInNetMode));
@@ -501,17 +502,17 @@ void CRailEditMode::RenderCursorScenery(){
 			if(CRailDetectCurve2D::IsDetected()){
 				CRailDetectCurve2D::RenderLink();
 				devResetMatrix();
-				devSetLighting(FALSE);
+				RS2SetLighting(false);
 				devSetTexture(0, NULL);
 	 			Draw3DPointAs2DRect(CRailDetectCurve2D::GetDetect().m_Pos, 0xff00ffff, 5);
 			}
 			if(m_WarpLinkFrom.m_Link && m_WarpLinkFrom.m_Link->GetScene()==g_Scene){
-				devSetLighting(TRUE);
+				RS2SetLighting(true);
 				g_LinkObject.SetPos(m_WarpLinkFrom.m_Pos);
 				g_LinkObject.SetDir(m_WarpLinkFrom.m_Dir, m_WarpLinkFrom.m_Up);
 				g_LinkObject.Render();
 				devResetMatrix();
-				devSetLighting(FALSE);
+				RS2SetLighting(false);
 				devSetTexture(0, NULL);
 				Draw3DPointAs2DRect(m_WarpLinkFrom.m_Pos, 0xffffff00, 5);
 				if(CRailDetectCurve2D::IsDetected()){
@@ -523,7 +524,7 @@ void CRailEditMode::RenderCursorScenery(){
 					}
 				}
 			}
-			devSetLighting(FALSE);
+			RS2SetLighting(false);
 			break;
 		case EM_EDIT_RAIL_BLOCK:
 			if(CheckAlt()) CRailDetectCurve2D::RenderLink();

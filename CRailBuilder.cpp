@@ -338,9 +338,9 @@ void CRailBuilder::Render(
 		bool renderlink = !IsLinkEmpty();
 		int i, lnum = 0;
 		if(renderlink){
-			devSetZRead(TRUE);
-			devSetZWrite(TRUE);
-			devSetLighting(TRUE);
+			RS2SetDepthTest(true);
+			RS2SetDepthWrite(true);
+			RS2SetLighting(true);
 			for(i = 0; i<m_Link.size() && i<ms_TrackNum; i++){
 				if(!m_Link[i].m_Link) continue;
 				lnum++;
@@ -350,9 +350,9 @@ void CRailBuilder::Render(
 			}
 		}
 		if(!m_Prev || renderlink){
-			devSetZRead(FALSE);
-			devSetZWrite(FALSE);
-			devSetLighting(FALSE);
+			RS2SetDepthTest(false);
+			RS2SetDepthWrite(false);
+			RS2SetLighting(false);
 			devResetMaterial();
 			devResetMatrix();
 			if(renderlink){
@@ -387,9 +387,9 @@ void CRailBuilder::Render(
 		}
 		if(draw){
 			dump->Render(true);
-			devSetZRead(TRUE);
-			devSetZWrite(TRUE);
-			devSetLighting(TRUE);
+			RS2SetDepthTest(true);
+			RS2SetDepthWrite(true);
+			RS2SetLighting(true);
 			g_ArrowObject.SetPos(m_Next ? m_Next->m_Pos : m_Pos);
 			g_ArrowObject.RotY(2.0f*D3DX_PI/RENDER_TARGET_FPS);
 			g_ArrowObject.Render();

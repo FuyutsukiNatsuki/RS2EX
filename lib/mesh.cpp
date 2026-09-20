@@ -410,8 +410,8 @@ void CMesh::RenderCustom(MTX4 *pMtx, CNamedObject *nobj){
 				devTexTransform(0, &m_pTexTrans[order].GetMTX4());
 			}
 			if(flag&32){
-				devTEX_POINT(0);
-				devTEX_POINT(1);
+				RS2SetTextureFilter(0, RS2_FILTER_POINT);
+				RS2SetTextureFilter(1, RS2_FILTER_POINT);
 				devSetState(D3DRS_ALPHATESTENABLE, TRUE);
 				devSetState(D3DRS_ALPHAREF, 0x00);
 				devSetState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);

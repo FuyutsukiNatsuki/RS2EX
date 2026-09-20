@@ -81,8 +81,8 @@ void Opening(){
 		const int letsize = 32, letsp = 24;
 		BeginScene();
 		int i;
-		devTEX_LINEAR(0);
-		devBLEND_ADD2();
+		RS2SetTextureFilter(0, RS2_FILTER_LINEAR);
+		RS2SetBlend(RS2_BLEND_ALPHA_ADD);
 		RS2BindTexture(0, g_OpeningTexture.GetRef());
 		for(i = 0; i<letters; i++){
 			int begin = (anim-letl)*i/(letters-1), end = begin+letl;
@@ -114,8 +114,8 @@ void Opening(){
 			TexMap2DRect(x1, y1, x2, y2, col);
 		//	Dialog("%d %d %p", x, y, col);
 		}
-		devTEX_POINT(0);
-		devBLEND_ALPHA();
+		RS2SetTextureFilter(0, RS2_FILTER_POINT);
+		RS2SetBlend(RS2_BLEND_ALPHA);
 		if(cnt>=anim){
 			const int pitypes = 15;
 			static char *pitype[pitypes] = {
@@ -153,7 +153,7 @@ void Opening(){
 void Main(){
 	SetListenerSens(10.0f);
 	SetMasterVolume(/*DSBVOLUME_MAX*/);
-	devSetState(D3DRS_AMBIENTMATERIALSOURCE, D3DMCS_COLOR1);
+	RS2SetAmbientColorSource(RS2_COLOR_FROM_VERTEX);
 	Randomize();
 	InitSystemObject();
 	InitSystemSwitch();

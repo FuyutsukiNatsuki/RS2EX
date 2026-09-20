@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CScene.h"
 #include "CRailDetectCurve.h"
@@ -23,7 +24,7 @@ CRailLinkTemp CRailDetectCurve2D::ms_Detect;
  */
 bool CRailDetectCurve2D::RenderLink(){
 	if(ms_MinDist<0.0f || ms_Detect.m_Link->GetScene()!=g_Scene) return false;
-	devSetLighting(TRUE);
+	RS2SetLighting(true);
 	g_LinkObject.Render();
 	ms_Detect.m_Link->ShowSegment();
 	return true;
@@ -135,7 +136,7 @@ CRailLinkTemp CRailDetectCurve3D::ms_Detect;
  */
 bool CRailDetectCurve3D::RenderLink(){
 	if(ms_MinDist<0.0f) return false;
-	devSetLighting(TRUE);
+	RS2SetLighting(true);
 	g_LinkObject.Render();
 	ms_Detect.m_Link->ShowSegment();
 	return true;

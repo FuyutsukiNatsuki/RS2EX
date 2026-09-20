@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-21.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CShadowVolume.h"
@@ -158,13 +159,13 @@ void DrawGrid(
 	move._11 *= gscale; move._22 *= gscale; move._33 *= gscale;
 	pos = (pos-tpos)/gscale;
 	devSetTexture(0, NULL);
-	devSetZRead(FALSE);
-	devSetZWrite(FALSE);
-	devSetLighting(FALSE);
+	RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
+	RS2SetLighting(false);
 	devTransform(&move);
 	devResetMaterial();
-	devTEX_POINT(0);
-	devTEX_POINT(1);
+	RS2SetTextureFilter(0, RS2_FILTER_POINT);
+	RS2SetTextureFilter(1, RS2_FILTER_POINT);
 	g_DetailGridVertex.RenderLL();
 	Draw3DLine(pos, VEC3(pos.x, 0.0f, GRID_SIZE), 0xffff8000, 0x00ff8000);
 	Draw3DLine(pos, VEC3(pos.x, 0.0f, -GRID_SIZE), 0xffff8000, 0x00ff8000);
@@ -230,9 +231,9 @@ void DrawFocus(
 ){
 	devResetMatrix();
 	devSetTexture(0, NULL);
-	devSetZRead(FALSE);
-	devSetZWrite(FALSE);
-	devSetLighting(FALSE);
+	RS2SetDepthTest(false);
+	RS2SetDepthWrite(false);
+	RS2SetLighting(false);
 	devResetMaterial();
 	Draw3DLine(pos, pos+VEC3(0.0f, 0.0f, TANGENT_LEN), 0xffff8000, 0x00ff8000);
 	Draw3DLine(pos, pos+VEC3(0.0f, 0.0f, -TANGENT_LEN), 0xffff8000, 0x00ff8000);
