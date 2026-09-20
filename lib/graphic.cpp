@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21.
 
 #include "headers.h"
 #include "debug.h"
