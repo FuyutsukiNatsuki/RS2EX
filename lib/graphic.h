@@ -70,6 +70,8 @@ BOOL SetPresentParam();
 D3DFORMAT FindDepthStencilFormat(D3DFORMAT form);
 const char *FormatToString(D3DFORMAT f);
 
+//	[RS2EX] Called by the renderer backend when a resize forces a reset.
+void AffectWindowSize();
 void InitMetrics();
 void InitRenderState();
 void GetDeviceCaps();

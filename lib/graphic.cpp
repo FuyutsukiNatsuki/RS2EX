@@ -360,61 +360,17 @@ void GetDeviceCaps(){
 		sv3.capsTexBump);
 }
 
-/*
- *	reset
- *
- *	[RS2EX] Compatibility entry point.  There is exactly one reset
- *	implementation and it belongs to the backend - see RS2D3D8Backend.cpp.
- */
-BOOL ResetD3DDevice()
-{
-	return GetRS2Renderer().Reset() ? TRUE : FALSE;
-}
 
 /*
  *	シーンの開始
  *
  *	c	: クリアカラー、c = 0でクリアしない。
+ *
+ *	[RS2EX] Compatibility wrapper.  The device work moved to the renderer
+ *	backend; the view-derived matrices below are engine math and stay here.
  */
 BOOL BeginScene(D3DCOLOR c){
-	//	デバイスのテスト
-	HRESULT hr = sv3.pDev->TestCooperativeLevel();
-
-	if(hr==D3DERR_DEVICELOST){
-		Debug("3Dデバイスがロストしています.\n");
-		return FALSE;
-	}else if(hr==D3DERR_DEVICENOTRESET){
-		Debug("3Dデバイスのリセットが必要です.\n");
-		/*
-		 *	本来ならここで sv3.pDev->Reset()を呼び出してデバイスの再設定
-		 *	を試みるべきだが、その前にデバイスに関連するオブジェクトを解放
-		 *	しておかなくてはならない。
-		 *
-		 *	そのタイミングをプログラマに通知したり、解放の義務をおしつける
-		 *	のは当ライブラリのコンセプトに反する。　
-		 *
-		 *	従って、ここでプログラム終了させることにする。
-		 */
-	//	SendWM_CLOSE();
-		if(!ResetD3DDevice()) return FALSE;
-	}
-	else if(sv3.d3dpp.BackBufferWidth!=svw.winW || sv3.d3dpp.BackBufferHeight!=svw.winH)
-	{
-		Debug("バッファサイズを変更します.\n");
-		sv3.d3dpp.BackBufferWidth	= svw.winW;
-		sv3.d3dpp.BackBufferHeight	= svw.winH;
-		sv3.width  = svw.winW;
-		sv3.height = svw.winH;
-		AffectWindowSize();
-		if(!ResetD3DDevice()) return FALSE;
-	}
-	//	シーン開始
-	if(FAILED(sv3.pDev->BeginScene())) return FALSE;
-
-	//	クリア
-	sv3.pDev->Clear(0, NULL, (c!=0 ? D3DCLEAR_TARGET : 0)|g_BufferClearMode, c, 1.0f, 0);
-	//	ビュートランスフォーム
-	sv3.pDev->SetTransform(D3DTS_VIEW, &sv3.mtxView);
+	if(!GetRS2Renderer().BeginRenderPass(c, c!=0)) return FALSE;
 
 	//	各種変換行列の計算
 	float tmp;
@@ -428,10 +384,13 @@ BOOL BeginScene(D3DCOLOR c){
 
 /*
  *	シーンの終了
+ *
+ *	[RS2EX] Still means "end the pass and present it", so the call sites do not
+ *	have to change.  The two halves are separate operations underneath.
  */
 void EndScene(){
-	sv3.pDev->EndScene();
-	sv3.pDev->Present(NULL, NULL, NULL, NULL);
+	GetRS2Renderer().EndRenderPass();
+	GetRS2Renderer().Present();
 }
 
 /*

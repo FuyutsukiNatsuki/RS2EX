@@ -9,6 +9,10 @@
 #include "RS2Renderer.h"
 #include "RS2D3D8Backend.h"
 
+//	Owned by lib/graphic.cpp; the clear mask depends on the depth/stencil
+//	format the backend picked at start-up.
+extern DWORD g_BufferClearMode;
+
 CRS2D3D8Backend::CRS2D3D8Backend()
 	: m_Initialized(false),
 	  m_ViewportWidth(1),
@@ -168,20 +172,84 @@ bool CRS2D3D8Backend::Reset()
 	return true;
 }
 
-//	--- not yet owned by the backend -------------------------------------------
-//	Filled in by the render-pass and viewport commits.
+/*
+ *	シーンの開始
+ *
+ *	[RS2EX] Moved from lib/graphic.cpp BeginScene().  Device health, the
+ *	resize-triggered reset, the D3D scene begin, the buffer clear and the view
+ *	transform are all backend work.  The inverse/world-to-screen matrices are
+ *	not - they are engine math and stay in the compatibility wrapper.
+ *
+ *	The checks run once per pass, not once per frame, because stereo and
+ *	window division begin several passes per frame.  That is what 2.15 did.
+ *
+ *	clearColor		: clear colour, used only when clearColorBuffer is true
+ *	clearColorBuffer: false to keep the colour buffer and clear depth only
+ */
+bool CRS2D3D8Backend::BeginRenderPass(
+	unsigned int clearColor,
+	bool clearColorBuffer
+){
+	//	デバイスのテスト
+	HRESULT hr = sv3.pDev->TestCooperativeLevel();
 
-bool CRS2D3D8Backend::BeginRenderPass(unsigned int clearColor, bool clearColorBuffer){
-	(void)clearColor;
-	(void)clearColorBuffer;
-	return false;
+	if(hr==D3DERR_DEVICELOST){
+		Debug("3Dデバイスがロストしています.\n");
+		return false;
+	}else if(hr==D3DERR_DEVICENOTRESET){
+		Debug("3Dデバイスのリセットが必要です.\n");
+		/*
+		 *	本来ならここで sv3.pDev->Reset()を呼び出してデバイスの再設定
+		 *	を試みるべきだが、その前にデバイスに関連するオブジェクトを解放
+		 *	しておかなくてはならない。
+		 *
+		 *	そのタイミングをプログラマに通知したり、解放の義務をおしつける
+		 *	のは当ライブラリのコンセプトに反する。　
+		 *
+		 *	従って、ここでプログラム終了させることにする。
+		 */
+	//	SendWM_CLOSE();
+		if(!Reset()) return false;
+	}
+	else if(sv3.d3dpp.BackBufferWidth!=svw.winW || sv3.d3dpp.BackBufferHeight!=svw.winH)
+	{
+		Debug("バッファサイズを変更します.\n");
+		sv3.d3dpp.BackBufferWidth	= svw.winW;
+		sv3.d3dpp.BackBufferHeight	= svw.winH;
+		sv3.width  = svw.winW;
+		sv3.height = svw.winH;
+		AffectWindowSize();
+		if(!Reset()) return false;
+	}
+	//	シーン開始
+	if(FAILED(sv3.pDev->BeginScene())) return false;
+
+	//	クリア
+	sv3.pDev->Clear(0, NULL,
+		(clearColorBuffer ? D3DCLEAR_TARGET : 0)|g_BufferClearMode, clearColor, 1.0f, 0);
+	//	ビュートランスフォーム
+	sv3.pDev->SetTransform(D3DTS_VIEW, &sv3.mtxView);
+
+	return true;
 }
 
+/*
+ *	シーンの終了
+ *
+ *	[RS2EX] Ending a pass no longer presents it.  Stereo, window division and
+ *	offscreen rendering all finish a D3D scene without putting it on screen,
+ *	and offscreen must never reach the swap chain at all.
+ */
 void CRS2D3D8Backend::EndRenderPass(){
+	sv3.pDev->EndScene();
 }
 
 void CRS2D3D8Backend::Present(){
+	sv3.pDev->Present(NULL, NULL, NULL, NULL);
 }
+
+//	--- not yet owned by the backend -------------------------------------------
+//	Filled in by the viewport commit.
 
 void CRS2D3D8Backend::SetViewport(
 	unsigned int x,
