@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 typedef LPDIRECT3DVERTEXBUFFER8 LPVB8;
 typedef D3DPRIMITIVETYPE PRIMTYPE;
@@ -138,8 +139,7 @@ public:
 	 *	頂点数の取得
 	 */
 	UINT Count(){return m_num;}
-	/*
-	 *	頂点バッファの取得
-	 */
-	LPVB8 GetObject(){return m_pVB;}
+	//	[RS2EX] GetObject() removed.  LPVB8 appeared nowhere outside this header,
+	//	so the buffer never escaped the class and no compatibility accessor is
+	//	needed - unlike CTexture, whose handle 11 call sites still require.
 };

@@ -1,9 +1,11 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-20.
 
 #include "headers.h"
 #include "debug.h"
 #include "graphic.h"
 #include "vertex.h"
+#include "..\RS2D3D8Resources.h"
 
 /*
  *	３角形の法線ベクトルを計算
@@ -58,8 +60,6 @@ CVertex::~CVertex(){
  *	size	: 配列のサイズ
  */
 BOOL CVertex::Create(LPVOID pSrc, DWORD fvf, UINT size){
-	HRESULT hr;
-
 	Free();	//	既存ならバッファを解放
 	m_fvf = fvf;
 
@@ -76,20 +76,19 @@ BOOL CVertex::Create(LPVOID pSrc, DWORD fvf, UINT size){
 	}	//	D3DXGetFVFVertexSize()
 
 	//	バッファの作成
-	hr = sv3.pDev->CreateVertexBuffer(
-		size, 0, fvf, D3DPOOL_MANAGED, &m_pVB);
-	if(FAILED(hr)) return FALSE;
+	//	[RS2EX] The managed pool lives in the resource module now; that is what
+	//	keeps vertex buffers out of device-reset handling entirely.
+	if(!RS2D3D8_CreateVertexBuffer(size, fvf, &m_pVB)) return FALSE;
 
 	//	ロックして書込み
-	LPVOID pDst;
-
-	hr = m_pVB->Lock(0, size, (BYTE **)&pDst, 0);
-
-	if(FAILED(hr)) return FALSE;
-
-	memcpy(pDst, pSrc, size);
-	m_pVB->Unlock();
-
+	if(!RS2D3D8_UploadVertexBuffer(m_pVB, pSrc, size)){
+		//	[RS2EX] 2.15 returned FALSE here with the buffer still allocated and
+		//	its contents undefined.  Callers ignore the return value, so that
+		//	left a drawable buffer full of garbage; an empty one matches what
+		//	the unsupported-FVF path above already produces.
+		RS2D3D8_ReleaseVertexBuffer(&m_pVB);
+		return FALSE;
+	}
 	return TRUE;
 }
 
@@ -97,7 +96,7 @@ BOOL CVertex::Create(LPVOID pSrc, DWORD fvf, UINT size){
  *	頂点バッファ解放
  */
 void CVertex::Free(){
-	RELEASE(m_pVB);
+	RS2D3D8_ReleaseVertexBuffer(&m_pVB);
 }
 
 /*
@@ -106,17 +105,14 @@ void CVertex::Free(){
  *	※ロック後は必ずアンロックすること。
  */
 BOOL CVertex::Lock(LPVOID *ppBuf){
-	if(FAILED(m_pVB->Lock(0, 0/*全体*/, (BYTE **)ppBuf, 0)))
-		return FALSE;
-	else
-		return TRUE;
+	return RS2D3D8_LockVertexBuffer(m_pVB, (void **)ppBuf);
 }
 
 /*
  *	頂点バッファをアンロック
  */
 void CVertex::Unlock(){
-	m_pVB->Unlock();
+	RS2D3D8_UnlockVertexBuffer(m_pVB);
 }
 
 /*
