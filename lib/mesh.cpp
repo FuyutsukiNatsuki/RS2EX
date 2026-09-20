@@ -705,6 +705,10 @@ CMesh *CMeshList::Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv){
 	p->pNext = q;
 	p->strName = strName;
 	p->nRef = 1;
+	//	[RS2EX] cTrans is part of the lookup key a few lines above but was
+	//	never assigned here, so the comparison read whatever the heap left in
+	//	the field and cache hits became a coin toss.
+	p->cTrans = cTrans;
 	p->nMipLv = nMipLv;
 
 	return &p->m_Mesh;
