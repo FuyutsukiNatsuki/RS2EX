@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "CPixelbit.h"
 #include "Capture.h"
+#include "RS2Renderer.h"
 #include "CCamera.h"
 #include "CSkinPlugin.h"
 #include "CVideoMode.h"
@@ -68,6 +69,11 @@ void ReleaseCaptureRS(){
  *	‚‰æŽ¿ŽB‰e
  */
 void HidefCapture(CSceneryMode *scenerymode){
+	//	[RS2EX] Readback is a deferred capability (v0.0.9 WP9).  A backend
+	//	that cannot read rendered pixels answers false here, and this path
+	//	stops rather than reaching for a device it does not have.
+	if(!GetRS2Renderer().SupportsReadback()) return;
+
 	LPTEX8 tex;
 	HRESULT hr = sv3.pDev->CreateTexture(
 		g_HidefBufferSize, g_HidefBufferSize,

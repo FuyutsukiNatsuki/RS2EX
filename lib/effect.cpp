@@ -11,6 +11,7 @@
 #include "vertex.h"
 #include "draw.h"
 #include "effect.h"
+#include "..\RS2Renderer.h"
 #include "..\RS2MaterialBinding.h"
 
 //	外部グローバル
@@ -27,6 +28,11 @@ extern int g_DispHeight;
  */
 D3DCOLOR GetPixelColor(int x, int y){
 	//	画面外
+	//	[RS2EX] Readback is a deferred capability (v0.0.9 WP9).  A backend
+	//	that cannot read rendered pixels answers false here, and this path
+	//	stops rather than reaching for a device it does not have.
+	if(!GetRS2Renderer().SupportsReadback()) return 0;
+
 	if(x<0 || x>=sv3.width || y<0 || y>=sv3.height)
 		return 0;
 

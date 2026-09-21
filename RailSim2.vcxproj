@@ -209,6 +209,7 @@
     <ClCompile Include="RS2Lighting.cpp" />
     <ClCompile Include="RS2D3D8RenderState.cpp" />
     <ClCompile Include="RS2D3D8Draw.cpp" />
+    <ClCompile Include="RS2D3D8Text.cpp" />
     <ClCompile Include="CSkinSelectMode.cpp" />
     <ClCompile Include="CVideoMode.cpp" />
     <ClCompile Include="C3DPluginMode.cpp" />
@@ -284,7 +285,6 @@
     <ClCompile Include="lib\draw.cpp" />
     <ClCompile Include="lib\editbox.cpp" />
     <ClCompile Include="lib\effect.cpp" />
-    <ClCompile Include="lib\font.cpp" />
     <ClCompile Include="lib\graphic.cpp" />
     <ClCompile Include="lib\input.cpp" />
     <ClCompile Include="lib\main.cpp" />
@@ -448,6 +448,7 @@
     <ClInclude Include="RS2Color.h" />
     <ClInclude Include="RS2Draw.h" />
     <ClInclude Include="RS2D3D8Draw.h" />
+    <ClInclude Include="RS2Text.h" />
     <ClInclude Include="Script.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemCover.h" />
@@ -460,7 +461,6 @@
     <ClInclude Include="lib\draw.h" />
     <ClInclude Include="lib\editbox.h" />
     <ClInclude Include="lib\effect.h" />
-    <ClInclude Include="lib\font.h" />
     <ClInclude Include="lib\frame.h" />
     <ClInclude Include="lib\graphic.h" />
     <ClInclude Include="lib\headers.h" />

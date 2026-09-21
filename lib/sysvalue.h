@@ -12,7 +12,6 @@ int g_DispHeight = 480;	//	âÊñ çÇ
 
 SYSVALUE_W svw;		//	Window
 SYSVALUE_3D sv3;	//	3D
-SYSVALUE_F svf;		//	Font
 SYSVALUE_I svi;		//	Input
 SYSVALUE_S svs;		//	Sound
 //SYSVALUE_M svm;		//	Music

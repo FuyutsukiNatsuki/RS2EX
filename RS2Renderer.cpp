@@ -159,3 +159,20 @@ void CRS2Renderer::GetViewportSize(unsigned int *width, unsigned int *height) co
 const char *CRS2Renderer::GetBackendName() const{
 	return m_Backend ? m_Backend->GetName() : "none";
 }
+
+
+bool CRS2Renderer::IsReady() const{
+	return m_Backend!=NULL;
+}
+
+void CRS2Renderer::ClearTarget(unsigned int color){
+	if(m_Backend) m_Backend->ClearTarget(color);
+}
+
+/*
+ *	False when there is no backend at all: a caller asking whether readback
+ *	works should get "no" rather than a crash.
+ */
+bool CRS2Renderer::SupportsReadback() const{
+	return m_Backend ? m_Backend->SupportsReadback() : false;
+}

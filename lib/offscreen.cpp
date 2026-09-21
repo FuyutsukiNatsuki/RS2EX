@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21.
 
 #include "headers.h"
 #include "debug.h"
@@ -49,6 +49,11 @@ COffScreen::~COffScreen(){
  *	w, h	: サイズ　※2の乗数のみ
  */
 BOOL COffScreen::Create(int w, int h){
+	//	[RS2EX] Readback is a deferred capability (v0.0.9 WP9).  A backend
+	//	that cannot read rendered pixels answers false here, and this path
+	//	stops rather than reaching for a device it does not have.
+	if(!GetRS2Renderer().SupportsReadback()) return FALSE;
+
 	Free();	//	既存なら解放
 
 	//	[RS2EX] Remember the request before touching the device, so a reset can

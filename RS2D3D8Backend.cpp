@@ -348,13 +348,14 @@ bool CRS2D3D8Backend::Initialize(int width, int height){
 
 	//	環境設定
 	InitMetrics();
+	InitClipStatus();
 	InitRenderState();
 
 	//	関連オブジェクトの作成
 	RS2SetDirectionalLight(RS2MakeDirection(1.0f, -1.0f, 1.0f),
 		RS2MakeColor4(0.5f, 0.5f, 0.5f, 0.0f));
 	D3DXCreateSprite(sv3.pDev, &sv3.pSpr);
-	CreateFont(FONT_HEIGHT, 0xffffffff, FW_NORMAL);
+	RS2CreateTextFont(FONT_HEIGHT, 0xffffffff, false);
 
 	Debug("[RS2EX Renderer] device = %s\n", sv3.type);
 
@@ -370,7 +371,7 @@ bool CRS2D3D8Backend::Initialize(int width, int height){
  *	unchanged and stays safe on a partially initialised device.
  */
 void CRS2D3D8Backend::Shutdown(){
-	FreeFont();
+	RS2DestroyTextFont();
 	RELEASE(sv3.pSpr);
 	RELEASE(sv3.pDev);
 	RELEASE(sv3.pD3D);
@@ -393,7 +394,7 @@ bool CRS2D3D8Backend::Reset()
 	//	any borrowed swap-chain surface, or Reset() fails outright.
 	GetRS2ResetRegistry().NotifyBeforeReset();
 
-	FreeFont();
+	RS2DestroyTextFont();
 	HRESULT hr = sv3.pDev->Reset(&sv3.d3dpp);
 	if(FAILED(hr))
 	{
@@ -401,8 +402,9 @@ bool CRS2D3D8Backend::Reset()
 		SendWM_CLOSE();
 		return false;
 	}
-	CreateFont();
+	RS2CreateTextFont(16, 0xffffffff, false);
 	InitMetrics();
+	InitClipStatus();
 	InitRenderState();
 
 	//	[RS2EX] Rebuilt only now, because a participant may need renderer state
@@ -545,4 +547,35 @@ void CRS2D3D8Backend::SetViewport(
 void CRS2D3D8Backend::GetViewportSize(unsigned int *width, unsigned int *height) const{
 	if(width) *width = m_ViewportWidth;
 	if(height) *height = m_ViewportHeight;
+}
+
+
+/*
+ *	Clear the whole target.
+ *
+ *	[RS2EX] Moved out of InitRenderState in v0.0.9.  g_BufferClearMode is the
+ *	backend's own decision about whether this device has a stencil buffer, so
+ *	the clear that depends on it belongs here too.
+ */
+void CRS2D3D8Backend::ClearTarget(unsigned int color){
+	if(!sv3.pDev) return;
+
+	sv3.pDev->Clear(0, NULL,
+		D3DCLEAR_TARGET|g_BufferClearMode, (D3DCOLOR)color, 1.0f, 0);
+}
+
+/*
+ *	Direct3D 8 clip status.
+ *
+ *	[RS2EX] Moved out of InitMetrics in v0.0.9.  It is a device setting with
+ *	no engine meaning - InitMetrics is about matrices - and no other backend
+ *	would have an equivalent to set.
+ */
+void CRS2D3D8Backend::InitClipStatus(){
+	if(!sv3.pDev) return;
+
+	D3DCLIPSTATUS8 cs;
+
+	cs.ClipUnion = cs.ClipIntersection = D3DCS_ALL;
+	sv3.pDev->SetClipStatus(&cs);
 }

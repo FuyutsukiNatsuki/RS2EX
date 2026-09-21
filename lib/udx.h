@@ -21,7 +21,8 @@
 #include "vertex.h"
 #include "draw.h"
 #include "texture.h"
-#include "font.h"
+//	[RS2EX] font.h removed in v0.0.9.  Live text is RS2Text.h; the D3DX
+//	font it owned is in the Direct3D 8 implementation.
 //#include "sprite.h"
 #include "mesh.h"
 #include "object.h"

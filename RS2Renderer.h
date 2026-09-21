@@ -47,6 +47,11 @@ public:
 
 	virtual bool Reset() = 0;
 
+	virtual void ClearTarget(unsigned int color) = 0;
+
+	//	Whether this backend can read rendered pixels back.  See CRS2Renderer.
+	virtual bool SupportsReadback() const = 0;
+
 	virtual void SetViewport(
 		unsigned int x,
 		unsigned int y,
@@ -102,6 +107,34 @@ public:
 	//	from the device.  A read-back has no natural equivalent in an explicit
 	//	API, and the caller only ever wants the aspect ratio.
 	void GetViewportSize(unsigned int *width, unsigned int *height) const;
+
+	/*
+	 *	Whether a backend is initialised and can be drawn to.
+	 *
+	 *	[RS2EX] Replaces the "if(!sv3.pDev) return" checks high-level code used
+	 *	to make.  Asking whether a Direct3D 8 device exists is the wrong
+	 *	question for code that should not know which backend is running.
+	 */
+	bool IsReady() const;
+
+	/*
+	 *	Clear the whole target, including depth and stencil.
+	 *
+	 *	[RS2EX] The one-time startup clear.  Per-frame clearing belongs to
+	 *	BeginRenderPass; this is the separate one InitRenderState issued before
+	 *	the first frame.
+	 */
+	void ClearTarget(unsigned int color);
+
+	/*
+	 *	Whether the backend can read rendered pixels back.
+	 *
+	 *	[RS2EX] Capture, the offscreen target and GetPixelColor all depend on
+	 *	readback.  v0.0.9 leaves them on Direct3D 8 deliberately, so a future
+	 *	backend has to answer false here rather than have those paths reach for
+	 *	a device it does not have.  The D3D8 backend answers true.
+	 */
+	bool SupportsReadback() const;
 
 	const char *GetBackendName() const;
 };

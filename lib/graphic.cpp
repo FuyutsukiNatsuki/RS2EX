@@ -7,7 +7,7 @@
 #include "graphic.h"
 #include "render.h"
 #include "texture.h"
-#include "font.h"
+#include "..\RS2Text.h"
 #include "frame.h"
 #include "..\Const.h"
 #include "..\RS2Renderer.h"
@@ -58,7 +58,7 @@ void FreeDirect3D(){
  */
 void AffectWindowSize()
 {
-	if(!sv3.pDev) return;
+	if(!GetRS2Renderer().IsReady()) return;
 
 	//int width = sv3.width, height = sv3.height;
 	int width = svw.winW, height = svw.winH;
@@ -107,11 +107,8 @@ void InitMetrics(){
 		&D3DXVECTOR3(0.0f, 1.0f, 0.0f));
 	RS2SetViewTransform(sv3.mtxView);
 
-	//	クリッピング設定
-	D3DCLIPSTATUS8 cs;
-
-	cs.ClipUnion = cs.ClipIntersection = D3DCS_ALL;
-	sv3.pDev->SetClipStatus(&cs);
+	//	[RS2EX] The clip status moved into the D3D8 backend in v0.0.9: it is a
+	//	device setting, and InitMetrics is about matrices.
 
 	//	向き行列の作成
 	sv3.mtxFront = MTX4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
@@ -137,8 +134,10 @@ void InitRenderState(){
 	//	here: it is not render state, and it depends on g_StencilEnabled.
 	RS2ApplyInitialRenderState();
 
-	g_BufferClearMode = D3DCLEAR_ZBUFFER | (g_StencilEnabled ? D3DCLEAR_STENCIL : 0);
-	sv3.pDev->Clear(0, NULL, D3DCLEAR_TARGET|g_BufferClearMode, 0, 1.0f, 0);
+	//	[RS2EX] The startup clear moved behind the renderer in v0.0.9, along
+	//	with g_BufferClearMode, which is the backend's own answer to whether
+	//	this device has a stencil buffer.
+	GetRS2Renderer().ClearTarget(0);
 }
 
 

@@ -8,7 +8,7 @@
 #include "graphic.h"
 #include "draw.h"
 #include "texture.h"
-#include "font.h"
+#include "..\RS2Text.h"
 #include "input.h"
 #include "sound.h"
 #include "wave.h"
@@ -191,40 +191,40 @@ void CEditBox::Render(){
 
 		string tmpstr(&m_str[0], &m_str[m_pos]);
 		m_show.insert(m_pos, m_comp);
-		int tbw = (m_show.size()+1)*svf.size/2;
+		int tbw = (m_show.size()+1)*RS2GetTextHeight()/2;
 		if(tbw<m_width) tbw = m_width;
 		if(m_pos<m_selpos){ sel1 += m_comp.size(); sel2 += m_comp.size(); }
-		Grad2DRect(m_x-BASE_MARGINX, m_y, m_x+tbw+BASE_MARGINX, m_y+svf.size,
+		Grad2DRect(m_x-BASE_MARGINX, m_y, m_x+tbw+BASE_MARGINX, m_y+RS2GetTextHeight(),
 			g_Skin->m_EditCtrlData.m_EditBaseColor);
-		if(sel1!=sel2) Grad2DRect(m_x+sel1*svf.size/2, m_y,
-			m_x+sel2*svf.size/2, m_y+svf.size, g_Skin->m_EditCtrlData.m_SelectedBaseColor);
+		if(sel1!=sel2) Grad2DRect(m_x+sel1*RS2GetTextHeight()/2, m_y,
+			m_x+sel2*RS2GetTextHeight()/2, m_y+RS2GetTextHeight(), g_Skin->m_EditCtrlData.m_SelectedBaseColor);
 
 		for(i = 0; i<n-1; i++){
 			D3DCOLOR col = g_Skin->m_EditCtrlData.
 				m_ConvertClauseColor[pAttr[pClause[i]]==ATTR_TARGET_CONVERTED];
-			int tx = m_x+((m_pos+pClause[i])*svf.size/2)+1, ty = m_y+svf.size-2;
-			int tx2 = m_x+((m_pos+pClause[i+1])*svf.size/2)-1;
+			int tx = m_x+((m_pos+pClause[i])*RS2GetTextHeight()/2)+1, ty = m_y+RS2GetTextHeight()-2;
+			int tx2 = m_x+((m_pos+pClause[i+1])*RS2GetTextHeight()/2)-1;
 			Draw2DLine(tx, ty, tx2, ty, col);
 			Draw2DLine(tx, ty+1, tx2, ty+1, col);
 		}
 
-		Text(m_x, m_y, g_Skin->m_EditCtrlData.m_EditFontColor, tmpstr.c_str());
-		Text(m_x+m_pos*svf.size/2, m_y,
+		RS2DrawText(m_x, m_y, g_Skin->m_EditCtrlData.m_EditFontColor, tmpstr.c_str());
+		RS2DrawText(m_x+m_pos*RS2GetTextHeight()/2, m_y,
 			g_Skin->m_EditCtrlData.m_ConvertFontColor, m_comp.c_str());
-		Text(m_x+(m_pos+m_comp.size())*svf.size/2, m_y,
+		RS2DrawText(m_x+(m_pos+m_comp.size())*RS2GetTextHeight()/2, m_y,
 			g_Skin->m_EditCtrlData.m_EditFontColor, &m_str[m_pos]);
 
 		delete [] pClause;
 		delete [] pAttr;
 	}else{
 		//	文字列を表示
-		int tbw = (m_show.size()+1)*svf.size/2;
+		int tbw = (m_show.size()+1)*RS2GetTextHeight()/2;
 		if(tbw<m_width) tbw = m_width;
-		Grad2DRect(m_x-BASE_MARGINX, m_y, m_x+tbw+BASE_MARGINX, m_y+svf.size,
+		Grad2DRect(m_x-BASE_MARGINX, m_y, m_x+tbw+BASE_MARGINX, m_y+RS2GetTextHeight(),
 			g_Skin->m_EditCtrlData.m_EditBaseColor);
-		if(sel1!=sel2) Grad2DRect(m_x+sel1*svf.size/2, m_y,
-			m_x+sel2*svf.size/2, m_y+svf.size, g_Skin->m_EditCtrlData.m_SelectedBaseColor);
-		Text(m_x, m_y, g_Skin->m_EditCtrlData.m_EditFontColor, m_show.c_str());
+		if(sel1!=sel2) Grad2DRect(m_x+sel1*RS2GetTextHeight()/2, m_y,
+			m_x+sel2*RS2GetTextHeight()/2, m_y+RS2GetTextHeight(), g_Skin->m_EditCtrlData.m_SelectedBaseColor);
+		RS2DrawText(m_x, m_y, g_Skin->m_EditCtrlData.m_EditFontColor, m_show.c_str());
 		//	キャレットを表示
 		DrawCaret();
 	}
@@ -236,9 +236,9 @@ void CEditBox::Render(){
 void CEditBox::DrawCaret(){
 	m_frame = (m_frame+1)%BLINK_FRAME;
 	if(m_frame<BLINK_FRAME/2){
-		int tx = m_x+(m_pos*svf.size/2), ty = m_y+svf.size-2;
-		Draw2DLine(tx, ty, tx+svf.size/2, ty, g_Skin->m_EditCtrlData.m_ConvertFontColor);
-		Draw2DLine(tx, ty+1, tx+svf.size/2, ty+1, g_Skin->m_EditCtrlData.m_ConvertFontColor);
+		int tx = m_x+(m_pos*RS2GetTextHeight()/2), ty = m_y+RS2GetTextHeight()-2;
+		Draw2DLine(tx, ty, tx+RS2GetTextHeight()/2, ty, g_Skin->m_EditCtrlData.m_ConvertFontColor);
+		Draw2DLine(tx, ty+1, tx+RS2GetTextHeight()/2, ty+1, g_Skin->m_EditCtrlData.m_ConvertFontColor);
 	}
 }
 

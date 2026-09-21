@@ -51,6 +51,11 @@ public:
 	virtual void Present();
 
 	virtual bool Reset();
+	virtual void ClearTarget(unsigned int color);
+
+	//	D3D8-only device setup, called from Initialize and Reset.
+	void InitClipStatus();
+	virtual bool SupportsReadback() const{ return true; }
 
 	virtual void SetViewport(
 		unsigned int x,

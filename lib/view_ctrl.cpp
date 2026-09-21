@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21.
 //	Copyright (c) 2002 Midikyou
 
 #include "headers.h"
@@ -10,7 +10,7 @@
 #include "vertex.h"
 #include "draw.h"
 #include "texture.h"
-#include "font.h"
+#include "..\RS2Text.h"
 #include "input.h"
 #include "view.h"
 #include "view_ctrl.h"
@@ -92,7 +92,7 @@ void ShowFPS(int x, int y){
 	char msg[80];
 
 	sprintf(msg, "%.1f", GetFPS());
-	Text(x, y, 0xffffffff, msg);
+	RS2DrawText(x, y, 0xffffffff, msg);
 }
 
 /*
@@ -109,7 +109,7 @@ void ShowCameraInfo(int x, int y){
 	sprintf(msg, "%.1f (%.1f, %.1f, %.1f)->(%.1f, %.1f, %.1f)",
 		GetFPS(), v.x, v.y, v.z, d.x, d.y, d.z);
 
-	Text(x, y, 0xffffffff, msg);
+	RS2DrawText(x, y, 0xffffffff, msg);
 }
 
 /*
@@ -124,7 +124,7 @@ void ShowKeyboardInfo(int x, int y){
 		msg, "Up = %d Down = %d Left = %d Right = %d Z = %d X = %d C = %d",
 		GetKey(DIK_UP), GetKey(DIK_DOWN), GetKey(DIK_LEFT), GetKey(DIK_RIGHT),
 		GetKey(DIK_Z), GetKey(DIK_X), GetKey(DIK_C));
-	Text(x, y, 0xffffffff, msg);
+	RS2DrawText(x, y, 0xffffffff, msg);
 }
 
 /*
@@ -140,7 +140,7 @@ void ShowMouseInfo(int x, int y){
 		GetCursorX(), GetCursorY(),
 		GetButton(DIM_LEFT), GetButton(DIM_RIGHT), GetButton(DIM_MIDDLE),
 		GetWheel());
-	Text(x, y, 0xffffffff, msg);
+	RS2DrawText(x, y, 0xffffffff, msg);
 }
 
 /*
@@ -165,5 +165,5 @@ void ShowJoyStickInfo(int x, int y){
 	}
 	strcat(msg, "\n");
 
-	Text(x, y, 0xffffffff, msg);
+	RS2DrawText(x, y, 0xffffffff, msg);
 }

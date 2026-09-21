@@ -357,6 +357,9 @@
     <ClCompile Include="RS2D3D8Draw.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
+    <ClCompile Include="RS2D3D8Text.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
     <ClCompile Include="CSkinSelectMode.cpp">
       <Filter>Source Files\RS2 Source\Mode Class Source\SystemMode Class Source</Filter>
     </ClCompile>
@@ -577,9 +580,6 @@
       <Filter>Source Files\UDX Source</Filter>
     </ClCompile>
     <ClCompile Include="lib\effect.cpp">
-      <Filter>Source Files\UDX Source</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\font.cpp">
       <Filter>Source Files\UDX Source</Filter>
     </ClCompile>
     <ClCompile Include="lib\graphic.cpp">
@@ -1060,6 +1060,9 @@
     <ClInclude Include="RS2D3D8Draw.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
+    <ClInclude Include="RS2Text.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
     <ClInclude Include="RSPV.H">
       <Filter>Header Files\RS2 Header\Misc Header</Filter>
     </ClInclude>
@@ -1097,9 +1100,6 @@
       <Filter>Header Files\UDX Header</Filter>
     </ClInclude>
     <ClInclude Include="lib\effect.h">
-      <Filter>Header Files\UDX Header</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\font.h">
       <Filter>Header Files\UDX Header</Filter>
     </ClInclude>
     <ClInclude Include="lib\frame.h">
