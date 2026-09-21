@@ -28,6 +28,19 @@
 class IRS2RendererBackend;
 
 /*
+ *	Which backend is running.
+ *
+ *	[RS2EX] Added in v0.1.0.  Code that has to behave differently per
+ *	backend asks this; it must never ask whether sv3.pDev is null, which
+ *	would rebuild the dependency v0.0.9 spent the release removing.
+ */
+enum RS2RendererBackendType
+{
+	RS2_RENDERER_D3D8,
+	RS2_RENDERER_D3D12
+};
+
+/*
  *	Renderer backend interface
  *
  *	Implemented once, by CRS2D3D8Backend.  Static source-level backends only:
@@ -40,6 +53,8 @@ public:
 
 	virtual bool Initialize(int width, int height) = 0;
 	virtual void Shutdown() = 0;
+
+	virtual RS2RendererBackendType GetType() const = 0;
 
 	virtual bool BeginRenderPass(unsigned int clearColor, bool clearColorBuffer) = 0;
 	virtual void EndRenderPass() = 0;
@@ -74,6 +89,9 @@ class CRS2Renderer
 {
 private:
 	IRS2RendererBackend *m_Backend;
+
+	//	Resolved once at initialisation and never reassigned.
+	RS2RendererBackendType m_BackendType;
 
 	//	Pass-state diagnostics.  These observe; they never alter control flow.
 	//	The 2.15 code ends a frame even when BeginScene() failed on a lost
@@ -116,6 +134,15 @@ public:
 	 *	question for code that should not know which backend is running.
 	 */
 	bool IsReady() const;
+
+	/*
+	 *	Which backend is running, or the one that was asked for before
+	 *	initialisation.
+	 *
+	 *	[RS2EX] The selection is made once, from the command line, and does
+	 *	not change for the life of the process.
+	 */
+	RS2RendererBackendType GetBackendType() const;
 
 	/*
 	 *	Clear the whole target, including depth and stencil.

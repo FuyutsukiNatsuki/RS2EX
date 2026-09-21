@@ -46,6 +46,8 @@ public:
 	virtual bool Initialize(int width, int height);
 	virtual void Shutdown();
 
+	virtual RS2RendererBackendType GetType() const{ return RS2_RENDERER_D3D8; }
+
 	virtual bool BeginRenderPass(unsigned int clearColor, bool clearColorBuffer);
 	virtual void EndRenderPass();
 	virtual void Present();

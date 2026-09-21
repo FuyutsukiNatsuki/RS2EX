@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "RS2Renderer.h"
 #include "RS2D3D8Backend.h"
+#include "RS2D3D12Availability.h"
 
 /*
  *	The renderer instance
@@ -27,8 +28,28 @@ CRS2Renderer &GetRS2Renderer(){
 	return *renderer;
 }
 
+/*
+ *	Which backend was asked for.
+ *
+ *	[RS2EX] Direct3D 8 is the default and stays the reference renderer.
+ *	-dx12 is a developer switch: no settings entry and nothing saved, so a
+ *	comparison is one command line away and no configuration has to migrate
+ *	while the Direct3D 12 backend is still incomplete.
+ *
+ *	Resolved once.  A selection that could change mid-run would make every
+ *	dispatch decision built on it unanswerable.
+ */
+static RS2RendererBackendType RS2RequestedBackend(){
+	static int requested = -1;
+
+	if(requested<0)
+		requested = CheckArguments("-dx12") ? RS2_RENDERER_D3D12 : RS2_RENDERER_D3D8;
+	return (RS2RendererBackendType)requested;
+}
+
 CRS2Renderer::CRS2Renderer()
 	: m_Backend(NULL),
+	  m_BackendType(RS2_RENDERER_D3D8),
 	  m_InRenderPass(false)
 {
 }
@@ -46,8 +67,23 @@ CRS2Renderer::~CRS2Renderer(){
 bool CRS2Renderer::Initialize(int width, int height){
 	if(m_Backend) return true;
 
-	//	One backend, chosen at compile time.  No settings UI, no runtime
-	//	selection, no plugin mechanism - see plan section 10.
+	m_BackendType = RS2RequestedBackend();
+
+	if(m_BackendType==RS2_RENDERER_D3D12){
+		//	Asked for explicitly, so failing loudly is the point.  Falling back
+		//	to Direct3D 8 would make every -dx12 test result mean "one of the
+		//	two backends worked", which is not a result.
+		if(!RS2D3D12IsRuntimeUsable()){
+			Debug("[RS2EX Renderer] -dx12 requested but Direct3D 12 is unusable here\n");
+			return false;
+		}
+
+		//	The backend itself lands in the next commit.  Saying so is better
+		//	than quietly running Direct3D 8 and reporting success.
+		Debug("[RS2EX Renderer] no Direct3D 12 backend in this build yet\n");
+		return false;
+	}
+
 	m_Backend = new CRS2D3D8Backend;
 
 	Debug("[RS2EX Renderer] backend = %s\n", GetBackendName());
@@ -160,6 +196,10 @@ const char *CRS2Renderer::GetBackendName() const{
 	return m_Backend ? m_Backend->GetName() : "none";
 }
 
+
+RS2RendererBackendType CRS2Renderer::GetBackendType() const{
+	return m_BackendType;
+}
 
 bool CRS2Renderer::IsReady() const{
 	return m_Backend!=NULL;
