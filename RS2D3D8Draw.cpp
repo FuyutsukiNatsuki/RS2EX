@@ -118,13 +118,30 @@ public:
 	unsigned int stride;
 	unsigned int vertexCount;
 	unsigned int indexCount;
+	bool counted;		//	fully built, so the totals include it
 
 	CRS2GeometryResource()
-		: vb(0), ib(0), fvf(0), stride(0), vertexCount(0), indexCount(0){}
+		: vb(0), ib(0), fvf(0), stride(0), vertexCount(0), indexCount(0), counted(false){}
 };
+
+//	Live totals.  Incremented once a resource is fully built, decremented on
+//	release, so a partial creation never shows up as a live resource.
+static unsigned int s_LiveGeometry = 0;
+static unsigned int s_VertexBytes = 0;
+static unsigned int s_IndexBytes = 0;
+
+unsigned int RS2GetLiveGeometryCount(){ return s_LiveGeometry; }
+unsigned int RS2GetGeometryVertexBytes(){ return s_VertexBytes; }
+unsigned int RS2GetGeometryIndexBytes(){ return s_IndexBytes; }
 
 static void RS2FreeGeometry(CRS2GeometryResource *g){
 	if(!g) return;
+
+	if(g->counted){
+		if(s_LiveGeometry) s_LiveGeometry--;
+		s_VertexBytes -= g->stride*g->vertexCount;
+		s_IndexBytes -= g->indexCount*sizeof(WORD);
+	}
 
 	if(g->vb) RS2D3D8_ReleaseVertexBuffer(&g->vb);
 	if(g->ib) RS2D3D8_ReleaseIndexBuffer(&g->ib);
@@ -158,11 +175,23 @@ static CRS2GeometryResource *RS2CreateVertexOnly(
 	return g;
 }
 
+static void RS2CountGeometry(CRS2GeometryResource *g){
+	if(!g || g->counted) return;
+
+	g->counted = true;
+	s_LiveGeometry++;
+	s_VertexBytes += g->stride*g->vertexCount;
+	s_IndexBytes += g->indexCount*sizeof(WORD);
+}
+
 CRS2GeometryResource *RS2CreateGeometry(
 	const RS2MeshVertexLayout &layout,
 	const void *vertices, unsigned int vertexCount
 ){
-	return RS2CreateVertexOnly(layout, vertices, vertexCount);
+	CRS2GeometryResource *g = RS2CreateVertexOnly(layout, vertices, vertexCount);
+
+	RS2CountGeometry(g);
+	return g;
 }
 
 CRS2GeometryResource *RS2CreateIndexedGeometry(
@@ -208,6 +237,7 @@ CRS2GeometryResource *RS2CreateIndexedGeometry(
 		out[i] = (WORD)indices[i];
 	}
 	RS2D3D8_UnlockIndexBuffer(g->ib);
+	RS2CountGeometry(g);
 	return g;
 }
 

@@ -99,6 +99,17 @@ void RS2DestroyGeometry(CRS2GeometryResource *geometry);
 
 unsigned int RS2GetGeometryVertexCount(const CRS2GeometryResource *geometry);
 
+/*
+ *	Live geometry totals, for validation rather than gameplay.
+ *
+ *	These replace the mesh-resource counters v0.0.6 added, now that meshes
+ *	and every other buffered draw share one resource type.  Drift across a
+ *	load/free/reset cycle is what they are for.
+ */
+unsigned int RS2GetLiveGeometryCount();
+unsigned int RS2GetGeometryVertexBytes();
+unsigned int RS2GetGeometryIndexBytes();
+
 ////////////////////////////////////////////////////////////////////////////////
 //	Submission
 ////////////////////////////////////////////////////////////////////////////////

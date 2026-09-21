@@ -1,10 +1,10 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21.
 
 class CNamedObject;
 
 #include "..\RS2MeshData.h"
-#include "..\RS2D3D8MeshResource.h"
+#include "..\RS2Draw.h"
 
 //	[RS2EX] CXFile moved to RS2LegacyXMeshImporter.h.  Reading .x files is
 //	import work, and after v0.0.6 the importer is the only place that does it.
@@ -35,7 +35,9 @@ class CMesh{
 	//	device; the GPU resource draws.  Both are geometry only - materials,
 	//	textures and flags below stay exactly where the customizers expect them.
 	CRS2MeshData m_Data;
-	CRS2D3D8MeshResource m_Resource;
+	//	[RS2EX] A neutral geometry resource from v0.0.9 on.  CMesh used to
+	//	own the Direct3D 8 class by value, which made every mesh a D3D8 mesh.
+	CRS2GeometryResource *m_Geometry;
 	DWORD *m_pMatFlag;		//	マテリアルフラグ (1: rendered)
 	DWORD *m_pMatOrder;		//	マテリアル順序
 	RS2Material *m_pMat;		//	マテリアルリスト
@@ -67,7 +69,7 @@ public:
 
 	//	[RS2EX] Replaces "the D3DX pointer is not null".  Means usable geometry
 	//	is loaded, which is what every caller actually wanted to know.
-	BOOL IsValid() const{ return m_Data.IsValid() && m_Resource.IsValid(); }
+	BOOL IsValid() const{ return m_Data.IsValid() && m_Geometry!=0; }
 
 	//	[RS2EX] Read-only geometry, for picking and shadow-volume generation.
 	const CRS2MeshData &GetMeshData() const{ return m_Data; }
@@ -94,6 +96,14 @@ private:
 	//	[RS2EX] Replaces ID3DXMesh::DrawSubset(materialId): draw every face whose
 	//	material ID matches, and nothing if the material owns none.
 	void DrawSubset(DWORD materialId);
+
+	/*
+	 *	[RS2EX] Upload m_Data for drawing.
+	 *
+	 *	One place rather than four, because the .x path and the three
+	 *	primitive generators all reach it with the same CRS2MeshData.
+	 */
+	BOOL CreateGeometry();
 };
 
 //	メッシュリストの要素

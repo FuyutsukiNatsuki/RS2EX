@@ -16,7 +16,6 @@
 
 #include "..\RS2LegacyXMeshImporter.h"
 #include "..\RS2MaterialBinding.h"
-#include "..\RS2D3D8MeshResource.h"
 #include "..\CModelPlugin.h"
 #include "..\CEnvPlugin.h"
 #include "..\CConfigMode.h"
@@ -39,6 +38,7 @@ RS2Material *g_AltMaterial = NULL;	//	代替マテリアル
  *	コンストラクタ
  */
 CMesh::CMesh(){
+	m_Geometry = 0;
 	m_pMatFlag = NULL;
 	m_pMatOrder = NULL;
 	m_pMat = NULL;
@@ -122,7 +122,7 @@ BOOL CMesh::Load(
 	//	nothing half-built: Free() clears the materials loaded above too.
 	m_Data.AdoptFrom(import.geometry);
 
-	if(!m_Resource.Create(m_Data)){
+	if(!CreateGeometry()){
 		Debug("[RS2EX Mesh] GPU upload failed for %s\n", strName);
 		Free();
 		return FALSE;
@@ -168,7 +168,7 @@ BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, RS2Color4 cv){
 
 	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
 	//	backend gets a copy.  No ID3DXMesh survives the generator.
-	if(!m_Resource.Create(m_Data)){
+	if(!CreateGeometry()){
 		Free();
 		return FALSE;
 	}
@@ -207,7 +207,7 @@ BOOL CMesh::CreateBox(float x, float y, float z, RS2Color4 cv){
 
 	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
 	//	backend gets a copy.  No ID3DXMesh survives the generator.
-	if(!m_Resource.Create(m_Data)){
+	if(!CreateGeometry()){
 		Free();
 		return FALSE;
 	}
@@ -246,7 +246,7 @@ BOOL CMesh::CreateTeapot(RS2Color4 cv){
 
 	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
 	//	backend gets a copy.  No ID3DXMesh survives the generator.
-	if(!m_Resource.Create(m_Data)){
+	if(!CreateGeometry()){
 		Free();
 		return FALSE;
 	}
@@ -274,7 +274,10 @@ void CMesh::Free(){
 	DELETE_A(m_pTexTrans);
 
 	//	[RS2EX] Geometry last, and safe to repeat.
-	m_Resource.Free();
+	if(m_Geometry){
+		RS2DestroyGeometry(m_Geometry);
+		m_Geometry = 0;
+	}
 	m_Data.Free();
 	m_dwNumMat = 0;
 }
@@ -328,6 +331,27 @@ void CMesh::ComputeBoundary(){
  *	per material is handled because the subset table does not assume that
  *	ATTRSORT made them contiguous.
  */
+/*
+ *	[RS2EX] Upload the CPU geometry.
+ *
+ *	CRS2MeshData keeps owning the vertices and indices - picking, bounds and
+ *	shadow generation still read them - and the resource is a copy for the
+ *	backend, exactly as the mesh resource it replaces was.
+ */
+BOOL CMesh::CreateGeometry(){
+	if(m_Geometry){
+		RS2DestroyGeometry(m_Geometry);
+		m_Geometry = 0;
+	}
+	if(!m_Data.IsValid()) return FALSE;
+
+	m_Geometry = RS2CreateIndexedGeometry(
+		m_Data.GetLayout(), m_Data.GetVertexBytes(), m_Data.GetVertexCount(),
+		m_Data.GetIndices(), m_Data.GetIndexCount());
+
+	return m_Geometry!=0;
+}
+
 void CMesh::DrawSubset(DWORD materialId){
 	const unsigned int n = m_Data.GetSubsetCount();
 	unsigned int i;
@@ -336,7 +360,9 @@ void CMesh::DrawSubset(DWORD materialId){
 		const RS2MeshSubset &s = m_Data.GetSubset(i);
 
 		if(s.materialId!=materialId) continue;
-		m_Resource.DrawRange(s.firstIndex, s.primitiveCount);
+		//	The subset table stores triangles; the draw boundary takes indices.
+		RS2DrawIndexed(m_Geometry, RS2_PRIMITIVE_TRIANGLE_LIST,
+			s.firstIndex, s.primitiveCount*3);
 	}
 }
 
