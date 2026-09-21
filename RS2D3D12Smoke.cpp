@@ -104,6 +104,9 @@ static bool RS2D3D12_SmokeLifecycle(){
 		wsprintfA(label, "shutdown twice cycle %d", cycle+1);
 		RS2D3D12_SmokeStep(label, true);
 
+		wsprintfA(label, "no leaked references cycle %d", cycle+1);
+		RS2D3D12_SmokeStep(label, backend.GetDeviceReferencesAfterShutdown()==0);
+
 		if(!ok) allOk = false;
 	}
 	return allOk;

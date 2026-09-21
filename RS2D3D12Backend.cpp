@@ -54,6 +54,7 @@ CRS2D3D12Backend::CRS2D3D12Backend()
 	  m_InfoQueue(0),
 	  m_ZeroSizeLogged(false),
 	  m_DeviceRemoved(false),
+	  m_DeviceReferencesAfterShutdown(0),
 	  m_FrameRecording(false),
 	  m_PassActive(false),
 	  m_Fence(0),
@@ -560,7 +561,22 @@ void CRS2D3D12Backend::Shutdown(){
 	}
 
 	RELEASE(m_Queue);
-	RELEASE(m_Device);
+
+	//	The device goes last, and its final reference count is the cheapest
+	//	leak check there is: everything created from it holds a reference, so
+	//	anything above that was missed leaves this above zero.  The alternative
+	//	- ReportLiveDeviceObjects - writes to the debugger rather than to a log
+	//	anyone running the program can read.
+	if(m_Device){
+		const ULONG remaining = m_Device->Release();
+
+		if(remaining)
+			Debug("[RS2EX D3D12] device still has %lu references after shutdown\n",
+				(unsigned long)remaining);
+		m_Device = 0;
+		m_DeviceReferencesAfterShutdown = (unsigned int)remaining;
+	}
+
 	RELEASE(m_Factory);
 
 	m_NextFenceValue = 1;

@@ -63,6 +63,9 @@ private:
 	//	recovery in v0.1.0, so this only stops the log repeating itself.
 	bool m_DeviceRemoved;
 
+	//	What the device's final Release() returned.  Zero is correct.
+	unsigned int m_DeviceReferencesAfterShutdown;
+
 	//	The command list is open across every logical pass of one displayed
 	//	frame, because RailSim runs several - stereo, window division - before
 	//	a single Present.
@@ -193,6 +196,15 @@ public:
 	 *	Whether the device has been reported gone.
 	 */
 	bool IsDeviceRemoved() const{ return m_DeviceRemoved; }
+
+	/*
+	 *	References the device still had when it was released.
+	 *
+	 *	Zero means everything created from it was released first.  Read
+	 *	after Shutdown().
+	 */
+	unsigned int GetDeviceReferencesAfterShutdown() const{
+		return m_DeviceReferencesAfterShutdown; }
 
 	/*
 	 *	Whether a swap chain and its render targets exist.
