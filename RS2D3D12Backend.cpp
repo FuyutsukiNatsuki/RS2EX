@@ -22,6 +22,11 @@ extern bool g_FullScreen;
 
 extern char *g_PluginViewArg;
 
+//	Set once the backend is up, cleared when it goes.  There is only ever one.
+static CRS2D3D12Backend *s_Active = 0;
+
+CRS2D3D12Backend *RS2D3D12GetActiveBackend(){ return s_Active; }
+
 /*
  *	Turn on the debug layer, if there is one.
  *
@@ -645,6 +650,7 @@ bool CRS2D3D12Backend::Initialize(int width, int height){
 	SetViewport(0, 0, m_Width, m_Height, 0.0f, 1.0f);
 
 	PublishCompatibilityState();
+	s_Active = this;
 
 	Debug("[RS2EX D3D12] ready: %d frame contexts, %s\n",
 		RS2D3D12_FRAME_COUNT, GetName());
@@ -676,6 +682,8 @@ void CRS2D3D12Backend::WaitForGpu(){
  *	Initialize().
  */
 void CRS2D3D12Backend::Shutdown(){
+	if(s_Active==this) s_Active = 0;
+
 	WaitForGpu();
 
 	if(m_FenceEvent){

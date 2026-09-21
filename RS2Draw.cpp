@@ -16,6 +16,7 @@
 #include "RS2Renderer.h"
 #include "RS2DrawBackend.h"
 #include "RS2D3D12Unsupported.h"
+#include "RS2D3D12Draw.h"
 
 /*
  *	How many primitives a count forms, or 0 if it cannot form whole ones.
@@ -152,7 +153,7 @@ void RS2DrawImmediate(const RS2MeshVertexLayout &layout, RS2PrimitiveType primit
 	const void *vertices, unsigned int vertexCount){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawImmediate(layout, primitive, vertices, vertexCount);
-	else RS2D3D12Unsupported("RS2DrawImmediate");
+	else RS2D3D12_DrawImmediate(layout, primitive, vertices, vertexCount);
 }
 
 void RS2DrawBuffered(const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
@@ -176,17 +177,17 @@ void RS2DrawIndexed(const CRS2GeometryResource *geometry, RS2PrimitiveType primi
 void RS2SetWorldTransform(const float *matrix){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetWorldTransform(matrix);
-	else RS2D3D12Unsupported("RS2SetWorldTransform");
+	else RS2D3D12_SetWorldTransform(matrix);
 }
 
 void RS2SetViewTransform(const float *matrix){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetViewTransform(matrix);
-	else RS2D3D12Unsupported("RS2SetViewTransform");
+	else RS2D3D12_SetViewTransform(matrix);
 }
 
 void RS2SetProjectionTransform(const float *matrix){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetProjectionTransform(matrix);
-	else RS2D3D12Unsupported("RS2SetProjectionTransform");
+	else RS2D3D12_SetProjectionTransform(matrix);
 }

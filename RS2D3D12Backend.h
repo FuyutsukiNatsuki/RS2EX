@@ -218,6 +218,17 @@ public:
 	unsigned int GetUploadPeak() const;
 
 	/*
+	 *	What a draw needs from the backend.
+	 *
+	 *	Only the draw implementation calls these, and only while a frame is
+	 *	being recorded - which IsRecording() is how it checks.
+	 */
+	bool IsRecording() const{ return m_FrameRecording; }
+	ID3D12GraphicsCommandList *GetCommandList() const{ return m_CommandList; }
+	CRS2D3D12Upload *GetUpload(){ return &m_Upload[m_FrameIndex]; }
+	CRS2D3D12Pipeline *GetPipeline(){ return &m_Pipeline; }
+
+	/*
 	 *	Whether the device has been reported gone.
 	 */
 	bool IsDeviceRemoved() const{ return m_DeviceRemoved; }
@@ -245,5 +256,15 @@ public:
 	 */
 	unsigned int GetFrameIndex() const{ return m_FrameIndex; }
 };
+
+/*
+ *	The backend the renderer is currently running, or null.
+ *
+ *	The draw implementation needs the command list and this frame's scratch
+ *	memory, and it is called from the neutral dispatch layer rather than from
+ *	the backend, so it has to be able to find it.  Set while the backend is
+ *	initialised and cleared when it shuts down.
+ */
+CRS2D3D12Backend *RS2D3D12GetActiveBackend();
 
 #endif	//	RS2D3D12BACKEND_H_INCLUDED

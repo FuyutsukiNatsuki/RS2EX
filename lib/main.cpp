@@ -5,6 +5,7 @@
 #include "libraries.h"
 #include "sysvalue.h"
 #include "..\RS2D3D12Smoke.h"
+#include "..\RS2D3D12DrawSmoke.h"
 
 /*
  *	コンパイル・オプション
@@ -26,6 +27,7 @@
  *		 world so captures are reproducible.
  *	-dx12	:RS2EX: select the Direct3D 12 backend.  No fallback.
  *	-dx12smoke:RS2EX: run the Direct3D 12 bootstrap test and exit.
+ *	-dx12drawsmoke:RS2EX: draw through the RS2 boundary and exit.
  *	/3ds	:3Dサウンドを使用しない。
  *	/fx		:サウンドにエフェクトを使用しない。
  */
@@ -104,6 +106,15 @@ BOOL CApp::Init(HINSTANCE hInst){
 	}
 	//	DirectX関連の初期化
 	if(!InitDirect3D()) return FALSE;
+
+	//	[RS2EX] -dx12drawsmoke draws through the public boundary and exits.
+	//	It runs here because it needs the renderer up with the Direct3D 12
+	//	backend installed - drawing through RS2Draw is the whole point, and
+	//	that dispatches on whichever backend the renderer is running.
+	if(RS2D3D12DrawSmokeRequested()){
+		RS2D3D12DrawSmokeRun();
+		return FALSE;
+	}
 	if(!InitDirectInput()) return FALSE;
 
 #ifndef NO_SOUNDS
