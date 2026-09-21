@@ -560,6 +560,12 @@ void CRS2D3D8Backend::GetViewportSize(unsigned int *width, unsigned int *height)
 void CRS2D3D8Backend::ClearTarget(unsigned int color){
 	if(!sv3.pDev) return;
 
+	//	The clear mask is decided here and read by the per-frame clear too.
+	//	InitRenderState set it immediately before issuing this clear; v0.0.9
+	//	moved the clear and left the assignment behind, so every frame after
+	//	the first kept the previous depth values and rejected every mesh.
+	g_BufferClearMode = D3DCLEAR_ZBUFFER | (g_StencilEnabled ? D3DCLEAR_STENCIL : 0);
+
 	sv3.pDev->Clear(0, NULL,
 		D3DCLEAR_TARGET|g_BufferClearMode, (D3DCOLOR)color, 1.0f, 0);
 }
