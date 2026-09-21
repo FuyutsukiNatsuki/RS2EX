@@ -23,6 +23,8 @@
 
 #include "RS2Renderer.h"
 #include "RS2D3D12.h"
+#include "RS2D3D12Pipeline.h"
+#include "RS2D3D12Upload.h"
 
 //	One command allocator per swap-chain buffer, so the allocator being reset
 //	is never one the GPU is still reading.  Two buffers, two contexts.
@@ -82,6 +84,14 @@ private:
 	//	builds and on a machine without the graphics tools.
 	ID3D12InfoQueue *m_InfoQueue;
 
+	//	Root signature, shaders and the pipeline-state cache.  Built once and
+	//	shared by every frame; only the states inside it are added to.
+	CRS2D3D12Pipeline m_Pipeline;
+
+	//	Scratch memory, one block per frame context.  Reset when its context is
+	//	reused, which only happens after that context's fence has completed.
+	CRS2D3D12Upload m_Upload[RS2D3D12_FRAME_COUNT];
+
 	ID3D12Fence *m_Fence;
 	HANDLE m_FenceEvent;
 
@@ -118,6 +128,7 @@ private:
 	bool ResizeIfNeeded();
 	void ReportDeviceFailure(const char *what, long hr);
 	void PublishCompatibilityState();
+	bool CreatePipeline();
 
 public:
 	CRS2D3D12Backend();
@@ -192,6 +203,19 @@ public:
 	 *	"nothing was checked" rather than "nothing was wrong".
 	 */
 	bool HasDebugLayer() const{ return m_InfoQueue!=0; }
+
+	/*
+	 *	How many pipeline states have been built.
+	 *
+	 *	A draw that needed a new one and could not get it draws nothing, so a
+	 *	count that stops growing while the picture is wrong says where to look.
+	 */
+	unsigned int GetPipelineStateCount() const{ return m_Pipeline.GetStateCount(); }
+
+	/*
+	 *	The most scratch memory any one frame has used, in bytes.
+	 */
+	unsigned int GetUploadPeak() const;
 
 	/*
 	 *	Whether the device has been reported gone.

@@ -10,6 +10,16 @@
 //	The same inputs the Direct3D 8 backend consults, so both backends
 //	answer "windowed or not" the same way.
 extern bool g_FullScreen;
+
+//	Scratch memory per frame context.
+//
+//	Chosen from what the engine can ask for in one frame rather than by
+//	rounding: a quad dump batch is 10922 quads of six vertices at 36 bytes,
+//	which is 2.3 MB, and a frame can flush more than one.  Eight megabytes
+//	leaves room for that plus constants and fan expansion.  The peak actually
+//	used is logged at shutdown, because the right number here is a measurement.
+#define RS2D3D12_UPLOAD_BYTES	(8*1024*1024)
+
 extern char *g_PluginViewArg;
 
 /*
@@ -470,6 +480,72 @@ void CRS2D3D12Backend::ReleaseSizeDependentResources(){
 }
 
 /*
+ *	The pipeline and the per-frame scratch memory.
+ */
+bool CRS2D3D12Backend::CreatePipeline(){
+	if(!m_Pipeline.Create(m_Device)) return false;
+
+	unsigned int i;
+
+	for(i = 0; i<RS2D3D12_FRAME_COUNT; i++)
+		if(!m_Upload[i].Create(m_Device, RS2D3D12_UPLOAD_BYTES)) return false;
+
+	Debug("[RS2EX D3D12] %d frame scratch blocks of %u KB\n",
+		RS2D3D12_FRAME_COUNT, (unsigned)(RS2D3D12_UPLOAD_BYTES/1024));
+
+	//	Build one state for each of the two vertex shaders now rather than on
+	//	the first draw.  It proves the whole chain - root signature, compiled
+	//	shader, input layout, pipeline state - at start-up, where a failure is
+	//	reported rather than discovered as missing geometry, and it costs two
+	//	objects out of a cache that holds sixty-four.
+	//
+	//	This is a warm-up and not a pre-build: everything else is still created
+	//	when a draw asks for it.
+	unsigned int semantic;
+
+	for(semantic = 0; semantic<2; semantic++){
+		RS2MeshVertexLayout layout;
+		RS2D3D12PipelineKey key;
+
+		//	Position and a packed colour - the least a visible draw can have.
+		layout.Clear();
+		layout.positionSemantic = semantic
+			? RS2_POSITION_ALREADY_TRANSFORMED : RS2_POSITION_TRANSFORMED_BY_PIPELINE;
+		layout.positionOffset = 0;
+		layout.diffuseOffset = semantic ? 16 : 12;
+		layout.stride = semantic ? 20 : 16;
+
+		ZeroMemory(&key, sizeof(key));
+		if(!RS2D3D12_DescribeLayout(layout, &key)){
+			Debug("[RS2EX D3D12] warm-up layout %u could not be described\n", semantic);
+			return false;
+		}
+
+		key.topology = (unsigned char)D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		key.depthTest = 1;
+		key.depthWrite = 1;
+		key.depthFunc = (unsigned char)RS2_COMPARE_LESS_EQUAL;
+		key.cullMode = (unsigned char)RS2_CULL_COUNTER_CLOCKWISE;
+		key.blendMode = (unsigned char)RS2_BLEND_ALPHA;
+
+		if(!m_Pipeline.Get(key)){
+			Debug("[RS2EX D3D12] warm-up pipeline %u could not be built\n", semantic);
+			return false;
+		}
+	}
+	return true;
+}
+
+unsigned int CRS2D3D12Backend::GetUploadPeak() const{
+	unsigned int peak = 0;
+	unsigned int i;
+
+	for(i = 0; i<RS2D3D12_FRAME_COUNT; i++)
+		if(m_Upload[i].GetPeak()>peak) peak = m_Upload[i].GetPeak();
+	return peak;
+}
+
+/*
  *	Fill in the scalar values the engine still reads out of sv3.
  *
  *	sv3 is the Direct3D 8 device and its parameters, and nothing of this
@@ -558,7 +634,7 @@ bool CRS2D3D12Backend::Initialize(int width, int height){
 
 	if(!CreateDevice() || !CreateCommandObjects() || !CreateFence()
 			|| !CreateSwapChain(svw.hWnd) || !CreateRenderTargets()
-			|| !CreateDepthBuffer()){
+			|| !CreateDepthBuffer() || !CreatePipeline()){
 		Shutdown();
 		return false;
 	}
@@ -606,6 +682,19 @@ void CRS2D3D12Backend::Shutdown(){
 		CloseHandle(m_FenceEvent);
 		m_FenceEvent = NULL;
 	}
+
+	//	Reported before it goes, because the size of these blocks is a guess
+	//	until something measures it.
+	if(m_Device && GetUploadPeak())
+		Debug("[RS2EX D3D12] frame scratch peak %u KB of %u KB\n",
+			GetUploadPeak()/1024, (unsigned)(RS2D3D12_UPLOAD_BYTES/1024));
+
+	{
+		unsigned int i;
+
+		for(i = 0; i<RS2D3D12_FRAME_COUNT; i++) m_Upload[i].Destroy();
+	}
+	m_Pipeline.Destroy();
 
 	RELEASE(m_InfoQueue);
 	RELEASE(m_Fence);
@@ -746,6 +835,10 @@ void CRS2D3D12Backend::BindTargets(){
  */
 bool CRS2D3D12Backend::BeginRecording(){
 	WaitForFrame(m_FrameIndex);
+
+	//	Safe here and nowhere else: the wait above is what says the GPU has
+	//	finished reading everything this context handed it last time round.
+	m_Upload[m_FrameIndex].Reset();
 
 	if(FAILED(m_Allocator[m_FrameIndex]->Reset())) return false;
 	if(FAILED(m_CommandList->Reset(m_Allocator[m_FrameIndex], NULL))) return false;

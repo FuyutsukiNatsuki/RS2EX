@@ -90,6 +90,13 @@ static bool RS2D3D12_SmokeLifecycle(){
 		wsprintfA(label, "swap chain cycle %d", cycle+1);
 		RS2D3D12_SmokeStep(label, backend.HasSwapChain());
 
+		//	Two: one for each vertex shader, built at start-up so the whole
+		//	chain - root signature, compiled shader, input layout, pipeline
+		//	state - is proven where a failure is reported rather than
+		//	discovered later as geometry that did not appear.
+		wsprintfA(label, "pipeline states cycle %d", cycle+1);
+		RS2D3D12_SmokeStep(label, backend.GetPipelineStateCount()>=2);
+
 		//	Not a pass or fail on its own: a device without stencil is a
 		//	fact about the machine, not a defect.  It is reported because
 		//	the stencil shadow passes will need to know.

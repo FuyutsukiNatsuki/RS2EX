@@ -214,6 +214,8 @@
     <ClCompile Include="RS2D3D12Unsupported.cpp" />
     <ClCompile Include="RS2Draw.cpp" />
     <ClCompile Include="RS2GeometryResource.cpp" />
+    <ClCompile Include="RS2D3D12Pipeline.cpp" />
+    <ClCompile Include="RS2D3D12Upload.cpp" />
     <ClCompile Include="RS2RenderState.cpp" />
     <ClCompile Include="RS2MaterialBinding.cpp" />
     <ClCompile Include="RS2Text.cpp" />
@@ -461,6 +463,8 @@
     <ClInclude Include="RS2D3D12Unsupported.h" />
     <ClInclude Include="RS2DrawBackend.h" />
     <ClInclude Include="RS2GeometryResource.h" />
+    <ClInclude Include="RS2D3D12Pipeline.h" />
+    <ClInclude Include="RS2D3D12Upload.h" />
     <ClInclude Include="RS2RenderStateBackend.h" />
     <ClInclude Include="RS2MaterialBindingBackend.h" />
     <ClInclude Include="RS2TextBackend.h" />
