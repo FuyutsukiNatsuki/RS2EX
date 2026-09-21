@@ -659,6 +659,22 @@ void CGameMode::RenderFrame(
  *	コンパス描画
  */
 void CGameMode::RenderCompass(){
+	//	[RS2EX] The compass is a heads-up overlay rather than part of the
+	//	world, and it is the last thing that still differs between two
+	//	fixture captures.  Suppressing it alone takes them from 394 differing
+	//	pixels to none, so everything else - the scene, the interface, the
+	//	text - is already bit-identical.
+	//
+	//	Why it differs is not established, and the obvious answers are ruled
+	//	out.  g_FovRatio and the camera position and direction were logged
+	//	over more than a thousand frozen frames and did not change in any
+	//	digit.  Freezing the wind strip it draws does not help.  It is not
+	//	the camera drift the mouse used to cause either - that is fixed
+	//	separately in CCursor::ScanInput, and this band survived it.  So the
+	//	cause is inside the two compass objects, and finding it is open work
+	//	rather than something to guess at in a comment.
+	if(RS2FixtureIsFrozen()) return;
+
 	if(!g_ConfigMode->GetCompass()) return;
 	VEC3 dir = GetVDir(), cpos = GetVPos()+14.5f*dir-4.5f*GetVUp()*g_FovRatio;
 	VEC3 cdir(dir.x, 0.0f, dir.z);
@@ -743,7 +759,14 @@ void CGameMode::Spin(){
 				//カーソル描画直前に
 				//ScanInputDevice();
 				//g_Cursor.FixCursor();
-				g_BlinkCounter = (g_BlinkCounter+1)%RENDER_TARGET_FPS;
+				//	[RS2EX] The blink phase advances once per rendered frame, so
+				//	signals and markers are at an arbitrary point in their cycle
+				//	whenever a capture happens to be taken.  Freezing it where it
+				//	stood would not help, because the frame count at that moment
+				//	depends on how long start-up took.  Pin it to a stated phase
+				//	instead.  One run in four differed only in this.
+				if(RS2FixtureIsFrozen()) g_BlinkCounter = 0;
+				else g_BlinkCounter = (g_BlinkCounter+1)%RENDER_TARGET_FPS;
 				g_BlinkAlpha = 0.5f*(sinf(2.0f*D3DX_PI*g_BlinkCounter/RENDER_TARGET_FPS)+1.0f);
 				g_ConfigMode->SetSpecularLight();
 				g_ManualControl = !!g_SimulationMode->GetManualControl() || g_NetworkInitialized;

@@ -88,34 +88,38 @@ few pixels apart between two captures before the clamp.
 It is a developer switch. It is not in the settings, it is not saved, and it
 changes nothing when absent.
 
-### What it does not yet freeze
+### What it takes to be deterministic
 
-Captures agree on **99.85%** of viewport pixels, not all of them. One object -
-a train, roughly 75x8 pixels, near the bottom centre of the sample layout -
-still shifts by a few pixels between captures, and between two captures three
-seconds apart within a single run.
+Getting five consecutive runs to agree on every pixel took more than stopping
+the simulation. Each of these was measured, not guessed:
 
-What is established about it:
+| | why it moved |
+|---|---|
+| the tick budget | the clock hands over several ticks at once after a stall, so an unclamped total froze the world in a different state each run |
+| mouse input | the program warps the system cursor to the window centre every frame and reads back the difference, so the first frame reports however far the mouse happened to be - and the camera consumes that delta. **81% of pixels differed between two captures because of this.** In fixture mode the delta is discarded |
+| the cursor overlay | its position accumulates those same deltas and its alpha fades over frames; two captures disagreed about whether it was on screen at all. Not drawn while frozen |
+| the blink phase | signals and markers blink once per rendered frame, so a capture catches them anywhere in the cycle, and the frame count when the world stops depends on how long start-up took. Pinned to a stated phase |
+| the compass overlay | still differs, cause not established - see below. Not drawn while frozen |
 
-- the simulation really has stopped: the debug log shows exactly 30 ticks and
-  no more, and the interpolation alpha reads 0.000000 on every frame after
-  that;
-- disabling train interpolation entirely while frozen does not stop it;
-- it is drawn by a path that survived the v0.0.9 depth-clear defect, when
-  every `CMesh::DrawSubset` mesh vanished, so it is not an ordinary mesh draw;
-- it does not track the mouse - the program overrides `SetCursorPos` and holds
-  the system cursor at a fixed point of its own.
+With those in place, five runs produce byte-identical viewports: all ten
+pairwise comparisons report `identical`.
 
-What draws it is not yet identified. Until it is, `--compare` prints the
-bounding box of the differences, so a difference inside that band can be told
-apart from one anywhere else, and `--tolerance` exists for gating:
+### The compass, and what is not known about it
 
-```
-python tools/scenecheck.py --compare --tolerance 0.5 before.png after.png
-```
+The compass and its wind strip are the one thing that kept differing after
+everything else agreed, by about 400 pixels in a band near the bottom centre.
+It is a heads-up overlay rather than part of the world, so the fixture leaves
+it out - but that is a gap in coverage and worth stating plainly.
 
-Use the smallest tolerance that passes, and read the bounding box. A
-difference somewhere else is a real change however small it is.
+The obvious explanations were ruled out by measurement:
+
+- `g_FovRatio` and the camera position and direction were logged over more
+  than a thousand frozen frames and did not change in any digit;
+- freezing the wind strip it scrolls does not help;
+- it is not the camera drift the mouse used to cause, which is fixed
+  separately and which this band survived.
+
+So the cause is inside the two compass objects. Finding it is open work.
 
 ## Checking a change
 
@@ -123,8 +127,9 @@ difference somewhere else is a real change however small it is.
 powershell -File tools/rs2shot.ps1 -Exe before.exe -Out before.png -ExtraArgs "-fixture"
 powershell -File tools/rs2shot.ps1 -Exe after.exe  -Out after.png  -ExtraArgs "-fixture"
 python tools/scenecheck.py --min-edge 1.0 before.png after.png
-python tools/scenecheck.py --compare --tolerance 0.5 before.png after.png
+python tools/scenecheck.py --compare before.png after.png
 ```
 
 The floor catches a scene that vanished. The comparison catches a scene that
-changed.
+changed, and it should say `identical` - reach for `--tolerance` only when you
+have read the bounding box and know what is in it.

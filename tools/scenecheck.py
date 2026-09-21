@@ -21,7 +21,8 @@ Against the actual defect, working builds measured 1.41-3.61% and 373-410
 colours; the broken ones measured 0.17-0.18% and 55-69.  Eight times at the
 narrowest, so this is a floor and not an equality test.  It answers "is there
 still a scene", not "is the scene right".  For the second question run the
-program with -fixture, where frames are reproducible, and use --compare.
+program with -fixture, where frames are reproducible to the pixel, and use
+--compare.
 
 Usage:
     python tools/scenecheck.py shot.png [shot.png ...]
@@ -82,10 +83,10 @@ def measure(im):
 def compare(a_path, b_path, viewport, tolerance_pct):
     """Compare two frames captured under -fixture.
 
-    Reports where they differ, not only that they do.  A fixture capture is
-    not quite pixel-perfect yet - see the README - so the bounding box is the
-    useful part: a difference inside the known band is the known residual, and
-    one anywhere else is a real change.
+    Two fixture captures of the same build are byte-identical, so anything
+    reported here is a real difference.  The bounding box is printed because
+    knowing where a change is usually identifies it faster than knowing how
+    large it is.
     """
     a = np.asarray(load(a_path, viewport)).astype(np.int16)
     b = np.asarray(load(b_path, viewport)).astype(np.int16)

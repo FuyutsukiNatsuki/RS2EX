@@ -1,5 +1,6 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21.
 #include "stdafx.h"
+#include "RS2Fixture.h"
 #include "CCursor.h"
 #include "CSkinPlugin.h"
 
@@ -103,6 +104,14 @@ void CCursor::Center(){
  *	•`‰æ
  */
 void CCursor::Render(){
+	//	[RS2EX] The cursor is not part of the world, and nothing about it is
+	//	reproducible.  ScanInput() warps the system cursor back to the window
+	//	centre every frame and accumulates the relative delta into m_Pos, so
+	//	where it ends up depends on every movement since start-up, and m_Alpha
+	//	fades it in and out over frames.  Two fixture captures disagreed about
+	//	whether it was on screen at all.  Leave it out while frozen.
+	if(RS2FixtureIsFrozen()) return;
+
 	if(m_State) m_Alpha = m_Alpha*CURSOR_HIDE_RATIO;
 	else m_Alpha = m_Alpha*CURSOR_HIDE_RATIO+(1.0f-CURSOR_HIDE_RATIO);
 	if(m_Resizing<0) g_Skin->m_NormalCursorData.Render(m_Pos, m_Alpha);
@@ -123,6 +132,21 @@ void CCursor::ScanInput(
 	m_Delta = GetCursorXY();
 	m_Delta.x -= cx;
 	m_Delta.y -= cy;
+
+	//	[RS2EX] The fixture takes no mouse input at all.
+	//
+	//	FixCursor() warps the system cursor to the centre every frame and
+	//	this reads back the difference, so the first frame of a run reports
+	//	however far the physical mouse happened to be from the centre.  The
+	//	camera consumes that delta, which means the view ends up somewhere
+	//	slightly different depending on where the mouse was left - measured as
+	//	81% of pixels differing between two captures that should have been
+	//	identical.  A capture harness that moves the cursor feeds it too.
+	if(RS2FixtureIsEnabled()){
+		m_Delta.x = m_Delta.y = 0;
+		return;
+	}
+
 	if(!m_State && !forcelock){
 		m_Pos.x += m_Delta.x;
 		m_Pos.y += m_Delta.y;
