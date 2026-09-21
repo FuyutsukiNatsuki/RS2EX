@@ -90,7 +90,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OutputFile>RailSim2\RailSim2_Release_vc2010.exe</OutputFile>
-      <AdditionalDependencies>libcpmt.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- [RS2EX] Direct3D 12 and DXGI, linked normally.  This raises the supported floor to Windows 10 for every configuration, including the default Direct3D 8 one; that was an explicit decision, recorded in v0.1.0-validation.md. -->
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;libcpmt.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%DX8SDK_ROOT%\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/nodefaultlib:libci %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -136,7 +137,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\RailSim2\RailSim2_Debug_vc2010.exe</OutputFile>
-      <AdditionalDependencies>libcpmtd.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- [RS2EX] Direct3D 12 and DXGI, linked normally.  This raises the supported floor to Windows 10 for every configuration, including the default Direct3D 8 one; that was an explicit decision, recorded in v0.1.0-validation.md. -->
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;libcpmtd.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%DX8SDK_ROOT%\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libci</IgnoreSpecificDefaultLibraries>
     </Link>
@@ -206,6 +208,7 @@
     <ClCompile Include="RS2LegacyXMeshImporter.cpp" />
     <ClCompile Include="RS2LegacyImportDevice.cpp" />
     <ClCompile Include="RS2Fixture.cpp" />
+    <ClCompile Include="RS2D3D12Availability.cpp" />
     <ClCompile Include="RS2TextureResource.cpp" />
     <ClCompile Include="RS2D3D8MaterialBinding.cpp" />
     <ClCompile Include="RS2Lighting.cpp" />
@@ -443,6 +446,8 @@
     <ClInclude Include="RS2LegacyXMeshImporter.h" />
     <ClInclude Include="RS2LegacyImportDevice.h" />
     <ClInclude Include="RS2Fixture.h" />
+    <ClInclude Include="RS2D3D12.h" />
+    <ClInclude Include="RS2D3D12Availability.h" />
     <ClInclude Include="RS2Material.h" />
     <ClInclude Include="RS2TextureResource.h" />
     <ClInclude Include="RS2MaterialBinding.h" />
