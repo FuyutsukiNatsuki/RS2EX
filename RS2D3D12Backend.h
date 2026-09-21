@@ -117,6 +117,7 @@ private:
 	bool BeginRecording();
 	bool ResizeIfNeeded();
 	void ReportDeviceFailure(const char *what, long hr);
+	void PublishCompatibilityState();
 
 public:
 	CRS2D3D12Backend();

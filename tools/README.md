@@ -23,6 +23,7 @@ So: two tools here, and a fixture mode in the program itself.
 |---|---|
 | `rs2shot.ps1` | launch a build, put the window somewhere reproducible, screenshot it |
 | `scenecheck.py` | measure whether a screenshot still has a scene in it |
+| `rs2state.ps1` | pin the world a fixture capture starts from |
 
 ## scenecheck.py
 
@@ -88,7 +89,33 @@ few pixels apart between two captures before the clamp.
 It is a developer switch. It is not in the settings, it is not saved, and it
 changes nothing when absent.
 
-### What it takes to be deterministic
+### Pinning the world it starts from
+
+`-fixture` makes a run reproducible from wherever the program resumes. It does
+not decide where that is: the program saves its state on exit and picks it up
+again next time, so every run moves the starting point.
+
+That was found the hard way. Two captures taken a day apart differed in
+**99.6%** of pixels with nothing in the renderer changed - the clock had moved
+from 20:01 on one day to 07:13 on another, because runs in between had
+advanced the world and saved it.
+
+So `rs2state.ps1` snapshots what the program rewrites - `Config.txt` and
+`Undo` - and restores it before a capture:
+
+```
+powershell -File tools/rs2state.ps1 -Action save    -Snapshot path\to\snapshot
+powershell -File tools/rs2state.ps1 -Action restore -Snapshot path\to\snapshot
+```
+
+Restore, capture, compare. Verified: three captures with the snapshot restored
+are byte-identical, and they stay byte-identical across a normal twenty-five
+second session run in between.
+
+The snapshot lives outside the repository. It is someone's layout, it is
+several megabytes, and it is not source.
+
+### What else it takes to be deterministic
 
 Getting five consecutive runs to agree on every pixel took more than stopping
 the simulation. Each of these was measured, not guessed:

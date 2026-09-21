@@ -470,6 +470,69 @@ void CRS2D3D12Backend::ReleaseSizeDependentResources(){
 }
 
 /*
+ *	Fill in the scalar values the engine still reads out of sv3.
+ *
+ *	sv3 is the Direct3D 8 device and its parameters, and nothing of this
+ *	backend's belongs in it - no device, no swap chain, no descriptor.  But
+ *	four plain numbers in that struct are written by the Direct3D 8 backend and
+ *	read by the engine, and with any other backend running they stay zero:
+ *
+ *	    capsMaxPrim   CVertexDump.h, CShadowVolume.h
+ *	    width/height  CGameMode, CSceneryMode, Capture, effect, graphic
+ *	    fWindowed     CCursor, input, window
+ *
+ *	This was found the hard way.  QUAD_DUMP_MAX is capsMaxPrim/6, so a zero
+ *	made the rail-profile dump allocate a zero-length buffer and then write six
+ *	vertices into it - a heap overrun during scene construction, before any
+ *	frame.  The v0.0.9 dependency scan could not have caught it: these are
+ *	plain integers, and nothing about reading one looks native.
+ *
+ *	This is a compatibility measure for v0.1.1, not a design.  The values the
+ *	engine needs should be asked for through the renderer boundary rather than
+ *	found in a global struct, and that migration is recorded as follow-up work
+ *	in the validation record.
+ */
+void CRS2D3D12Backend::PublishCompatibilityState(){
+	//	NOT the hardware limit.  Direct3D 12 has no equivalent of
+	//	D3DCAPS8::MaxPrimitiveCount, and inventing one here would be a claim
+	//	about the adapter that this backend is in no position to make.
+	//
+	//	What this number actually has to satisfy is the engine's own batching
+	//	contract.  The three users divide it and then clamp the result:
+	//
+	//	    LINE_DUMP_MAX = /2, clamped to 32767
+	//	    TRI_DUMP_MAX  = /3, clamped to 21845
+	//	    QUAD_DUMP_MAX = /6, clamped to 10922
+	//
+	//	Those three clamps are 65535/2, 65535/3 and 65535/6.  The ceiling the
+	//	engine already imposes on itself is a batch of 65535 vertices - the
+	//	16-bit index range the dump buffers are written for - so that is the
+	//	number, and every derived size lands exactly on the clamp the code
+	//	applies anyway.
+	sv3.capsMaxPrim = 65535;
+
+	//	The engine reads these for aspect ratio, viewport arithmetic, capture
+	//	geometry and cursor clipping.  Zero would divide by zero in several of
+	//	them.
+	sv3.width = (int)m_Width;
+	sv3.height = (int)m_Height;
+	sv3.fWindowed = m_Windowed ? TRUE : FALSE;
+
+	//	Showing the window is the Direct3D 8 backend's job today, done from
+	//	its device creation, so a windowed run under any other backend would
+	//	never appear at all.  It is not a device matter and does not belong to
+	//	either backend, but until it moves, both have to do it.
+	if(m_Windowed && svw.hWnd){
+		ShowWindow(svw.hWnd, SW_SHOW);
+		UpdateWindow(svw.hWnd);
+	}
+
+	Debug("[RS2EX D3D12] compatibility state: %d x %d, %s, batch limit %lu\n",
+		sv3.width, sv3.height, sv3.fWindowed ? "windowed" : "fullscreen",
+		(unsigned long)sv3.capsMaxPrim);
+}
+
+/*
  *	Bring the backend up.
  *
  *	width	: back buffer width
@@ -504,6 +567,8 @@ bool CRS2D3D12Backend::Initialize(int width, int height){
 	//	would clip every pass away and look exactly like a backend that draws
 	//	nothing.
 	SetViewport(0, 0, m_Width, m_Height, 0.0f, 1.0f);
+
+	PublishCompatibilityState();
 
 	Debug("[RS2EX D3D12] ready: %d frame contexts, %s\n",
 		RS2D3D12_FRAME_COUNT, GetName());
@@ -891,6 +956,10 @@ bool CRS2D3D12Backend::Reset(){
 	if(!CreateRenderTargets() || !CreateDepthBuffer()) return false;
 
 	SetViewport(0, 0, m_Width, m_Height, 0.0f, 1.0f);
+
+	//	The engine reads the size from sv3, so a resize that did not update it
+	//	would leave every aspect-ratio and viewport calculation on the old one.
+	PublishCompatibilityState();
 
 	Debug("[RS2EX D3D12] resized to %u x %u\n", m_Width, m_Height);
 	return true;

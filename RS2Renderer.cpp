@@ -100,28 +100,21 @@ bool CRS2Renderer::Initialize(int width, int height){
 		return false;
 	}
 
-	//	[RS2EX] The Direct3D 12 backend of v0.1.0 owns a device, a swap chain
-	//	and a frame, and it can clear and present.  It cannot create a
-	//	texture or a vertex buffer, so nothing the game loads can be built,
-	//	and scene setup does not survive being handed nothing.  That is not a
-	//	defect to paper over here: scene rendering is explicitly out of scope
-	//	for this release.
+	//	[RS2EX] v0.1.0 stopped here rather than continue: the Direct3D 12
+	//	backend could not create a texture or a vertex buffer, and scene
+	//	construction did not survive being handed nothing.
 	//
-	//	So the selection happens, the backend comes up and is measured, and
-	//	then the program stops rather than walking into a world it cannot
-	//	build.  -dx12smoke exercises the backend itself.
+	//	v0.1.1 found what that actually was - a single scalar the engine reads
+	//	out of sv3 that only the Direct3D 8 backend was writing - and fixed it,
+	//	so the program now runs.  It still draws nothing until the Direct3D 12
+	//	draw path lands, but running and drawing nothing is a state you can
+	//	investigate; refusing to start is not.
 	if(m_BackendType==RS2_RENDERER_D3D12){
-		Debug("[RS2EX Renderer] Direct3D 12 is up, but v0.1.0 cannot create\n");
-		Debug("[RS2EX Renderer] textures or geometry, so there is no scene to\n");
-		Debug("[RS2EX Renderer] render.  Use -dx12smoke to exercise the backend.\n");
-
 		//	Logged here because this is the one place a Direct3D 12 backend is
 		//	actually installed behind the renderer, which is what the capture,
 		//	offscreen and pixel-read guards ask.
 		Debug("[RS2EX Renderer] readback supported = %s\n",
 			SupportsReadback() ? "yes" : "no");
-		Shutdown();
-		return false;
 	}
 	return true;
 }
