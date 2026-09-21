@@ -108,9 +108,29 @@ powershell -File tools/rs2state.ps1 -Action save    -Snapshot path\to\snapshot
 powershell -File tools/rs2state.ps1 -Action restore -Snapshot path\to\snapshot
 ```
 
-Restore, capture, compare. Verified: three captures with the snapshot restored
-are byte-identical, and they stay byte-identical across a normal twenty-five
-second session run in between.
+Restore, capture, compare.
+
+Two things about doing that reliably, both found by a capture that disagreed
+with four others:
+
+- **Stop the program before restoring.** It writes its state while shutting
+  down, so an instance still on its way out overwrites a restore that has
+  already happened. That produced one wrong capture in a run of good ones, and
+  it looked exactly like the change under test. `rs2state.ps1` now waits for
+  the process to be gone before it copies anything.
+- **Wait for the program to say it is ready, not for a clock.** A fixed settle
+  caught the loading screen about one run in four when the machine was busy,
+  and a photograph of the loading screen looks exactly like a renderer that
+  lost the scene. `rs2shot.ps1 -WaitForLog` polls the log for a marker
+  instead; under `-fixture` the marker is `world stopped`, which only appears
+  once the layout is loaded and the world has been stopped.
+
+A short settle after the marker is still wanted: the camera converges on its
+target over frames, and capturing immediately left a few dozen pixels
+different between runs. Eight seconds is enough here.
+
+Verified: five captures with all of that in place are byte-identical, and stay
+so across a normal session run in between.
 
 The snapshot lives outside the repository. It is someone's layout, it is
 several megabytes, and it is not source.

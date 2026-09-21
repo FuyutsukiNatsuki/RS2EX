@@ -41,70 +41,112 @@ unsigned int RS2PrimitiveCount(RS2PrimitiveType primitive, unsigned int count){
 	return 0;
 }
 
-CRS2GeometryResource * RS2CreateGeometry(const RS2MeshVertexLayout &layout,
-	const void *vertices, unsigned int vertexCount){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		return RS2D3D8_CreateGeometry(layout, vertices, vertexCount);
+/*
+ *	Create a geometry resource.
+ *
+ *	The resource is neutral and this code owns it; only its contents belong to
+ *	a backend.  That is what lets a resource say which backend built it, which
+ *	matters because game code holds these across frames and a resource handed
+ *	to the wrong backend would be an interesting kind of crash to debug.
+ */
+CRS2GeometryResource *RS2CreateGeometry(
+	const RS2MeshVertexLayout &layout,	//	vertex layout
+	const void *vertices,			//	vertex data
+	unsigned int vertexCount		//	vertices
+){
+	if(!vertices || !vertexCount) return 0;
 
-	RS2D3D12Unsupported("RS2CreateGeometry");
-	return 0;
+	const RS2RendererBackendType backend = GetRS2Renderer().GetBackendType();
+	CRS2GeometryResource *geometry = RS2GeometryAllocate(
+		backend, layout.stride, vertexCount, 0);
+	bool built = false;
+
+	if(backend==RS2_RENDERER_D3D8)
+		built = RS2D3D8_CreateGeometry(geometry, layout, vertices);
+	else
+		RS2D3D12Unsupported("RS2CreateGeometry");
+
+	if(!built){
+		//	Whatever the backend managed to build is released before the
+		//	resource goes, so a failure leaves nothing behind.
+		if(backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
+		RS2GeometryFree(geometry);
+		return 0;
+	}
+
+	RS2GeometryCount(geometry);
+	return geometry;
 }
 
-CRS2GeometryResource * RS2CreateIndexedGeometry(const RS2MeshVertexLayout &layout,
-	const void *vertices, unsigned int vertexCount,
-	const unsigned int *indices, unsigned int indexCount){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		return RS2D3D8_CreateIndexedGeometry(layout, vertices, vertexCount, indices, indexCount);
+CRS2GeometryResource *RS2CreateIndexedGeometry(
+	const RS2MeshVertexLayout &layout,	//	vertex layout
+	const void *vertices,			//	vertex data
+	unsigned int vertexCount,		//	vertices
+	const unsigned int *indices,		//	index data
+	unsigned int indexCount			//	indices
+){
+	if(!vertices || !vertexCount || !indices || !indexCount) return 0;
 
-	RS2D3D12Unsupported("RS2CreateIndexedGeometry");
-	return 0;
+	const RS2RendererBackendType backend = GetRS2Renderer().GetBackendType();
+	CRS2GeometryResource *geometry = RS2GeometryAllocate(
+		backend, layout.stride, vertexCount, indexCount);
+	bool built = false;
+
+	if(backend==RS2_RENDERER_D3D8)
+		built = RS2D3D8_CreateIndexedGeometry(geometry, layout, vertices, indices);
+	else
+		RS2D3D12Unsupported("RS2CreateIndexedGeometry");
+
+	if(!built){
+		if(backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
+		RS2GeometryFree(geometry);
+		return 0;
+	}
+
+	RS2GeometryCount(geometry);
+	return geometry;
 }
 
-bool RS2UpdateGeometry(CRS2GeometryResource *geometry, const void *vertices, unsigned int vertexCount){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
+bool RS2UpdateGeometry(
+	CRS2GeometryResource *geometry,	//	resource to update
+	const void *vertices,		//	new vertex data
+	unsigned int vertexCount	//	vertices to write
+){
+	if(!RS2GeometryUsable(geometry, "RS2UpdateGeometry")) return false;
+
+	if(geometry->backend==RS2_RENDERER_D3D8)
 		return RS2D3D8_UpdateGeometry(geometry, vertices, vertexCount);
 
 	RS2D3D12Unsupported("RS2UpdateGeometry");
 	return false;
 }
 
-void RS2DestroyGeometry(CRS2GeometryResource *geometry){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		RS2D3D8_DestroyGeometry(geometry);
-	else RS2D3D12Unsupported("RS2DestroyGeometry");
+/*
+ *	Destroy a geometry resource.
+ *
+ *	Deliberately not routed through RS2GeometryUsable: a resource has to be
+ *	destroyable by the backend that built it even if that is no longer the
+ *	active one, or shutting one backend down would leak everything the other
+ *	had made.
+ */
+void RS2DestroyGeometry(
+	CRS2GeometryResource *geometry	//	resource to destroy
+){
+	if(!geometry) return;
+
+	if(geometry->backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
+
+	RS2GeometryFree(geometry);
 }
 
+//	Neutral: these describe the resource, not the backend behind it.
 unsigned int RS2GetGeometryVertexCount(const CRS2GeometryResource *geometry){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		return RS2D3D8_GetGeometryVertexCount(geometry);
-
-	RS2D3D12Unsupported("RS2GetGeometryVertexCount");
-	return 0;
+	return geometry ? geometry->vertexCount : 0;
 }
 
-unsigned int RS2GetLiveGeometryCount(){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		return RS2D3D8_GetLiveGeometryCount();
-
-	RS2D3D12Unsupported("RS2GetLiveGeometryCount");
-	return 0;
-}
-
-unsigned int RS2GetGeometryVertexBytes(){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		return RS2D3D8_GetGeometryVertexBytes();
-
-	RS2D3D12Unsupported("RS2GetGeometryVertexBytes");
-	return 0;
-}
-
-unsigned int RS2GetGeometryIndexBytes(){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		return RS2D3D8_GetGeometryIndexBytes();
-
-	RS2D3D12Unsupported("RS2GetGeometryIndexBytes");
-	return 0;
-}
+unsigned int RS2GetLiveGeometryCount(){ return RS2GeometryLiveCount(); }
+unsigned int RS2GetGeometryVertexBytes(){ return RS2GeometryTotalVertexBytes(); }
+unsigned int RS2GetGeometryIndexBytes(){ return RS2GeometryTotalIndexBytes(); }
 
 void RS2DrawImmediate(const RS2MeshVertexLayout &layout, RS2PrimitiveType primitive,
 	const void *vertices, unsigned int vertexCount){
@@ -115,14 +157,18 @@ void RS2DrawImmediate(const RS2MeshVertexLayout &layout, RS2PrimitiveType primit
 
 void RS2DrawBuffered(const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
 	unsigned int firstVertex, unsigned int vertexCount){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
+	if(!RS2GeometryUsable(geometry, "RS2DrawBuffered")) return;
+
+	if(geometry->backend==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawBuffered(geometry, primitive, firstVertex, vertexCount);
 	else RS2D3D12Unsupported("RS2DrawBuffered");
 }
 
 void RS2DrawIndexed(const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
 	unsigned int firstIndex, unsigned int indexCount){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
+	if(!RS2GeometryUsable(geometry, "RS2DrawIndexed")) return;
+
+	if(geometry->backend==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawIndexed(geometry, primitive, firstIndex, indexCount);
 	else RS2D3D12Unsupported("RS2DrawIndexed");
 }

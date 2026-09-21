@@ -28,6 +28,31 @@ $ErrorActionPreference = "Stop"
 #   the state it resumes from; Undo holds the autosaved world.
 $items = @("Config.txt", "Undo")
 
+#   Nothing may be running. The program writes its state while shutting down,
+#   so an instance still on its way out will overwrite a restore that has
+#   already happened - which is a race that produces one wrong capture in a run
+#   of good ones, and looks exactly like the change under test.
+function Wait-ForExit {
+    foreach ($name in @("RailSim2_Release_vc2010", "RailSim2_Debug_vc2010", "RailSim2")) {
+        $procs = Get-Process $name -ErrorAction SilentlyContinue
+        if (-not $procs) { continue }
+
+        $procs | Stop-Process -Force -ErrorAction SilentlyContinue
+
+        $deadline = (Get-Date).AddSeconds(15)
+        while ((Get-Date) -lt $deadline) {
+            if (-not (Get-Process $name -ErrorAction SilentlyContinue)) { break }
+            Start-Sleep -Milliseconds 200
+        }
+        Write-Host "stopped $name"
+    }
+
+    #   Give the file system a moment to settle after the handles close.
+    Start-Sleep -Milliseconds 400
+}
+
+Wait-ForExit
+
 if ($Action -eq "save") {
     if (Test-Path $Snapshot) { Remove-Item $Snapshot -Recurse -Force }
     $null = New-Item -ItemType Directory -Path $Snapshot

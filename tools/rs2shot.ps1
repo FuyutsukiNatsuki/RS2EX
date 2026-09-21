@@ -23,6 +23,15 @@ param(
     #   Extra command-line arguments, e.g. "-fixture" or "-dx12".
     [string]$ExtraArgs = "",
 
+    #   Wait for this text to appear in the program's log before capturing,
+    #   instead of trusting the settle time. A fixed wait caught the loading
+    #   screen about one run in four when the machine was busy, and a capture
+    #   of the loading screen looks exactly like a renderer that lost the
+    #   scene. Needs -dbf in ExtraArgs, which is what writes the log.
+    [string]$WaitForLog = "",
+
+    [int]$WaitForLogSeconds = 120,
+
     #   Pass -Fullscreen to omit -win and capture the primary screen instead.
     [switch]$Fullscreen,
 
@@ -85,6 +94,24 @@ try {
             Start-Sleep -Milliseconds 50
         }
         if ($proc.MainWindowHandle -eq 0) { throw "no window appeared within ${TimeoutSeconds}s" }
+
+        if ($WaitForLog) {
+            $log = Join-Path $workDir "debug.txt"
+            $deadline = (Get-Date).AddSeconds($WaitForLogSeconds)
+            $seen = $false
+
+            while ((Get-Date) -lt $deadline) {
+                $proc.Refresh()
+                if ($proc.HasExited) { throw "the program exited before logging '$WaitForLog'" }
+                if ((Test-Path $log) -and
+                        (Select-String -Path $log -Pattern $WaitForLog -SimpleMatch -Quiet)) {
+                    $seen = $true
+                    break
+                }
+                Start-Sleep -Milliseconds 200
+            }
+            if (-not $seen) { throw "'$WaitForLog' did not appear within ${WaitForLogSeconds}s" }
+        }
 
         Start-Sleep -Seconds $Settle
 

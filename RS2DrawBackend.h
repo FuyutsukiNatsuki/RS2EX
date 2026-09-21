@@ -17,18 +17,26 @@
 
 #include "RS2Draw.h"
 #include "RS2MeshData.h"
+#include "RS2GeometryResource.h"
 
-CRS2GeometryResource * RS2D3D8_CreateGeometry(const RS2MeshVertexLayout &layout,
-	const void *vertices, unsigned int vertexCount);
-CRS2GeometryResource * RS2D3D8_CreateIndexedGeometry(const RS2MeshVertexLayout &layout,
-	const void *vertices, unsigned int vertexCount,
-	const unsigned int *indices, unsigned int indexCount);
-bool RS2D3D8_UpdateGeometry(CRS2GeometryResource *geometry, const void *vertices, unsigned int vertexCount);
+//	Geometry.  The neutral side allocates and frees the resource itself and
+//	counts it; these fill in and release the payload behind it, and are the
+//	only code that knows what is in there.
+bool RS2D3D8_CreateGeometry(
+	CRS2GeometryResource *geometry,
+	const RS2MeshVertexLayout &layout,
+	const void *vertices);
+bool RS2D3D8_CreateIndexedGeometry(
+	CRS2GeometryResource *geometry,
+	const RS2MeshVertexLayout &layout,
+	const void *vertices,
+	const unsigned int *indices);
+bool RS2D3D8_UpdateGeometry(
+	CRS2GeometryResource *geometry,
+	const void *vertices,
+	unsigned int vertexCount);
 void RS2D3D8_DestroyGeometry(CRS2GeometryResource *geometry);
-unsigned int RS2D3D8_GetGeometryVertexCount(const CRS2GeometryResource *geometry);
-unsigned int RS2D3D8_GetLiveGeometryCount();
-unsigned int RS2D3D8_GetGeometryVertexBytes();
-unsigned int RS2D3D8_GetGeometryIndexBytes();
+
 void RS2D3D8_DrawImmediate(const RS2MeshVertexLayout &layout, RS2PrimitiveType primitive,
 	const void *vertices, unsigned int vertexCount);
 void RS2D3D8_DrawBuffered(const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,

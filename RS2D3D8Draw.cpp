@@ -17,6 +17,7 @@
 
 #include "stdafx.h"
 #include "RS2DrawBackend.h"
+#include "RS2GeometryResource.h"
 #include "RS2Draw.h"
 #include "RS2D3D8Draw.h"
 #include "RS2D3D8Resources.h"
@@ -82,159 +83,125 @@ static D3DPRIMITIVETYPE RS2ToD3DPrimitive(RS2PrimitiveType primitive){
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
- *	The opaque type RS2Draw.h forward-declares.
+ *	What this backend keeps behind a geometry resource.
  *
- *	Buffers come from RS2D3D8Resources, so pool choice and the live-resource
+ *	The resource itself is neutral now - see RS2GeometryResource.h - and this
+ *	hangs off it as a void pointer that only this file dereferences.  Buffers
+ *	still come from RS2D3D8Resources, so pool choice and the live-resource
  *	counters keep the single owner v0.0.5 gave them.
  */
-class CRS2GeometryResource
+struct RS2D3D8Geometry
 {
-public:
 	LPDIRECT3DVERTEXBUFFER8 vb;
 	LPDIRECT3DINDEXBUFFER8 ib;
 	DWORD fvf;
-	unsigned int stride;
-	unsigned int vertexCount;
-	unsigned int indexCount;
-	bool counted;		//	fully built, so the totals include it
-
-	CRS2GeometryResource()
-		: vb(0), ib(0), fvf(0), stride(0), vertexCount(0), indexCount(0), counted(false){}
 };
 
-//	Live totals.  Incremented once a resource is fully built, decremented on
-//	release, so a partial creation never shows up as a live resource.
-static unsigned int s_LiveGeometry = 0;
-static unsigned int s_VertexBytes = 0;
-static unsigned int s_IndexBytes = 0;
-
-unsigned int RS2D3D8_GetLiveGeometryCount(){ return s_LiveGeometry; }
-unsigned int RS2D3D8_GetGeometryVertexBytes(){ return s_VertexBytes; }
-unsigned int RS2D3D8_GetGeometryIndexBytes(){ return s_IndexBytes; }
-
-static void RS2FreeGeometry(CRS2GeometryResource *g){
-	if(!g) return;
-
-	if(g->counted){
-		if(s_LiveGeometry) s_LiveGeometry--;
-		s_VertexBytes -= g->stride*g->vertexCount;
-		s_IndexBytes -= g->indexCount*sizeof(WORD);
-	}
-
-	if(g->vb) RS2D3D8_ReleaseVertexBuffer(&g->vb);
-	if(g->ib) RS2D3D8_ReleaseIndexBuffer(&g->ib);
-	delete g;
+static RS2D3D8Geometry *RS2D3D8_Payload(const CRS2GeometryResource *geometry){
+	return geometry ? (RS2D3D8Geometry *)geometry->payload : 0;
 }
 
 /*
- *	Build the vertex half.  Returns 0 having released nothing partial.
+ *	Release the buffers and the payload, leaving the neutral resource alone.
  */
-static CRS2GeometryResource *RS2CreateVertexOnly(
-	const RS2MeshVertexLayout &layout,
-	const void *vertices, unsigned int vertexCount
-){
-	if(!vertices || vertexCount==0) return 0;
+void RS2D3D8_DestroyGeometry(CRS2GeometryResource *geometry){
+	RS2D3D8Geometry *payload = RS2D3D8_Payload(geometry);
 
+	if(!payload) return;
+
+	if(payload->vb) RS2D3D8_ReleaseVertexBuffer(&payload->vb);
+	if(payload->ib) RS2D3D8_ReleaseIndexBuffer(&payload->ib);
+
+	delete payload;
+	geometry->payload = 0;
+}
+
+/*
+ *	Build the vertex half into an already-allocated resource.
+ */
+static bool RS2D3D8_BuildVertices(
+	CRS2GeometryResource *geometry,	//	resource to fill
+	const RS2MeshVertexLayout &layout,	//	vertex layout
+	const void *vertices		//	vertex data
+){
 	unsigned long fvf = 0;
-	if(!RS2D3D8_LayoutToFVF(layout, &fvf)) return 0;
 
-	const UINT bytes = layout.stride*vertexCount;
+	if(!RS2D3D8_LayoutToFVF(layout, &fvf)) return false;
 
-	CRS2GeometryResource *g = new CRS2GeometryResource;
-	g->fvf = (DWORD)fvf;
-	g->stride = layout.stride;
-	g->vertexCount = vertexCount;
+	RS2D3D8Geometry *payload = new RS2D3D8Geometry;
 
-	if(!RS2D3D8_CreateVertexBuffer(bytes, g->fvf, &g->vb)
-		|| !RS2D3D8_UploadVertexBuffer(g->vb, vertices, bytes)){
-		RS2FreeGeometry(g);
-		return 0;
-	}
-	return g;
+	payload->vb = 0;
+	payload->ib = 0;
+	payload->fvf = (DWORD)fvf;
+	geometry->payload = payload;
+
+	const UINT bytes = geometry->stride*geometry->vertexCount;
+
+	if(!RS2D3D8_CreateVertexBuffer(bytes, payload->fvf, &payload->vb)) return false;
+	return !!RS2D3D8_UploadVertexBuffer(payload->vb, vertices, bytes);
 }
 
-static void RS2CountGeometry(CRS2GeometryResource *g){
-	if(!g || g->counted) return;
-
-	g->counted = true;
-	s_LiveGeometry++;
-	s_VertexBytes += g->stride*g->vertexCount;
-	s_IndexBytes += g->indexCount*sizeof(WORD);
-}
-
-CRS2GeometryResource *RS2D3D8_CreateGeometry(
-	const RS2MeshVertexLayout &layout,
-	const void *vertices, unsigned int vertexCount
+bool RS2D3D8_CreateGeometry(
+	CRS2GeometryResource *geometry,		//	resource to fill
+	const RS2MeshVertexLayout &layout,	//	vertex layout
+	const void *vertices			//	vertex data
 ){
-	CRS2GeometryResource *g = RS2CreateVertexOnly(layout, vertices, vertexCount);
-
-	RS2CountGeometry(g);
-	return g;
+	return RS2D3D8_BuildVertices(geometry, layout, vertices);
 }
 
-CRS2GeometryResource *RS2D3D8_CreateIndexedGeometry(
-	const RS2MeshVertexLayout &layout,
-	const void *vertices, unsigned int vertexCount,
-	const unsigned int *indices, unsigned int indexCount
+bool RS2D3D8_CreateIndexedGeometry(
+	CRS2GeometryResource *geometry,		//	resource to fill
+	const RS2MeshVertexLayout &layout,	//	vertex layout
+	const void *vertices,			//	vertex data
+	const unsigned int *indices		//	index data
 ){
-	if(!indices || indexCount==0) return 0;
-
 	//	Inherited from CMesh: the index buffers are 16-bit, and a mesh that
 	//	needs more is refused rather than silently wrapping.
-	if(vertexCount>0xffff){
-		Debug("[RS2EX Draw] %u vertices exceeds the 16-bit index range\n", vertexCount);
-		return 0;
+	if(geometry->vertexCount>0xffff){
+		Debug("[RS2EX Draw] %u vertices exceeds the 16-bit index range\n",
+			geometry->vertexCount);
+		return false;
 	}
 
-	CRS2GeometryResource *g = RS2CreateVertexOnly(layout, vertices, vertexCount);
-	if(!g) return 0;
+	if(!RS2D3D8_BuildVertices(geometry, layout, vertices)) return false;
 
-	g->indexCount = indexCount;
+	RS2D3D8Geometry *payload = RS2D3D8_Payload(geometry);
 
-	if(!RS2D3D8_CreateIndexBuffer(indexCount*sizeof(WORD), &g->ib)){
-		RS2FreeGeometry(g);
-		return 0;
-	}
+	if(!RS2D3D8_CreateIndexBuffer(geometry->indexCount*sizeof(WORD), &payload->ib))
+		return false;
 
 	void *dst = 0;
-	if(!RS2D3D8_LockIndexBuffer(g->ib, &dst)){
-		RS2FreeGeometry(g);
-		return 0;
-	}
+
+	if(!RS2D3D8_LockIndexBuffer(payload->ib, &dst)) return false;
 
 	WORD *out = (WORD *)dst;
 	unsigned int i;
-	for(i = 0; i<indexCount; i++){
-		if(indices[i]>=vertexCount){
-			RS2D3D8_UnlockIndexBuffer(g->ib);
+
+	for(i = 0; i<geometry->indexCount; i++){
+		if(indices[i]>=geometry->vertexCount){
+			RS2D3D8_UnlockIndexBuffer(payload->ib);
 			Debug("[RS2EX Draw] index %u is outside %u vertices\n",
-				indices[i], vertexCount);
-			RS2FreeGeometry(g);
-			return 0;
+				indices[i], geometry->vertexCount);
+			return false;
 		}
 		out[i] = (WORD)indices[i];
 	}
-	RS2D3D8_UnlockIndexBuffer(g->ib);
-	RS2CountGeometry(g);
-	return g;
+	RS2D3D8_UnlockIndexBuffer(payload->ib);
+	return true;
 }
 
 bool RS2D3D8_UpdateGeometry(
-	CRS2GeometryResource *geometry, const void *vertices, unsigned int vertexCount
+	CRS2GeometryResource *geometry,	//	resource to update
+	const void *vertices,		//	new vertex data
+	unsigned int vertexCount	//	vertices to write
 ){
-	if(!geometry || !geometry->vb || !vertices) return false;
+	RS2D3D8Geometry *payload = RS2D3D8_Payload(geometry);
+
+	if(!payload || !payload->vb || !vertices) return false;
 	if(vertexCount>geometry->vertexCount) return false;
 
 	return !!RS2D3D8_UploadVertexBuffer(
-		geometry->vb, vertices, geometry->stride*vertexCount);
-}
-
-void RS2D3D8_DestroyGeometry(CRS2GeometryResource *geometry){
-	RS2FreeGeometry(geometry);
-}
-
-unsigned int RS2D3D8_GetGeometryVertexCount(const CRS2GeometryResource *geometry){
-	return geometry ? geometry->vertexCount : 0;
+		payload->vb, vertices, geometry->stride*vertexCount);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -260,14 +227,16 @@ void RS2D3D8_DrawBuffered(
 	const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
 	unsigned int firstVertex, unsigned int vertexCount
 ){
-	if(!geometry || !geometry->vb) return;
+	RS2D3D8Geometry *payload = RS2D3D8_Payload(geometry);
+
+	if(!payload || !payload->vb) return;
 	if(firstVertex+vertexCount>geometry->vertexCount) return;
 
 	const unsigned int prims = RS2PrimitiveCount(primitive, vertexCount);
 	if(!prims) return;
 
-	sv3.pDev->SetStreamSource(0, geometry->vb, geometry->stride);
-	sv3.pDev->SetVertexShader(geometry->fvf);
+	sv3.pDev->SetStreamSource(0, payload->vb, geometry->stride);
+	sv3.pDev->SetVertexShader(payload->fvf);
 	sv3.pDev->DrawPrimitive(RS2ToD3DPrimitive(primitive), firstVertex, prims);
 }
 
@@ -275,15 +244,17 @@ void RS2D3D8_DrawIndexed(
 	const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
 	unsigned int firstIndex, unsigned int indexCount
 ){
-	if(!geometry || !geometry->vb || !geometry->ib) return;
+	RS2D3D8Geometry *payload = RS2D3D8_Payload(geometry);
+
+	if(!payload || !payload->vb || !payload->ib) return;
 	if(firstIndex+indexCount>geometry->indexCount) return;
 
 	const unsigned int prims = RS2PrimitiveCount(primitive, indexCount);
 	if(!prims) return;
 
-	sv3.pDev->SetStreamSource(0, geometry->vb, geometry->stride);
-	sv3.pDev->SetIndices(geometry->ib, 0);
-	sv3.pDev->SetVertexShader(geometry->fvf);
+	sv3.pDev->SetStreamSource(0, payload->vb, geometry->stride);
+	sv3.pDev->SetIndices(payload->ib, 0);
+	sv3.pDev->SetVertexShader(payload->fvf);
 
 	//	The whole vertex buffer stays addressable: a subset draws its own index
 	//	range but shares vertices with the others.
