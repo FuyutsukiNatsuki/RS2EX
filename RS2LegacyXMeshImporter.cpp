@@ -14,6 +14,7 @@
 #include <rmxftmpl.h>
 
 #include "RS2LegacyXMeshImporter.h"
+#include "RS2LegacyImportDevice.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //	CXFile - inherited from lib/mesh.cpp
@@ -351,6 +352,12 @@ bool RS2ImportLegacyXMesh(BOOL fRes, const char *strName, CRS2MeshImportResult *
 	LPD3DXBUFFER pBuf = 0;
 	LPD3DXBUFFER pAdj = 0;
 	DWORD numMat = 0;
+	//	[RS2EX] The importer's own device, not the renderer's.  If it cannot
+	//	be created the import fails, leaving the destination empty - the same
+	//	outcome a missing or unreadable file already produces.
+	IDirect3DDevice8 *device = RS2GetLegacyImportDevice();
+	if(!device) return false;
+
 	HRESULT hr;
 
 	if(fRes){
@@ -366,13 +373,13 @@ bool RS2ImportLegacyXMesh(BOOL fRes, const char *strName, CRS2MeshImportResult *
 			return false;
 		}
 		hr = D3DXLoadMeshFromXof(pDat, D3DXMESH_SYSTEMMEM,
-			sv3.pDev, &pAdj, &pBuf, &numMat, &pMesh);
+			device, &pAdj, &pBuf, &numMat, &pMesh);
 		RELEASE(pDat);
 		xfile.Close();
 	}else{
 		hr = D3DXLoadMeshFromX(
 			(LPSTR)strName, D3DXMESH_SYSTEMMEM,
-			sv3.pDev, &pAdj, &pBuf, &numMat, &pMesh);
+			device, &pAdj, &pBuf, &numMat, &pMesh);
 	}
 
 	if(FAILED(hr)){
@@ -462,8 +469,13 @@ static bool RS2FinishPrimitive(LPD3DXMESH pMesh, CRS2MeshData *out){
 
 bool RS2ImportLegacySphere(float r, UINT sl, UINT st, CRS2MeshData *out){
 	LPD3DXMESH pMesh = NULL;
+	//	[RS2EX] The importer's own device, not the renderer's.  If it cannot
+	//	be created the import fails, leaving the destination empty - the same
+	//	outcome a missing or unreadable file already produces.
+	IDirect3DDevice8 *device = RS2GetLegacyImportDevice();
+	if(!device) return false;
 
-	if(FAILED(D3DXCreateSphere(sv3.pDev, r, sl, st, &pMesh, NULL))){
+	if(FAILED(D3DXCreateSphere(device, r, sl, st, &pMesh, NULL))){
 		Debug("D3DXCreateSphere\n");
 		return false;
 	}
@@ -472,8 +484,13 @@ bool RS2ImportLegacySphere(float r, UINT sl, UINT st, CRS2MeshData *out){
 
 bool RS2ImportLegacyBox(float x, float y, float z, CRS2MeshData *out){
 	LPD3DXMESH pMesh = NULL;
+	//	[RS2EX] The importer's own device, not the renderer's.  If it cannot
+	//	be created the import fails, leaving the destination empty - the same
+	//	outcome a missing or unreadable file already produces.
+	IDirect3DDevice8 *device = RS2GetLegacyImportDevice();
+	if(!device) return false;
 
-	if(FAILED(D3DXCreateBox(sv3.pDev, x, y, z, &pMesh, NULL))){
+	if(FAILED(D3DXCreateBox(device, x, y, z, &pMesh, NULL))){
 		//	[RS2EX] 2.15 logged "D3DXCreateSphere" here; kept verbatim so the
 		//	existing debug output does not change.  Recorded as a known issue.
 		Debug("D3DXCreateSphere\n");
@@ -484,8 +501,13 @@ bool RS2ImportLegacyBox(float x, float y, float z, CRS2MeshData *out){
 
 bool RS2ImportLegacyTeapot(CRS2MeshData *out){
 	LPD3DXMESH pMesh = NULL;
+	//	[RS2EX] The importer's own device, not the renderer's.  If it cannot
+	//	be created the import fails, leaving the destination empty - the same
+	//	outcome a missing or unreadable file already produces.
+	IDirect3DDevice8 *device = RS2GetLegacyImportDevice();
+	if(!device) return false;
 
-	if(FAILED(D3DXCreateTeapot(sv3.pDev, &pMesh, NULL))){
+	if(FAILED(D3DXCreateTeapot(device, &pMesh, NULL))){
 		Debug("D3DXCreateTeapot\n");
 		return false;
 	}
