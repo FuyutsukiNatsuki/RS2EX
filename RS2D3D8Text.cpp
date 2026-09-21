@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-22.
 //
 //	The Direct3D 8 side of live text.  Provenance: the font description, the
 //	DrawText flags and the rectangle are from lib/font.cpp (Copyright (c) 2002
@@ -10,14 +11,15 @@
 //	rather than preserving one.
 
 #include "stdafx.h"
+#include "RS2TextBackend.h"
 #include "RS2Text.h"
 
 static LPD3DXFONT s_Font = 0;
 static int s_Size = 0;
 static RS2PackedColor s_Color = 0xffffffff;
 
-void RS2CreateTextFont(int size, RS2PackedColor color, bool bold){
-	RS2DestroyTextFont();
+void RS2D3D8_CreateTextFont(int size, RS2PackedColor color, bool bold){
+	RS2D3D8_DestroyTextFont();
 
 	LOGFONT logFont = {
 		size, 0, 0, 0,
@@ -36,12 +38,12 @@ void RS2CreateTextFont(int size, RS2PackedColor color, bool bold){
 	s_Color = color;
 }
 
-void RS2DestroyTextFont(){
+void RS2D3D8_DestroyTextFont(){
 	RELEASE(s_Font);
 	s_Size = 0;
 }
 
-int RS2GetTextHeight(){
+int RS2D3D8_GetTextHeight(){
 	return s_Size;
 }
 
@@ -52,7 +54,7 @@ int RS2GetTextHeight(){
  *	passed: the text is never clipped to a narrower box, and the edit box
  *	relies on being able to draw past its own width while composing.
  */
-void RS2DrawText(int x, int y, RS2PackedColor color, const char *text){
+void RS2D3D8_DrawText(int x, int y, RS2PackedColor color, const char *text){
 	if(!s_Font || !text) return;
 
 	RECT rect = {x, y, sv3.width, sv3.height};

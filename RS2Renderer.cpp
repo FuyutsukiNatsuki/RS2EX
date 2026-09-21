@@ -6,6 +6,7 @@
 #include "RS2Renderer.h"
 #include "RS2D3D8Backend.h"
 #include "RS2D3D12Availability.h"
+#include "RS2D3D12Backend.h"
 
 /*
  *	The renderer instance
@@ -79,13 +80,10 @@ bool CRS2Renderer::Initialize(int width, int height){
 			return false;
 		}
 
-		//	The backend itself lands in the next commit.  Saying so is better
-		//	than quietly running Direct3D 8 and reporting success.
-		Debug("[RS2EX Renderer] no Direct3D 12 backend in this build yet\n");
-		return false;
+		m_Backend = new CRS2D3D12Backend;
+	}else{
+		m_Backend = new CRS2D3D8Backend;
 	}
-
-	m_Backend = new CRS2D3D8Backend;
 
 	Debug("[RS2EX Renderer] backend = %s\n", GetBackendName());
 	Debug("[RS2EX Renderer] initialize %d x %d\n", width, height);
@@ -99,6 +97,24 @@ bool CRS2Renderer::Initialize(int width, int height){
 		m_Backend->Shutdown();
 		delete m_Backend;
 		m_Backend = NULL;
+		return false;
+	}
+
+	//	[RS2EX] The Direct3D 12 backend of v0.1.0 owns a device, a swap chain
+	//	and a frame, and it can clear and present.  It cannot create a
+	//	texture or a vertex buffer, so nothing the game loads can be built,
+	//	and scene setup does not survive being handed nothing.  That is not a
+	//	defect to paper over here: scene rendering is explicitly out of scope
+	//	for this release.
+	//
+	//	So the selection happens, the backend comes up and is measured, and
+	//	then the program stops rather than walking into a world it cannot
+	//	build.  -dx12smoke exercises the backend itself.
+	if(m_BackendType==RS2_RENDERER_D3D12){
+		Debug("[RS2EX Renderer] Direct3D 12 is up, but v0.1.0 cannot create\n");
+		Debug("[RS2EX Renderer] textures or geometry, so there is no scene to\n");
+		Debug("[RS2EX Renderer] render.  Use -dx12smoke to exercise the backend.\n");
+		Shutdown();
 		return false;
 	}
 	return true;

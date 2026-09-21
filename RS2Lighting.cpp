@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-22.
 //
 //	The engine half of the scene light.  Owns the values; the backend owns the
 //	submission.  Provenance: the normalisation, the diffuse-equals-specular
@@ -7,6 +8,8 @@
 //	SetDirLight() in lib/light.cpp (Copyright (c) 2002 Midikyou).
 
 #include "stdafx.h"
+#include "RS2Renderer.h"
+#include "RS2D3D12Unsupported.h"
 #include "RS2Lighting.h"
 #include "RS2D3D8Lighting.h"
 
@@ -31,7 +34,12 @@ void RS2SetDirectionalLight(const RS2Direction &direction, const RS2Color4 &colo
 	s_Light.color = color;
 	s_Enabled = true;
 
-	RS2D3D8_SubmitDirectionalLight(s_Light);
+	//	[RS2EX] The value above is engine state and is kept whatever backend
+	//	is running - the shadow code and the sun read it.  Only the
+	//	submission is a backend matter.
+	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
+		RS2D3D8_SubmitDirectionalLight(s_Light);
+	else RS2D3D12Unsupported("RS2SetDirectionalLight");
 }
 
 const RS2DirectionalLight &RS2GetDirectionalLight(){

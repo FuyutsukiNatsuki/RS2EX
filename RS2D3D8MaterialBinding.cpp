@@ -1,11 +1,13 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-22.
 //
 //	The Direct3D 8 side of material and sampled-texture submission.  This is the
 //	only place a RailSim material becomes a D3DMATERIAL8, and the only place a
 //	texture reference becomes an IDirect3DTexture8*.
 
 #include "stdafx.h"
+#include "RS2MaterialBindingBackend.h"
 #include "RS2MaterialBinding.h"
 
 /*
@@ -15,7 +17,7 @@
  *	D3DCOLORVALUE happen to have the same layout today, and reinterpreting one as
  *	the other would silently break the moment either changes.
  */
-void RS2SetMaterial(const RS2Material &material){
+void RS2D3D8_SetMaterial(const RS2Material &material){
 	D3DMATERIAL8 mat;
 
 	mat.Diffuse.r = material.Diffuse.r;
@@ -52,7 +54,7 @@ void RS2SetMaterial(const RS2Material &material){
  *	The empty case matters: v0.0.8 moves the remaining native unbind calls here,
  *	and the API should not need changing when it does.
  */
-void RS2BindTexture(unsigned int stage, const RS2TextureRef &texture){
+void RS2D3D8_BindTexture(unsigned int stage, const RS2TextureRef &texture){
 	const CRS2TextureResource *resource = texture.GetResource();
 	LPTEX8 native = resource ? (LPTEX8)resource->GetNativeForBackend() : NULL;
 

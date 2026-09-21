@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-22.
 //
 //	The Direct3D 8 side of render state and scene lighting.
 //
@@ -11,6 +12,7 @@
 //	reordering here would be invisible in review and hard to find later.
 
 #include "stdafx.h"
+#include "RS2RenderStateBackend.h"
 #include "RS2RenderState.h"
 #include "RS2Lighting.h"
 #include "RS2D3D8Lighting.h"
@@ -64,19 +66,19 @@ static DWORD RS2ToD3DColorSource(RS2ColorSource source){
 //	Depth
 ////////////////////////////////////////////////////////////////////////////////
 
-void RS2SetDepthTest(bool enable){
+void RS2D3D8_SetDepthTest(bool enable){
 	sv3.pDev->SetRenderState(D3DRS_ZENABLE, enable ? TRUE : FALSE);
 }
 
-void RS2SetDepthWrite(bool enable){
+void RS2D3D8_SetDepthWrite(bool enable){
 	sv3.pDev->SetRenderState(D3DRS_ZWRITEENABLE, enable ? TRUE : FALSE);
 }
 
-void RS2SetDepthFunc(RS2CompareFunc func){
+void RS2D3D8_SetDepthFunc(RS2CompareFunc func){
 	sv3.pDev->SetRenderState(D3DRS_ZFUNC, RS2ToD3DCompare(func));
 }
 
-void RS2ClearDepth(){
+void RS2D3D8_ClearDepth(){
 	sv3.pDev->Clear(0, NULL, D3DCLEAR_ZBUFFER, 0, 1.0f, 0);
 }
 
@@ -89,7 +91,7 @@ void RS2ClearDepth(){
  *	devSetBlend() had.  Disabling therefore leaves the factors alone, which
  *	several passes depend on.
  */
-void RS2SetBlend(RS2BlendMode mode){
+void RS2D3D8_SetBlend(RS2BlendMode mode){
 	if(mode==RS2_BLEND_DISABLED){
 		sv3.pDev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 		return;
@@ -117,15 +119,15 @@ void RS2SetBlend(RS2BlendMode mode){
 //	Alpha test
 ////////////////////////////////////////////////////////////////////////////////
 
-void RS2SetAlphaTest(bool enable){
+void RS2D3D8_SetAlphaTest(bool enable){
 	sv3.pDev->SetRenderState(D3DRS_ALPHATESTENABLE, enable ? TRUE : FALSE);
 }
 
-void RS2SetAlphaRef(unsigned int ref){
+void RS2D3D8_SetAlphaRef(unsigned int ref){
 	sv3.pDev->SetRenderState(D3DRS_ALPHAREF, (DWORD)ref);
 }
 
-void RS2SetAlphaFunc(RS2CompareFunc func){
+void RS2D3D8_SetAlphaFunc(RS2CompareFunc func){
 	sv3.pDev->SetRenderState(D3DRS_ALPHAFUNC, RS2ToD3DCompare(func));
 }
 
@@ -133,16 +135,16 @@ void RS2SetAlphaFunc(RS2CompareFunc func){
 //	Raster
 ////////////////////////////////////////////////////////////////////////////////
 
-void RS2SetCullMode(RS2CullMode mode){
+void RS2D3D8_SetCullMode(RS2CullMode mode){
 	sv3.pDev->SetRenderState(D3DRS_CULLMODE, RS2ToD3DCull(mode));
 }
 
-void RS2SetShadeMode(RS2ShadeMode mode){
+void RS2D3D8_SetShadeMode(RS2ShadeMode mode){
 	sv3.pDev->SetRenderState(D3DRS_SHADEMODE,
 		mode==RS2_SHADE_FLAT ? D3DSHADE_FLAT : D3DSHADE_GOURAUD);
 }
 
-void RS2SetNormalizeNormals(bool enable){
+void RS2D3D8_SetNormalizeNormals(bool enable){
 	sv3.pDev->SetRenderState(D3DRS_NORMALIZENORMALS, enable ? TRUE : FALSE);
 }
 
@@ -150,35 +152,35 @@ void RS2SetNormalizeNormals(bool enable){
 //	Stencil
 ////////////////////////////////////////////////////////////////////////////////
 
-void RS2SetStencilTest(bool enable){
+void RS2D3D8_SetStencilTest(bool enable){
 	sv3.pDev->SetRenderState(D3DRS_STENCILENABLE, enable ? TRUE : FALSE);
 }
 
-void RS2SetStencilFunc(RS2CompareFunc func){
+void RS2D3D8_SetStencilFunc(RS2CompareFunc func){
 	sv3.pDev->SetRenderState(D3DRS_STENCILFUNC, RS2ToD3DCompare(func));
 }
 
-void RS2SetStencilRef(unsigned int ref){
+void RS2D3D8_SetStencilRef(unsigned int ref){
 	sv3.pDev->SetRenderState(D3DRS_STENCILREF, (DWORD)ref);
 }
 
-void RS2SetStencilReadMask(unsigned int mask){
+void RS2D3D8_SetStencilReadMask(unsigned int mask){
 	sv3.pDev->SetRenderState(D3DRS_STENCILMASK, (DWORD)mask);
 }
 
-void RS2SetStencilWriteMask(unsigned int mask){
+void RS2D3D8_SetStencilWriteMask(unsigned int mask){
 	sv3.pDev->SetRenderState(D3DRS_STENCILWRITEMASK, (DWORD)mask);
 }
 
-void RS2SetStencilFailOp(RS2StencilOp op){
+void RS2D3D8_SetStencilFailOp(RS2StencilOp op){
 	sv3.pDev->SetRenderState(D3DRS_STENCILFAIL, RS2ToD3DStencilOp(op));
 }
 
-void RS2SetStencilDepthFailOp(RS2StencilOp op){
+void RS2D3D8_SetStencilDepthFailOp(RS2StencilOp op){
 	sv3.pDev->SetRenderState(D3DRS_STENCILZFAIL, RS2ToD3DStencilOp(op));
 }
 
-void RS2SetStencilPassOp(RS2StencilOp op){
+void RS2D3D8_SetStencilPassOp(RS2StencilOp op){
 	sv3.pDev->SetRenderState(D3DRS_STENCILPASS, RS2ToD3DStencilOp(op));
 }
 
@@ -186,24 +188,24 @@ void RS2SetStencilPassOp(RS2StencilOp op){
 //	Lighting and material source
 ////////////////////////////////////////////////////////////////////////////////
 
-void RS2SetLighting(bool enable){
+void RS2D3D8_SetLighting(bool enable){
 	sv3.pDev->SetRenderState(D3DRS_LIGHTING, enable ? TRUE : FALSE);
 }
 
-void RS2SetAmbientLight(RS2PackedColor color){
+void RS2D3D8_SetAmbientLight(RS2PackedColor color){
 	sv3.pDev->SetRenderState(D3DRS_AMBIENT, (DWORD)color);
 }
 
-void RS2SetSpecular(bool enable){
+void RS2D3D8_SetSpecular(bool enable){
 	sv3.pDev->SetRenderState(D3DRS_SPECULARENABLE, enable ? TRUE : FALSE);
 }
 
-void RS2SetDiffuseColorSource(RS2ColorSource source){
+void RS2D3D8_SetDiffuseColorSource(RS2ColorSource source){
 	sv3.pDev->SetRenderState(
 		D3DRS_DIFFUSEMATERIALSOURCE, RS2ToD3DColorSource(source));
 }
 
-void RS2SetAmbientColorSource(RS2ColorSource source){
+void RS2D3D8_SetAmbientColorSource(RS2ColorSource source){
 	sv3.pDev->SetRenderState(
 		D3DRS_AMBIENTMATERIALSOURCE, RS2ToD3DColorSource(source));
 }
@@ -216,7 +218,7 @@ void RS2SetAmbientColorSource(RS2ColorSource source){
  *	FOGENABLE FALSE; the shadow overlay writes it once.  Folding the pair in
  *	here would have given the overlay a spurious second write.
  */
-void RS2DisableFog(){
+void RS2D3D8_DisableFog(){
 	sv3.pDev->SetRenderState(D3DRS_FOGENABLE, FALSE);
 }
 
@@ -224,7 +226,7 @@ void RS2DisableFog(){
 //	Texture stage
 ////////////////////////////////////////////////////////////////////////////////
 
-void RS2SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
+void RS2D3D8_SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
 	const DWORD f = RS2ToD3DFilter(filter);
 
 	sv3.pDev->SetTextureStageState(stage, D3DTSS_MAGFILTER, f);
@@ -241,7 +243,7 @@ void RS2SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
  *	before the overlay draws and none is read back, so the result is identical;
  *	the alternative was two functions that differ only in ordering.
  */
-void RS2SetBaseTextureCombine(){
+void RS2D3D8_SetBaseTextureCombine(){
 	sv3.pDev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	sv3.pDev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 	sv3.pDev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
@@ -251,19 +253,19 @@ void RS2SetBaseTextureCombine(){
 	sv3.pDev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 }
 
-void RS2SetSecondaryTextureCombine(unsigned int stage, bool enable){
+void RS2D3D8_SetSecondaryTextureCombine(unsigned int stage, bool enable){
 	sv3.pDev->SetTextureStageState(
 		stage, D3DTSS_COLOROP, enable ? D3DTOP_MODULATE : D3DTOP_DISABLE);
 	sv3.pDev->SetTextureStageState(stage, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 	sv3.pDev->SetTextureStageState(stage, D3DTSS_COLORARG2, D3DTA_CURRENT);
 }
 
-void RS2SetUVTransform(unsigned int stage, bool enable){
+void RS2D3D8_SetUVTransform(unsigned int stage, bool enable){
 	sv3.pDev->SetTextureStageState(stage, D3DTSS_TEXTURETRANSFORMFLAGS,
 		enable ? D3DTTFF_COUNT2 : D3DTTFF_DISABLE);
 }
 
-void RS2SetUVMatrix(unsigned int stage, const float *matrix){
+void RS2D3D8_SetUVMatrix(unsigned int stage, const float *matrix){
 	if(!matrix) return;
 
 	sv3.pDev->SetTransform(
@@ -281,10 +283,10 @@ static const float RS2_ENV_MATRIX[16] = {
 	0.0f,  0.0f, 0.0f, 1.0f
 };
 
-void RS2SetEnvironmentMapping(unsigned int stage, bool enable){
-	RS2SetUVTransform(stage, enable);
+void RS2D3D8_SetEnvironmentMapping(unsigned int stage, bool enable){
+	RS2D3D8_SetUVTransform(stage, enable);
 
-	if(enable) RS2SetUVMatrix(stage, RS2_ENV_MATRIX);
+	if(enable) RS2D3D8_SetUVMatrix(stage, RS2_ENV_MATRIX);
 	else sv3.pDev->SetTransform(
 		(D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0+stage), &MTX_FRONT);
 
@@ -307,22 +309,22 @@ void RS2SetEnvironmentMapping(unsigned int stage, bool enable){
  *	something sets them.  docs/v0.0.8-render-state-inventory.md lists them.
  *	Adding initial values would be a behaviour change dressed as tidiness.
  */
-void RS2ApplyInitialRenderState(){
-	RS2SetLighting(true);
-	RS2SetAmbientLight(0xff808080);
-	RS2SetSpecular(true);
-	RS2SetShadeMode(RS2_SHADE_GOURAUD);
-	RS2SetCullMode(RS2_CULL_COUNTER_CLOCKWISE);
-	RS2SetDepthTest(true);
-	RS2SetDepthWrite(true);
+void RS2D3D8_ApplyInitialRenderState(){
+	RS2D3D8_SetLighting(true);
+	RS2D3D8_SetAmbientLight(0xff808080);
+	RS2D3D8_SetSpecular(true);
+	RS2D3D8_SetShadeMode(RS2_SHADE_GOURAUD);
+	RS2D3D8_SetCullMode(RS2_CULL_COUNTER_CLOCKWISE);
+	RS2D3D8_SetDepthTest(true);
+	RS2D3D8_SetDepthWrite(true);
 	//	Twice: devSetFog() and devSetPixelFog() each wrote FOGENABLE FALSE.
-	RS2DisableFog();
-	RS2DisableFog();
-	RS2SetBlend(RS2_BLEND_ALPHA);
-	RS2SetNormalizeNormals(true);
+	RS2D3D8_DisableFog();
+	RS2D3D8_DisableFog();
+	RS2D3D8_SetBlend(RS2_BLEND_ALPHA);
+	RS2D3D8_SetNormalizeNormals(true);
 
-	RS2SetBaseTextureCombine();
-	RS2SetTextureFilter(0, RS2_FILTER_POINT);
+	RS2D3D8_SetBaseTextureCombine();
+	RS2D3D8_SetTextureFilter(0, RS2_FILTER_POINT);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

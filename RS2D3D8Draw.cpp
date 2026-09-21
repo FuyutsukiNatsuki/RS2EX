@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-22.
 //
 //	The Direct3D 8 side of draw submission.
 //
@@ -15,6 +16,7 @@
 //	differently per topology, at thirty-seven places.
 
 #include "stdafx.h"
+#include "RS2DrawBackend.h"
 #include "RS2Draw.h"
 #include "RS2D3D8Draw.h"
 #include "RS2D3D8Resources.h"
@@ -75,30 +77,6 @@ static D3DPRIMITIVETYPE RS2ToD3DPrimitive(RS2PrimitiveType primitive){
 	}
 }
 
-/*
- *	How many primitives a count forms, or 0 if it cannot form whole ones.
- *
- *	Refusing rather than truncating is the point.  A triangle list of eight
- *	vertices is a caller bug; drawing two triangles and ignoring the rest would
- *	hide it behind geometry that is merely slightly wrong.
- */
-unsigned int RS2PrimitiveCount(RS2PrimitiveType primitive, unsigned int count){
-	switch(primitive){
-	case RS2_PRIMITIVE_POINT_LIST:
-		return count;
-	case RS2_PRIMITIVE_LINE_LIST:
-		return (count>=2 && count%2==0) ? count/2 : 0;
-	case RS2_PRIMITIVE_LINE_STRIP:
-		return count>=2 ? count-1 : 0;
-	case RS2_PRIMITIVE_TRIANGLE_LIST:
-		return (count>=3 && count%3==0) ? count/3 : 0;
-	case RS2_PRIMITIVE_TRIANGLE_STRIP:
-	case RS2_PRIMITIVE_TRIANGLE_FAN:
-		return count>=3 ? count-2 : 0;
-	}
-	return 0;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 //	Geometry resource
 ////////////////////////////////////////////////////////////////////////////////
@@ -130,9 +108,9 @@ static unsigned int s_LiveGeometry = 0;
 static unsigned int s_VertexBytes = 0;
 static unsigned int s_IndexBytes = 0;
 
-unsigned int RS2GetLiveGeometryCount(){ return s_LiveGeometry; }
-unsigned int RS2GetGeometryVertexBytes(){ return s_VertexBytes; }
-unsigned int RS2GetGeometryIndexBytes(){ return s_IndexBytes; }
+unsigned int RS2D3D8_GetLiveGeometryCount(){ return s_LiveGeometry; }
+unsigned int RS2D3D8_GetGeometryVertexBytes(){ return s_VertexBytes; }
+unsigned int RS2D3D8_GetGeometryIndexBytes(){ return s_IndexBytes; }
 
 static void RS2FreeGeometry(CRS2GeometryResource *g){
 	if(!g) return;
@@ -184,7 +162,7 @@ static void RS2CountGeometry(CRS2GeometryResource *g){
 	s_IndexBytes += g->indexCount*sizeof(WORD);
 }
 
-CRS2GeometryResource *RS2CreateGeometry(
+CRS2GeometryResource *RS2D3D8_CreateGeometry(
 	const RS2MeshVertexLayout &layout,
 	const void *vertices, unsigned int vertexCount
 ){
@@ -194,7 +172,7 @@ CRS2GeometryResource *RS2CreateGeometry(
 	return g;
 }
 
-CRS2GeometryResource *RS2CreateIndexedGeometry(
+CRS2GeometryResource *RS2D3D8_CreateIndexedGeometry(
 	const RS2MeshVertexLayout &layout,
 	const void *vertices, unsigned int vertexCount,
 	const unsigned int *indices, unsigned int indexCount
@@ -241,7 +219,7 @@ CRS2GeometryResource *RS2CreateIndexedGeometry(
 	return g;
 }
 
-bool RS2UpdateGeometry(
+bool RS2D3D8_UpdateGeometry(
 	CRS2GeometryResource *geometry, const void *vertices, unsigned int vertexCount
 ){
 	if(!geometry || !geometry->vb || !vertices) return false;
@@ -251,11 +229,11 @@ bool RS2UpdateGeometry(
 		geometry->vb, vertices, geometry->stride*vertexCount);
 }
 
-void RS2DestroyGeometry(CRS2GeometryResource *geometry){
+void RS2D3D8_DestroyGeometry(CRS2GeometryResource *geometry){
 	RS2FreeGeometry(geometry);
 }
 
-unsigned int RS2GetGeometryVertexCount(const CRS2GeometryResource *geometry){
+unsigned int RS2D3D8_GetGeometryVertexCount(const CRS2GeometryResource *geometry){
 	return geometry ? geometry->vertexCount : 0;
 }
 
@@ -263,7 +241,7 @@ unsigned int RS2GetGeometryVertexCount(const CRS2GeometryResource *geometry){
 //	Submission
 ////////////////////////////////////////////////////////////////////////////////
 
-void RS2DrawImmediate(
+void RS2D3D8_DrawImmediate(
 	const RS2MeshVertexLayout &layout, RS2PrimitiveType primitive,
 	const void *vertices, unsigned int vertexCount
 ){
@@ -278,7 +256,7 @@ void RS2DrawImmediate(
 		RS2ToD3DPrimitive(primitive), prims, vertices, layout.stride);
 }
 
-void RS2DrawBuffered(
+void RS2D3D8_DrawBuffered(
 	const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
 	unsigned int firstVertex, unsigned int vertexCount
 ){
@@ -293,7 +271,7 @@ void RS2DrawBuffered(
 	sv3.pDev->DrawPrimitive(RS2ToD3DPrimitive(primitive), firstVertex, prims);
 }
 
-void RS2DrawIndexed(
+void RS2D3D8_DrawIndexed(
 	const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
 	unsigned int firstIndex, unsigned int indexCount
 ){
@@ -317,17 +295,17 @@ void RS2DrawIndexed(
 //	Transforms
 ////////////////////////////////////////////////////////////////////////////////
 
-void RS2SetWorldTransform(const float *matrix){
+void RS2D3D8_SetWorldTransform(const float *matrix){
 	if(!matrix) return;
 	sv3.pDev->SetTransform(D3DTS_WORLD, (const D3DMATRIX *)matrix);
 }
 
-void RS2SetViewTransform(const float *matrix){
+void RS2D3D8_SetViewTransform(const float *matrix){
 	if(!matrix) return;
 	sv3.pDev->SetTransform(D3DTS_VIEW, (const D3DMATRIX *)matrix);
 }
 
-void RS2SetProjectionTransform(const float *matrix){
+void RS2D3D8_SetProjectionTransform(const float *matrix){
 	if(!matrix) return;
 	sv3.pDev->SetTransform(D3DTS_PROJECTION, (const D3DMATRIX *)matrix);
 }

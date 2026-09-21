@@ -1,11 +1,14 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-22.
 //
 //	The pool and format choices below are not made here - they live in
 //	RS2D3D8Resources, where v0.0.5 centralised them.  This file owns lifetime and
 //	identity; that file owns how a texture is actually created.
 
 #include "stdafx.h"
+#include "RS2Renderer.h"
+#include "RS2D3D12Unsupported.h"
 #include "RS2TextureResource.h"
 #include "RS2D3D8Resources.h"
 
@@ -110,6 +113,15 @@ static CRS2TextureResource *RS2AdoptTexture(LPTEX8 tex){
 CRS2TextureResource *RS2CreateTextureFromFile(
 	const char *strFile, unsigned long cTrans, int nMipLv
 ){
+	//	[RS2EX] Direct3D 12 has no texture creation in v0.1.0, and the
+	//	Direct3D 8 helper below would use a device this backend does not
+	//	own.  Failing is the honest answer; the caller already handles a
+	//	texture that would not load.
+	if(GetRS2Renderer().GetBackendType()!=RS2_RENDERER_D3D8){
+		RS2D3D12Unsupported("RS2CreateTextureFromFile");
+		return 0;
+	}
+
 	LPTEX8 tex = 0;
 
 	if(FAILED(RS2D3D8_CreateTextureFromFile(&tex, strFile, cTrans, nMipLv))) return 0;
@@ -119,6 +131,15 @@ CRS2TextureResource *RS2CreateTextureFromFile(
 CRS2TextureResource *RS2CreateTextureFromResource(
 	const char *strRes, unsigned long cTrans, int nMipLv
 ){
+	//	[RS2EX] Direct3D 12 has no texture creation in v0.1.0, and the
+	//	Direct3D 8 helper below would use a device this backend does not
+	//	own.  Failing is the honest answer; the caller already handles a
+	//	texture that would not load.
+	if(GetRS2Renderer().GetBackendType()!=RS2_RENDERER_D3D8){
+		RS2D3D12Unsupported("RS2CreateTextureFromResource");
+		return 0;
+	}
+
 	LPTEX8 tex = 0;
 
 	if(FAILED(RS2D3D8_CreateTextureFromResource(&tex, strRes, cTrans, nMipLv))) return 0;
@@ -126,6 +147,15 @@ CRS2TextureResource *RS2CreateTextureFromResource(
 }
 
 CRS2TextureResource *RS2CreateMutableTexture(int w, int h){
+	//	[RS2EX] Direct3D 12 has no texture creation in v0.1.0, and the
+	//	Direct3D 8 helper below would use a device this backend does not
+	//	own.  Failing is the honest answer; the caller already handles a
+	//	texture that would not load.
+	if(GetRS2Renderer().GetBackendType()!=RS2_RENDERER_D3D8){
+		RS2D3D12Unsupported("RS2CreateMutableTexture");
+		return 0;
+	}
+
 	LPTEX8 tex = 0;
 
 	if(FAILED(RS2D3D8_CreateMutableTexture(&tex, w, h))) return 0;
