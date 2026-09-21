@@ -1,6 +1,7 @@
 //	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21.
 #include "stdafx.h"
 #include "HighTimer.h"
+#include "RS2Fixture.h"
 #include "Capture.h"
 #include "RSPV.h"
 #include "CJobTimer.h"
@@ -818,6 +819,22 @@ int CGameMode::ConsumeSimulationTicks(
 		ms_SimulationClock.Reset(false);
 		return 0;
 	}
+
+	//	[RS2EX] Fixture mode stops the world once it has settled, so every
+	//	frame after that renders the same state and two runs can be compared
+	//	pixel for pixel.  The limit is a tick count and not an elapsed time,
+	//	because elapsed time is exactly what makes the normal scene
+	//	irreproducible.  Freezing clears the accumulator the same way the
+	//	disabled path above does, which also pins the interpolation alpha at
+	//	zero - measured at 0.000000 on every frame after the freeze.
+	if(RS2FixtureIsEnabled()){
+		if(RS2FixtureIsFrozen()){
+			ms_SimulationClock.Reset(false);
+			return 0;
+		}
+		return RS2FixtureClampTicks(ms_SimulationClock.ConsumeTicks());
+	}
+
 	return ms_SimulationClock.ConsumeTicks();
 }
 
@@ -853,6 +870,13 @@ void CGameMode::RunSimulationTick(){
  *	which is what v0.0.2 already did.
  */
 bool CGameMode::IsTrainInterpolationEnabled(){
+	//	[RS2EX] Interpolation is a real-time input to rendering, and the
+	//	fixture exists to remove those, so it presents the authoritative
+	//	posture instead - which is what v0.0.2 did for every frame.
+	//	Measurement puts the alpha at zero once the world has stopped, so
+	//	this changes nothing today; it is here so that a later change to the
+	//	clock cannot make the fixture move again without anyone noticing.
+	if(RS2FixtureIsFrozen()) return false;
 	if(g_NetworkInitialized) return false;
 	if(!g_SimulationMode) return false;
 	return g_SimulationMode->GetSimSpeed()==1;

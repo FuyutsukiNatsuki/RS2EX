@@ -205,6 +205,7 @@
     <ClCompile Include="RS2MeshData.cpp" />
     <ClCompile Include="RS2LegacyXMeshImporter.cpp" />
     <ClCompile Include="RS2LegacyImportDevice.cpp" />
+    <ClCompile Include="RS2Fixture.cpp" />
     <ClCompile Include="RS2TextureResource.cpp" />
     <ClCompile Include="RS2D3D8MaterialBinding.cpp" />
     <ClCompile Include="RS2Lighting.cpp" />
@@ -441,6 +442,7 @@
     <ClInclude Include="RS2MeshData.h" />
     <ClInclude Include="RS2LegacyXMeshImporter.h" />
     <ClInclude Include="RS2LegacyImportDevice.h" />
+    <ClInclude Include="RS2Fixture.h" />
     <ClInclude Include="RS2Material.h" />
     <ClInclude Include="RS2TextureResource.h" />
     <ClInclude Include="RS2MaterialBinding.h" />
