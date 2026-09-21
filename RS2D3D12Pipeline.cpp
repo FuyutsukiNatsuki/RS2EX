@@ -40,10 +40,21 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	float4 g_Viewport;	// xy size, zw reciprocal\n"
 "};\n"
 "\n"
+"//	Geometry with no vertex colour draws white.  It is not a material - there\n"
+"//	are no materials yet - but it is visible and unmistakably unfinished,\n"
+"//	which is what a bootstrap should look like rather than black.\n"
+"#if RS2_HAS_DIFFUSE\n"
+"#define RS2_VERTEX_COLOUR(v)	((v).col)\n"
+"#else\n"
+"#define RS2_VERTEX_COLOUR(v)	float4(1.0f, 1.0f, 1.0f, 1.0f)\n"
+"#endif\n"
+"\n"
 "struct VSIn\n"
 "{\n"
 "	float4 pos : POSITION;\n"
+"#if RS2_HAS_DIFFUSE\n"
 "	float4 col : COLOR0;\n"
+"#endif\n"
 "};\n"
 "\n"
 "struct VSOut\n"
@@ -57,7 +68,7 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "{\n"
 "	VSOut output;\n"
 "	output.pos = mul(float4(input.pos.xyz, 1.0f), g_WorldViewProj);\n"
-"	output.col = input.col;\n"
+"	output.col = RS2_VERTEX_COLOUR(input);\n"
 "	return output;\n"
 "}\n"
 "\n"
@@ -73,7 +84,7 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	ndc.x = input.pos.x*g_Viewport.z*2.0f - 1.0f;\n"
 "	ndc.y = 1.0f - input.pos.y*g_Viewport.w*2.0f;\n"
 "	output.pos = float4(ndc.x*w, ndc.y*w, input.pos.z*w, w);\n"
-"	output.col = input.col;\n"
+"	output.col = RS2_VERTEX_COLOUR(input);\n"
 "	return output;\n"
 "}\n"
 "\n"
@@ -84,10 +95,16 @@ static const char *RS2D3D12_SHADER_SOURCE =
 
 static ID3DBlob *RS2D3D12_Compile(
 	const char *entry,	//	function to compile
-	const char *target	//	shader model
+	const char *target,	//	shader model
+	bool hasDiffuse		//	whether the layout supplies a vertex colour
 ){
 	ID3DBlob *code = 0;
 	ID3DBlob *errors = 0;
+
+	const D3D_SHADER_MACRO macros[2] = {
+		{ "RS2_HAS_DIFFUSE", hasDiffuse ? "1" : "0" },
+		{ NULL, NULL }
+	};
 
 	UINT flags = D3DCOMPILE_ENABLE_STRICTNESS;
 
@@ -99,7 +116,7 @@ static ID3DBlob *RS2D3D12_Compile(
 
 	const HRESULT hr = D3DCompile(
 		RS2D3D12_SHADER_SOURCE, strlen(RS2D3D12_SHADER_SOURCE),
-		"RS2Basic", NULL, NULL, entry, target, flags, 0, &code, &errors);
+		"RS2Basic", macros, NULL, entry, target, flags, 0, &code, &errors);
 
 	if(errors){
 		//	Warnings arrive here too, so this is reported whether or not the
@@ -119,8 +136,6 @@ static ID3DBlob *RS2D3D12_Compile(
 CRS2D3D12Pipeline::CRS2D3D12Pipeline()
 	: m_Device(0),
 	  m_RootSignature(0),
-	  m_VertexPipeline(0),
-	  m_VertexScreen(0),
 	  m_Pixel(0),
 	  m_Count(0),
 	  m_Full(false)
@@ -128,6 +143,7 @@ CRS2D3D12Pipeline::CRS2D3D12Pipeline()
 	unsigned int i;
 
 	for(i = 0; i<RS2D3D12_MAX_PIPELINES; i++) m_State[i] = 0;
+	ZeroMemory(m_Vertex, sizeof(m_Vertex));
 	ZeroMemory(m_Key, sizeof(m_Key));
 }
 
@@ -136,11 +152,17 @@ CRS2D3D12Pipeline::~CRS2D3D12Pipeline(){
 }
 
 bool CRS2D3D12Pipeline::CompileShaders(){
-	m_VertexPipeline = RS2D3D12_Compile("VSPipeline", "vs_5_0");
-	m_VertexScreen = RS2D3D12_Compile("VSScreen", "vs_5_0");
-	m_Pixel = RS2D3D12_Compile("PSMain", "ps_5_0");
+	unsigned int diffuse;
 
-	return m_VertexPipeline && m_VertexScreen && m_Pixel;
+	for(diffuse = 0; diffuse<2; diffuse++){
+		m_Vertex[0][diffuse] = RS2D3D12_Compile("VSPipeline", "vs_5_0", diffuse!=0);
+		m_Vertex[1][diffuse] = RS2D3D12_Compile("VSScreen", "vs_5_0", diffuse!=0);
+
+		if(!m_Vertex[0][diffuse] || !m_Vertex[1][diffuse]) return false;
+	}
+
+	m_Pixel = RS2D3D12_Compile("PSMain", "ps_5_0", true);
+	return m_Pixel!=0;
 }
 
 bool CRS2D3D12Pipeline::Create(
@@ -209,8 +231,13 @@ void CRS2D3D12Pipeline::Destroy(){
 	m_Full = false;
 
 	RELEASE(m_Pixel);
-	RELEASE(m_VertexScreen);
-	RELEASE(m_VertexPipeline);
+
+	{
+		unsigned int semantic, diffuse;
+
+		for(semantic = 0; semantic<2; semantic++)
+			for(diffuse = 0; diffuse<2; diffuse++) RELEASE(m_Vertex[semantic][diffuse]);
+	}
 	RELEASE(m_RootSignature);
 
 	m_Device = 0;
@@ -406,8 +433,11 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 		count++;
 	}
 
-	ID3DBlob *vertex = (key.positionSemantic==RS2_POSITION_ALREADY_TRANSFORMED)
-		? m_VertexScreen : m_VertexPipeline;
+	ID3DBlob *vertex = m_Vertex
+		[(key.positionSemantic==RS2_POSITION_ALREADY_TRANSFORMED) ? 1 : 0]
+		[key.hasDiffuse ? 1 : 0];
+
+	if(!vertex) return 0;
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC desc;
 

@@ -16,23 +16,24 @@
 #include "RS2Renderer.h"
 #include "RS2RenderStateBackend.h"
 #include "RS2D3D12Unsupported.h"
+#include "RS2D3D12Draw.h"
 
 void RS2SetDepthTest(bool enable){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetDepthTest(enable);
-	else RS2D3D12Unsupported("RS2SetDepthTest");
+	else RS2D3D12_SetDepthTest(enable);
 }
 
 void RS2SetDepthWrite(bool enable){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetDepthWrite(enable);
-	else RS2D3D12Unsupported("RS2SetDepthWrite");
+	else RS2D3D12_SetDepthWrite(enable);
 }
 
 void RS2SetDepthFunc(RS2CompareFunc func){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetDepthFunc(func);
-	else RS2D3D12Unsupported("RS2SetDepthFunc");
+	else RS2D3D12_SetDepthFunc(func);
 }
 
 void RS2ClearDepth(){
@@ -44,7 +45,7 @@ void RS2ClearDepth(){
 void RS2SetBlend(RS2BlendMode mode){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetBlend(mode);
-	else RS2D3D12Unsupported("RS2SetBlend");
+	else RS2D3D12_SetBlend(mode);
 }
 
 void RS2SetAlphaTest(bool enable){
@@ -68,7 +69,7 @@ void RS2SetAlphaFunc(RS2CompareFunc func){
 void RS2SetCullMode(RS2CullMode mode){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetCullMode(mode);
-	else RS2D3D12Unsupported("RS2SetCullMode");
+	else RS2D3D12_SetCullMode(mode);
 }
 
 void RS2SetShadeMode(RS2ShadeMode mode){
@@ -206,5 +207,5 @@ void RS2SetUVMatrix(unsigned int stage, const float *matrix){
 void RS2ApplyInitialRenderState(){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_ApplyInitialRenderState();
-	else RS2D3D12Unsupported("RS2ApplyInitialRenderState");
+	else RS2D3D12_ApplyInitialRenderState();
 }

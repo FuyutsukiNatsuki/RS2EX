@@ -6,6 +6,7 @@
 
 #include "stdafx.h"
 #include "RS2D3D12Backend.h"
+#include "RS2D3D12Draw.h"
 
 //	The same inputs the Direct3D 8 backend consults, so both backends
 //	answer "windowed or not" the same way.
@@ -691,6 +692,14 @@ void CRS2D3D12Backend::Shutdown(){
 		m_FenceEvent = NULL;
 	}
 
+	//	What the run actually drew.  A renderer that presented every frame and
+	//	submitted nothing looks identical from the outside to one that drew
+	//	something invisible, and these two numbers tell them apart.
+	if(m_Device)
+		Debug("[RS2EX D3D12] draws submitted %u, refused %u, pipeline states %u\n",
+			RS2D3D12_GetDrawCount(), RS2D3D12_GetRefusedDrawCount(),
+			m_Pipeline.GetStateCount());
+
 	//	Reported before it goes, because the size of these blocks is a guess
 	//	until something measures it.
 	if(m_Device && GetUploadPeak())
@@ -915,6 +924,17 @@ bool CRS2D3D12Backend::BeginRenderPass(unsigned int clearColor, bool clearColorB
 
 	m_CommandList->ClearDepthStencilView(
 		m_DsvHeap->GetCPUDescriptorHandleForHeapStart(), flags, 1.0f, 0, 0, NULL);
+
+	//	[RS2EX] The Direct3D 8 backend submits the view matrix here, straight
+	//	to the device, so it never went through the draw boundary and the
+	//	Direct3D 12 backend never saw it - the scene drew at the world origin
+	//	and went off screen, while the screen-space interface looked fine.
+	//
+	//	Same source, same moment, same effect.  Like the scalar state in
+	//	PublishCompatibilityState, this is the engine keeping something in sv3
+	//	that a backend has to go and fetch, and it belongs on the same list of
+	//	things the boundary should be asking for instead.
+	RS2D3D12_SetViewTransform(sv3.mtxView);
 
 	m_PassActive = true;
 	return true;

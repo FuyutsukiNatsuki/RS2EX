@@ -84,8 +84,11 @@ private:
 	ID3D12Device *m_Device;
 	ID3D12RootSignature *m_RootSignature;
 
-	ID3DBlob *m_VertexPipeline;	//	position transformed by the matrix
-	ID3DBlob *m_VertexScreen;	//	position already in screen space
+	//	[position semantic][vertex has a colour].  A vertex shader has to
+	//	declare exactly the inputs the layout supplies - an input the layout
+	//	does not provide is not ignored, it fails pipeline creation - so a
+	//	layout without a diffuse colour needs its own variant.
+	ID3DBlob *m_Vertex[2][2];
 	ID3DBlob *m_Pixel;
 
 	//	Small and linear on purpose: a scene reaches a handful of states, and a

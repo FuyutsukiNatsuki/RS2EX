@@ -202,6 +202,69 @@ static void RS2D3D12_Refuse(const char *why){
 	Debug("[RS2EX D3D12] draw refused: %s\n", why);
 }
 
+/*
+ *	Finish a pipeline key, bind the state and the constants.
+ *
+ *	The constants are the same for every draw in a pass, but they are written
+ *	per draw because the engine can change a transform between two of them and
+ *	the scratch allocator makes a copy cheap.  Deduplicating that would mean
+ *	tracking what changed, which is a cache to get wrong for a memcpy.
+ *
+ *	returns	: false having already said why not
+ */
+static bool RS2D3D12_BindPipeline(
+	CRS2D3D12Backend *backend,			//	backend to record into
+	RS2D3D12PipelineKey *key,			//	layout half filled in
+	D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType,	//	class for the state
+	D3D12_PRIMITIVE_TOPOLOGY topology		//	topology for the assembler
+){
+	key->topology = (unsigned char)topologyType;
+	key->depthTest = s_DepthTest ? 1 : 0;
+	key->depthWrite = s_DepthWrite ? 1 : 0;
+	key->depthFunc = (unsigned char)s_DepthFunc;
+	key->cullMode = (unsigned char)s_CullMode;
+	key->blendMode = (unsigned char)s_BlendMode;
+
+	ID3D12PipelineState *state = backend->GetPipeline()->Get(*key);
+
+	if(!state){
+		RS2D3D12_Refuse("no pipeline state for this combination");
+		return false;
+	}
+
+	//	World, view and projection are combined here because the shader wants
+	//	one matrix and the engine sets three.
+	RS2D3D12Constants constants;
+	float worldView[16];
+
+	RS2D3D12_Multiply(worldView, s_World, s_View);
+	RS2D3D12_Multiply(constants.worldViewProj, worldView, s_Projection);
+
+	unsigned int width = 0, height = 0;
+
+	backend->GetViewportSize(&width, &height);
+	constants.viewport[0] = (float)width;
+	constants.viewport[1] = (float)height;
+	constants.viewport[2] = width ? 1.0f/(float)width : 0.0f;
+	constants.viewport[3] = height ? 1.0f/(float)height : 0.0f;
+
+	D3D12_GPU_VIRTUAL_ADDRESS constantAddress = 0;
+
+	//	Constant buffers must start on a 256-byte boundary.
+	if(!backend->GetUpload()->Write(&constants, sizeof(constants), 256, &constantAddress)){
+		RS2D3D12_Refuse("the constants would not fit in this frame");
+		return false;
+	}
+
+	ID3D12GraphicsCommandList *list = backend->GetCommandList();
+
+	list->SetGraphicsRootSignature(backend->GetPipeline()->GetRootSignature());
+	list->SetPipelineState(state);
+	list->SetGraphicsRootConstantBufferView(0, constantAddress);
+	list->IASetPrimitiveTopology(topology);
+	return true;
+}
+
 void RS2D3D12_DrawImmediate(
 	const RS2MeshVertexLayout &layout,	//	vertex layout
 	RS2PrimitiveType primitive,		//	what to draw
@@ -260,47 +323,7 @@ void RS2D3D12_DrawImmediate(
 		}
 	}
 
-	key.topology = (unsigned char)topologyType;
-	key.depthTest = s_DepthTest ? 1 : 0;
-	key.depthWrite = s_DepthWrite ? 1 : 0;
-	key.depthFunc = (unsigned char)s_DepthFunc;
-	key.cullMode = (unsigned char)s_CullMode;
-	key.blendMode = (unsigned char)s_BlendMode;
-
-	ID3D12PipelineState *state = backend->GetPipeline()->Get(key);
-
-	if(!state){
-		RS2D3D12_Refuse("no pipeline state for this combination");
-		return;
-	}
-
-	//	Constants.  World, view and projection are combined here because the
-	//	shader wants one matrix and the engine sets three, and because doing it
-	//	on the GPU would mean three matrices in the constant buffer for no
-	//	reason.
-	RS2D3D12Constants constants;
-	float worldView[16];
-
-	RS2D3D12_Multiply(worldView, s_World, s_View);
-	RS2D3D12_Multiply(constants.worldViewProj, worldView, s_Projection);
-
-	unsigned int width = 0, height = 0;
-
-	backend->GetViewportSize(&width, &height);
-	constants.viewport[0] = (float)width;
-	constants.viewport[1] = (float)height;
-	constants.viewport[2] = width ? 1.0f/(float)width : 0.0f;
-	constants.viewport[3] = height ? 1.0f/(float)height : 0.0f;
-
-	D3D12_GPU_VIRTUAL_ADDRESS constantAddress = 0;
-
-	//	Constant buffers must start on a 256-byte boundary.
-	if(!upload->Write(&constants, sizeof(constants), 256, &constantAddress)){
-		RS2D3D12_Refuse("the constants would not fit in this frame");
-		return;
-	}
-
-	ID3D12GraphicsCommandList *list = backend->GetCommandList();
+	if(!RS2D3D12_BindPipeline(backend, &key, topologyType, topology)) return;
 
 	D3D12_VERTEX_BUFFER_VIEW view;
 
@@ -308,12 +331,316 @@ void RS2D3D12_DrawImmediate(
 	view.SizeInBytes = drawCount*layout.stride;
 	view.StrideInBytes = layout.stride;
 
-	list->SetGraphicsRootSignature(backend->GetPipeline()->GetRootSignature());
-	list->SetPipelineState(state);
-	list->SetGraphicsRootConstantBufferView(0, constantAddress);
-	list->IASetPrimitiveTopology(topology);
-	list->IASetVertexBuffers(0, 1, &view);
-	list->DrawInstanced(drawCount, 1, 0, 0);
+	backend->GetCommandList()->IASetVertexBuffers(0, 1, &view);
+	backend->GetCommandList()->DrawInstanced(drawCount, 1, 0, 0);
+
+	s_DrawCount++;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//	Geometry resources
+////////////////////////////////////////////////////////////////////////////////
+
+/*
+ *	What this backend keeps behind a geometry resource.
+ *
+ *	The layout key is stored because a buffered or indexed draw is given only
+ *	the resource.  Direct3D 8 kept an FVF for the same reason; Direct3D 12
+ *	needs the whole input layout, and the key is exactly that.
+ */
+struct RS2D3D12Geometry
+{
+	ID3D12Resource *vertices;
+	ID3D12Resource *indices;
+
+	D3D12_VERTEX_BUFFER_VIEW vertexView;
+	D3D12_INDEX_BUFFER_VIEW indexView;
+
+	RS2D3D12PipelineKey layout;
+};
+
+static RS2D3D12Geometry *RS2D3D12_Payload(const CRS2GeometryResource *geometry){
+	return geometry ? (RS2D3D12Geometry *)geometry->payload : 0;
+}
+
+/*
+ *	A buffer on the upload heap, filled once.
+ *
+ *	v0.1.1 keeps static geometry in upload memory rather than copying it to a
+ *	default heap through a staging buffer.  That is slower for the GPU to read
+ *	and it is written down as temporary, because the question this release
+ *	answers is whether RS2 geometry reaches the Direct3D 12 pipeline at all,
+ *	not how fast it gets there.  A staging copy needs a copy queue or a
+ *	one-shot command list and a fence wait per resource, which is a second
+ *	lifetime problem to get right for no benefit yet.
+ */
+static ID3D12Resource *RS2D3D12_CreateFilledBuffer(
+	ID3D12Device *device,	//	device to allocate from
+	const void *data,	//	what to put in it
+	unsigned int bytes	//	how much
+){
+	D3D12_HEAP_PROPERTIES props;
+
+	ZeroMemory(&props, sizeof(props));
+	props.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+	D3D12_RESOURCE_DESC desc;
+
+	ZeroMemory(&desc, sizeof(desc));
+	desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	desc.Width = bytes;
+	desc.Height = 1;
+	desc.DepthOrArraySize = 1;
+	desc.MipLevels = 1;
+	desc.Format = DXGI_FORMAT_UNKNOWN;
+	desc.SampleDesc.Count = 1;
+	desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	ID3D12Resource *buffer = 0;
+
+	if(FAILED(device->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
+			D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&buffer))))
+		return 0;
+
+	void *cpu = 0;
+	D3D12_RANGE none;
+
+	none.Begin = 0;
+	none.End = 0;
+
+	if(FAILED(buffer->Map(0, &none, &cpu))){
+		buffer->Release();
+		return 0;
+	}
+
+	memcpy(cpu, data, bytes);
+	buffer->Unmap(0, NULL);
+	return buffer;
+}
+
+void RS2D3D12_DestroyGeometry(CRS2GeometryResource *geometry){
+	RS2D3D12Geometry *payload = RS2D3D12_Payload(geometry);
+
+	if(!payload) return;
+
+	RELEASE(payload->indices);
+	RELEASE(payload->vertices);
+
+	delete payload;
+	geometry->payload = 0;
+}
+
+static bool RS2D3D12_BuildVertices(
+	CRS2GeometryResource *geometry,		//	resource to fill
+	const RS2MeshVertexLayout &layout,	//	vertex layout
+	const void *vertices			//	vertex data
+){
+	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
+
+	if(!backend) return false;
+
+	RS2D3D12PipelineKey key;
+
+	ZeroMemory(&key, sizeof(key));
+	if(!RS2D3D12_DescribeLayout(layout, &key)){
+		Debug("[RS2EX D3D12] geometry layout cannot be expressed\n");
+		return false;
+	}
+
+	RS2D3D12Geometry *payload = new RS2D3D12Geometry;
+
+	ZeroMemory(payload, sizeof(*payload));
+	payload->layout = key;
+	geometry->payload = payload;
+
+	const unsigned int bytes = geometry->stride*geometry->vertexCount;
+
+	payload->vertices = RS2D3D12_CreateFilledBuffer(
+		backend->GetDevice(), vertices, bytes);
+
+	if(!payload->vertices){
+		Debug("[RS2EX D3D12] %u vertex bytes could not be allocated\n", bytes);
+		return false;
+	}
+
+	payload->vertexView.BufferLocation = payload->vertices->GetGPUVirtualAddress();
+	payload->vertexView.SizeInBytes = bytes;
+	payload->vertexView.StrideInBytes = geometry->stride;
+	return true;
+}
+
+bool RS2D3D12_CreateGeometry(
+	CRS2GeometryResource *geometry,		//	resource to fill
+	const RS2MeshVertexLayout &layout,	//	vertex layout
+	const void *vertices			//	vertex data
+){
+	return RS2D3D12_BuildVertices(geometry, layout, vertices);
+}
+
+bool RS2D3D12_CreateIndexedGeometry(
+	CRS2GeometryResource *geometry,		//	resource to fill
+	const RS2MeshVertexLayout &layout,	//	vertex layout
+	const void *vertices,			//	vertex data
+	const unsigned int *indices		//	index data
+){
+	//	Sixteen-bit indices, the same contract CMesh has always had.  A mesh
+	//	that needs more is refused rather than silently wrapping, and an index
+	//	outside the vertices is refused rather than read.
+	if(geometry->vertexCount>0xffff){
+		Debug("[RS2EX D3D12] %u vertices exceeds the 16-bit index range\n",
+			geometry->vertexCount);
+		return false;
+	}
+
+	if(!RS2D3D12_BuildVertices(geometry, layout, vertices)) return false;
+
+	RS2D3D12Geometry *payload = RS2D3D12_Payload(geometry);
+	WORD *narrowed = new WORD[geometry->indexCount];
+	unsigned int i;
+
+	for(i = 0; i<geometry->indexCount; i++){
+		if(indices[i]>=geometry->vertexCount){
+			Debug("[RS2EX D3D12] index %u is outside %u vertices\n",
+				indices[i], geometry->vertexCount);
+			delete [] narrowed;
+			return false;
+		}
+		narrowed[i] = (WORD)indices[i];
+	}
+
+	const unsigned int bytes = geometry->indexCount*(unsigned int)sizeof(WORD);
+
+	payload->indices = RS2D3D12_CreateFilledBuffer(
+		RS2D3D12GetActiveBackend()->GetDevice(), narrowed, bytes);
+	delete [] narrowed;
+
+	if(!payload->indices){
+		Debug("[RS2EX D3D12] %u index bytes could not be allocated\n", bytes);
+		return false;
+	}
+
+	payload->indexView.BufferLocation = payload->indices->GetGPUVirtualAddress();
+	payload->indexView.SizeInBytes = bytes;
+	payload->indexView.Format = DXGI_FORMAT_R16_UINT;
+	return true;
+}
+
+/*
+ *	The part of a buffered or indexed draw that is the same either way.
+ *
+ *	returns	: the payload, or 0 having already said why not
+ */
+static RS2D3D12Geometry *RS2D3D12_PrepareBufferedDraw(
+	const CRS2GeometryResource *geometry,	//	resource being drawn
+	RS2PrimitiveType primitive,		//	what to draw
+	CRS2D3D12Backend **backendOut		//	the backend, for the caller
+){
+	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
+
+	if(!backend || !backend->IsRecording()){
+		RS2D3D12_Refuse("no frame is being recorded");
+		return 0;
+	}
+
+	RS2D3D12Geometry *payload = RS2D3D12_Payload(geometry);
+
+	if(!payload || !payload->vertices){
+		RS2D3D12_Refuse("the geometry has no vertices");
+		return 0;
+	}
+
+	//	Fans out of a buffer would have to be expanded with an index list built
+	//	per draw.  Nothing in the engine draws a buffered fan today, so this
+	//	says so rather than guessing at an implementation nobody needs yet.
+	if(primitive==RS2_PRIMITIVE_TRIANGLE_FAN){
+		RS2D3D12_Refuse("a buffered triangle fan is not implemented");
+		return 0;
+	}
+
+	*backendOut = backend;
+	return payload;
+}
+
+void RS2D3D12_DrawBuffered(
+	const CRS2GeometryResource *geometry,	//	resource to draw from
+	RS2PrimitiveType primitive,		//	what to draw
+	unsigned int firstVertex,		//	first vertex
+	unsigned int vertexCount		//	vertices
+){
+	CRS2D3D12Backend *backend = 0;
+	RS2D3D12Geometry *payload =
+		RS2D3D12_PrepareBufferedDraw(geometry, primitive, &backend);
+
+	if(!payload) return;
+	if(firstVertex+vertexCount>geometry->vertexCount){
+		RS2D3D12_Refuse("the vertex range is outside the buffer");
+		return;
+	}
+	if(!RS2PrimitiveCount(primitive, vertexCount)){
+		RS2D3D12_Refuse("the vertex count does not form whole primitives");
+		return;
+	}
+
+	D3D12_PRIMITIVE_TOPOLOGY topology;
+	D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType;
+
+	if(!RS2D3D12_Topology(primitive, &topology, &topologyType)){
+		RS2D3D12_Refuse("the primitive type has no Direct3D 12 topology");
+		return;
+	}
+
+	RS2D3D12PipelineKey key = payload->layout;
+
+	if(!RS2D3D12_BindPipeline(backend, &key, topologyType, topology)) return;
+
+	backend->GetCommandList()->IASetVertexBuffers(0, 1, &payload->vertexView);
+	backend->GetCommandList()->DrawInstanced(vertexCount, 1, firstVertex, 0);
+
+	s_DrawCount++;
+}
+
+void RS2D3D12_DrawIndexed(
+	const CRS2GeometryResource *geometry,	//	resource to draw from
+	RS2PrimitiveType primitive,		//	what to draw
+	unsigned int firstIndex,		//	first index
+	unsigned int indexCount			//	indices
+){
+	CRS2D3D12Backend *backend = 0;
+	RS2D3D12Geometry *payload =
+		RS2D3D12_PrepareBufferedDraw(geometry, primitive, &backend);
+
+	if(!payload) return;
+	if(!payload->indices){
+		RS2D3D12_Refuse("the geometry has no indices");
+		return;
+	}
+	if(firstIndex+indexCount>geometry->indexCount){
+		RS2D3D12_Refuse("the index range is outside the buffer");
+		return;
+	}
+	if(!RS2PrimitiveCount(primitive, indexCount)){
+		RS2D3D12_Refuse("the index count does not form whole primitives");
+		return;
+	}
+
+	D3D12_PRIMITIVE_TOPOLOGY topology;
+	D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType;
+
+	if(!RS2D3D12_Topology(primitive, &topology, &topologyType)){
+		RS2D3D12_Refuse("the primitive type has no Direct3D 12 topology");
+		return;
+	}
+
+	RS2D3D12PipelineKey key = payload->layout;
+
+	if(!RS2D3D12_BindPipeline(backend, &key, topologyType, topology)) return;
+
+	backend->GetCommandList()->IASetVertexBuffers(0, 1, &payload->vertexView);
+	backend->GetCommandList()->IASetIndexBuffer(&payload->indexView);
+
+	//	The whole vertex buffer stays addressable: a subset draws its own index
+	//	range but shares vertices with the others, as it does on Direct3D 8.
+	backend->GetCommandList()->DrawIndexedInstanced(indexCount, 1, firstIndex, 0, 0);
 
 	s_DrawCount++;
 }

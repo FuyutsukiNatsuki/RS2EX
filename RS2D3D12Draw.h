@@ -16,6 +16,7 @@
 #include "RS2Draw.h"
 #include "RS2MeshData.h"
 #include "RS2RenderState.h"
+#include "RS2GeometryResource.h"
 
 class CRS2GeometryResource;
 
@@ -53,6 +54,31 @@ void RS2D3D12_DrawImmediate(
 	RS2PrimitiveType primitive,
 	const void *vertices,
 	unsigned int vertexCount);
+
+//	Geometry resources.  The neutral side owns the resource and these fill in
+//	and release what is behind it, exactly as the Direct3D 8 side does.
+bool RS2D3D12_CreateGeometry(
+	CRS2GeometryResource *geometry,
+	const RS2MeshVertexLayout &layout,
+	const void *vertices);
+bool RS2D3D12_CreateIndexedGeometry(
+	CRS2GeometryResource *geometry,
+	const RS2MeshVertexLayout &layout,
+	const void *vertices,
+	const unsigned int *indices);
+void RS2D3D12_DestroyGeometry(CRS2GeometryResource *geometry);
+
+void RS2D3D12_DrawBuffered(
+	const CRS2GeometryResource *geometry,
+	RS2PrimitiveType primitive,
+	unsigned int firstVertex,
+	unsigned int vertexCount);
+
+void RS2D3D12_DrawIndexed(
+	const CRS2GeometryResource *geometry,
+	RS2PrimitiveType primitive,
+	unsigned int firstIndex,
+	unsigned int indexCount);
 
 /*
  *	How many draws the Direct3D 12 backend has submitted.

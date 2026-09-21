@@ -65,12 +65,13 @@ CRS2GeometryResource *RS2CreateGeometry(
 	if(backend==RS2_RENDERER_D3D8)
 		built = RS2D3D8_CreateGeometry(geometry, layout, vertices);
 	else
-		RS2D3D12Unsupported("RS2CreateGeometry");
+		built = RS2D3D12_CreateGeometry(geometry, layout, vertices);
 
 	if(!built){
 		//	Whatever the backend managed to build is released before the
 		//	resource goes, so a failure leaves nothing behind.
 		if(backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
+		else RS2D3D12_DestroyGeometry(geometry);
 		RS2GeometryFree(geometry);
 		return 0;
 	}
@@ -96,10 +97,11 @@ CRS2GeometryResource *RS2CreateIndexedGeometry(
 	if(backend==RS2_RENDERER_D3D8)
 		built = RS2D3D8_CreateIndexedGeometry(geometry, layout, vertices, indices);
 	else
-		RS2D3D12Unsupported("RS2CreateIndexedGeometry");
+		built = RS2D3D12_CreateIndexedGeometry(geometry, layout, vertices, indices);
 
 	if(!built){
 		if(backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
+		else RS2D3D12_DestroyGeometry(geometry);
 		RS2GeometryFree(geometry);
 		return 0;
 	}
@@ -136,6 +138,7 @@ void RS2DestroyGeometry(
 	if(!geometry) return;
 
 	if(geometry->backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
+	else RS2D3D12_DestroyGeometry(geometry);
 
 	RS2GeometryFree(geometry);
 }
@@ -162,7 +165,7 @@ void RS2DrawBuffered(const CRS2GeometryResource *geometry, RS2PrimitiveType prim
 
 	if(geometry->backend==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawBuffered(geometry, primitive, firstVertex, vertexCount);
-	else RS2D3D12Unsupported("RS2DrawBuffered");
+	else RS2D3D12_DrawBuffered(geometry, primitive, firstVertex, vertexCount);
 }
 
 void RS2DrawIndexed(const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
@@ -171,7 +174,7 @@ void RS2DrawIndexed(const CRS2GeometryResource *geometry, RS2PrimitiveType primi
 
 	if(geometry->backend==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawIndexed(geometry, primitive, firstIndex, indexCount);
-	else RS2D3D12Unsupported("RS2DrawIndexed");
+	else RS2D3D12_DrawIndexed(geometry, primitive, firstIndex, indexCount);
 }
 
 void RS2SetWorldTransform(const float *matrix){

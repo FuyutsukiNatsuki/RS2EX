@@ -227,6 +227,7 @@ public:
 	ID3D12GraphicsCommandList *GetCommandList() const{ return m_CommandList; }
 	CRS2D3D12Upload *GetUpload(){ return &m_Upload[m_FrameIndex]; }
 	CRS2D3D12Pipeline *GetPipeline(){ return &m_Pipeline; }
+	ID3D12Device *GetDevice() const{ return m_Device; }
 
 	/*
 	 *	Whether the device has been reported gone.
