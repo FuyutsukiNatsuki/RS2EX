@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-22.
 //
 //	Renderer facade.
 //

@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include "RS2D3D12Smoke.h"
 #include "RS2D3D12Backend.h"
+#include "RS2Renderer.h"
 
 //	How many times the create/shutdown step repeats.  Once proves it works;
 //	repeating proves shutdown actually released what it created, which is the
@@ -74,6 +75,17 @@ static bool RS2D3D12_SmokeLifecycle(){
 
 		wsprintfA(label, "readback refused cycle %d", cycle+1);
 		RS2D3D12_SmokeStep(label, !backend.SupportsReadback());
+
+		//	The guards in Capture, the offscreen target and GetPixelColor ask
+		//	CRS2Renderer, which delegates to whichever backend is installed.
+		//	This test builds a backend directly and never installs one, so
+		//	asking the renderer here would answer about nothing at all.  What
+		//	can be established here is the backend end of that chain, above;
+		//	the renderer end is logged by -dx12, where a backend really is
+		//	installed.
+
+		wsprintfA(label, "device present cycle %d", cycle+1);
+		RS2D3D12_SmokeStep(label, !backend.IsDeviceRemoved());
 
 		wsprintfA(label, "swap chain cycle %d", cycle+1);
 		RS2D3D12_SmokeStep(label, backend.HasSwapChain());

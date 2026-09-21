@@ -53,6 +53,7 @@ CRS2D3D12Backend::CRS2D3D12Backend()
 	  m_Windowed(true),
 	  m_InfoQueue(0),
 	  m_ZeroSizeLogged(false),
+	  m_DeviceRemoved(false),
 	  m_FrameRecording(false),
 	  m_PassActive(false),
 	  m_Fence(0),
@@ -563,6 +564,7 @@ void CRS2D3D12Backend::Shutdown(){
 	RELEASE(m_Factory);
 
 	m_NextFenceValue = 1;
+	m_DeviceRemoved = false;
 	m_FrameIndex = 0;
 	m_Width = m_Height = 0;
 	m_RtvStride = 0;
@@ -680,6 +682,10 @@ bool CRS2D3D12Backend::BeginRecording(){
 bool CRS2D3D12Backend::BeginRenderPass(unsigned int clearColor, bool clearColorBuffer){
 	if(!m_SwapChain || !m_CommandList) return false;
 
+	//	Once the device is gone every call fails, so recording against it would
+	//	only produce a log full of the same failure.
+	if(m_DeviceRemoved) return false;
+
 	//	Checked once per displayed frame, before anything is recorded.  Doing
 	//	it between logical passes would resize out from under a frame that is
 	//	half submitted.
@@ -761,7 +767,7 @@ void CRS2D3D12Backend::Present(){
 
 	const HRESULT hr = m_SwapChain->Present(1, 0);
 
-	if(FAILED(hr)) Debug("[RS2EX D3D12] Present failed (0x%08lx)\n", (unsigned long)hr);
+	if(FAILED(hr)) ReportDeviceFailure("Present", hr);
 
 	//	Remember what this context has to finish before its allocator may be
 	//	reset again, then move on to the buffer DXGI has just made current.
@@ -772,6 +778,37 @@ void CRS2D3D12Backend::Present(){
 	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 	m_FrameRecording = false;
 	m_PassActive = false;
+}
+
+/*
+ *	Report a failure, and say whether the device is gone.
+ *
+ *	what	: the operation that failed
+ *	hr		: what it returned
+ *
+ *	A removed device makes every later call fail the same way, so the first
+ *	report is the only one worth reading, and the removal reason is the only
+ *	thing that says why - the HRESULT from the call that noticed is almost
+ *	always just DXGI_ERROR_DEVICE_REMOVED again.
+ *
+ *	There is no recovery attempt.  Recreating a device means recreating
+ *	everything built on it, and v0.1.0 has nothing built on it worth
+ *	recreating; guessing at that now would be designing for a case nobody has
+ *	yet had to handle.
+ */
+void CRS2D3D12Backend::ReportDeviceFailure(
+	const char *what,	//	operation that failed
+	long hr			//	its result
+){
+	Debug("[RS2EX D3D12] %s failed (0x%08lx)\n", what, (unsigned long)hr);
+
+	if(hr!=DXGI_ERROR_DEVICE_REMOVED && hr!=DXGI_ERROR_DEVICE_RESET) return;
+	if(!m_Device) return;
+
+	const HRESULT reason = m_Device->GetDeviceRemovedReason();
+
+	Debug("[RS2EX D3D12] the device is gone, reason 0x%08lx\n", (unsigned long)reason);
+	m_DeviceRemoved = true;
 }
 
 /*
@@ -812,10 +849,7 @@ bool CRS2D3D12Backend::Reset(){
 		RS2D3D12_FRAME_COUNT, m_Width, m_Height, DXGI_FORMAT_UNKNOWN, 0);
 
 	if(FAILED(hr)){
-		Debug("[RS2EX D3D12] ResizeBuffers failed (0x%08lx)\n", (unsigned long)hr);
-		if(hr==DXGI_ERROR_DEVICE_REMOVED || hr==DXGI_ERROR_DEVICE_RESET)
-			Debug("[RS2EX D3D12] device removed: 0x%08lx\n",
-				(unsigned long)m_Device->GetDeviceRemovedReason());
+		ReportDeviceFailure("ResizeBuffers", hr);
 		return false;
 	}
 

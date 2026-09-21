@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-22.
 
 #include "stdafx.h"
 #include "RS2Renderer.h"
@@ -114,6 +114,12 @@ bool CRS2Renderer::Initialize(int width, int height){
 		Debug("[RS2EX Renderer] Direct3D 12 is up, but v0.1.0 cannot create\n");
 		Debug("[RS2EX Renderer] textures or geometry, so there is no scene to\n");
 		Debug("[RS2EX Renderer] render.  Use -dx12smoke to exercise the backend.\n");
+
+		//	Logged here because this is the one place a Direct3D 12 backend is
+		//	actually installed behind the renderer, which is what the capture,
+		//	offscreen and pixel-read guards ask.
+		Debug("[RS2EX Renderer] readback supported = %s\n",
+			SupportsReadback() ? "yes" : "no");
 		Shutdown();
 		return false;
 	}

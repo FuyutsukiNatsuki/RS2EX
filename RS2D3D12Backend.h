@@ -59,6 +59,10 @@ private:
 	//	So a minimised window says so once instead of once per frame.
 	bool m_ZeroSizeLogged;
 
+	//	Set once the adapter has reported the device gone.  There is no
+	//	recovery in v0.1.0, so this only stops the log repeating itself.
+	bool m_DeviceRemoved;
+
 	//	The command list is open across every logical pass of one displayed
 	//	frame, because RailSim runs several - stereo, window division - before
 	//	a single Present.
@@ -109,6 +113,7 @@ private:
 	void BindTargets();
 	bool BeginRecording();
 	bool ResizeIfNeeded();
+	void ReportDeviceFailure(const char *what, long hr);
 
 public:
 	CRS2D3D12Backend();
@@ -183,6 +188,11 @@ public:
 	 *	"nothing was checked" rather than "nothing was wrong".
 	 */
 	bool HasDebugLayer() const{ return m_InfoQueue!=0; }
+
+	/*
+	 *	Whether the device has been reported gone.
+	 */
+	bool IsDeviceRemoved() const{ return m_DeviceRemoved; }
 
 	/*
 	 *	Whether a swap chain and its render targets exist.
