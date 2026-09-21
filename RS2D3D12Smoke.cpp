@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-22.
 //
 //	See RS2D3D12Smoke.h.
 
@@ -64,6 +65,15 @@ static bool RS2D3D12_SmokeLifecycle(){
 		wsprintfA(label, "readback refused cycle %d", cycle+1);
 		RS2D3D12_SmokeStep(label, !backend.SupportsReadback());
 
+		wsprintfA(label, "swap chain cycle %d", cycle+1);
+		RS2D3D12_SmokeStep(label, backend.HasSwapChain());
+
+		//	Not a pass or fail on its own: a device without stencil is a
+		//	fact about the machine, not a defect.  It is reported because
+		//	the stencil shadow passes will need to know.
+		Debug("RS2D3D12SMOKE|stencil available         |%s\n",
+			backend.HasStencil() ? "yes" : "no");
+
 		//	The destructor shuts it down; calling Shutdown() first makes the
 		//	double shutdown explicit, because that is a real code path -
 		//	CRS2Renderer::Initialize shuts a failed backend down and then
@@ -78,12 +88,18 @@ static bool RS2D3D12_SmokeLifecycle(){
 }
 
 bool RS2D3D12SmokeRun(
-	HWND window	//	application window, unused until there is a swap chain
+	HWND window	//	application window the swap chain presents to
 ){
-	(void)window;
-
 	s_Passed = s_Failed = 0;
 	Debug("RS2D3D12SMOKE|begin\n");
+
+	//	The backend reads svw.hWnd itself, as the Direct3D 8 one does, so
+	//	this is a check that the window exists rather than a way to pass it.
+	RS2D3D12_SmokeStep("window available", window!=NULL);
+	if(!window){
+		Debug("RS2D3D12SMOKE|end|passed=%d|failed=%d\n", s_Passed, s_Failed);
+		return false;
+	}
 
 	RS2D3D12_SmokeLifecycle();
 

@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-22.
 //
 //	The Direct3D 12 renderer backend.
 //
@@ -37,6 +38,24 @@ private:
 	ID3D12CommandAllocator *m_Allocator[RS2D3D12_FRAME_COUNT];
 	ID3D12GraphicsCommandList *m_CommandList;
 
+	IDXGISwapChain3 *m_SwapChain;
+
+	//	One render-target view per swap-chain buffer, and one depth buffer
+	//	shared by both - only one is being written at a time.
+	ID3D12DescriptorHeap *m_RtvHeap;
+	ID3D12DescriptorHeap *m_DsvHeap;
+	UINT m_RtvStride;
+	ID3D12Resource *m_BackBuffer[RS2D3D12_FRAME_COUNT];
+	ID3D12Resource *m_DepthBuffer;
+	DXGI_FORMAT m_DepthFormat;
+
+	//	False when the depth format had to fall back to one without stencil.
+	//	Claiming stencil that is not there would corrupt the shadow passes the
+	//	moment they were ported.
+	bool m_HasStencil;
+
+	bool m_Windowed;
+
 	ID3D12Fence *m_Fence;
 	HANDLE m_FenceEvent;
 
@@ -57,6 +76,11 @@ private:
 	bool CreateDevice();
 	bool CreateCommandObjects();
 	bool CreateFence();
+	bool CreateSwapChain(HWND window);
+	bool CreateRenderTargets();
+	bool CreateDepthBuffer();
+	void ReleaseSizeDependentResources();
+	DXGI_FORMAT ChooseDepthFormat();
 
 public:
 	CRS2D3D12Backend();
@@ -102,6 +126,19 @@ public:
 	 *	on one frame context instead.
 	 */
 	void WaitForGpu();
+
+	/*
+	 *	Whether the depth buffer has stencil bits.
+	 *
+	 *	Reported rather than assumed, because a depth-only fallback would
+	 *	silently break stencil work rather than fail it.
+	 */
+	bool HasStencil() const{ return m_HasStencil; }
+
+	/*
+	 *	Whether a swap chain and its render targets exist.
+	 */
+	bool HasSwapChain() const{ return m_SwapChain!=0; }
 };
 
 #endif	//	RS2D3D12BACKEND_H_INCLUDED
