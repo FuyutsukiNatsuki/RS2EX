@@ -109,6 +109,43 @@ static bool RS2D3D12_SmokeLifecycle(){
  *	EndRenderPass were closing the list this would present a frame that had
  *	only been half recorded.
  */
+/*
+ *	Present a number of frames, two logical passes each.
+ *
+ *	backend	: the backend under test
+ *	frames	: how many displayed frames to run
+ *	allOk	: cleared if any pass was refused
+ *
+ *	returns	: the value of *allOk
+ */
+static bool RS2D3D12_SmokeFrames(
+	CRS2D3D12Backend &backend,	//	backend under test
+	int frames,			//	displayed frames to run
+	bool *allOk,			//	cleared on a refused pass
+	bool *alternated		//	set when the frame index ever changes
+){
+	int frame;
+
+	for(frame = 0; frame<frames; frame++){
+		const unsigned int before = backend.GetFrameIndex();
+
+		if(!backend.BeginRenderPass(RS2D3D12_SMOKE_COLOR, true)) *allOk = false;
+		backend.EndRenderPass();
+
+		//	Second pass, keeping the colour: depth is still cleared.
+		if(!backend.BeginRenderPass(0, false)) *allOk = false;
+		backend.EndRenderPass();
+
+		backend.Present();
+
+		//	Checked here rather than after the loop.  With two buffers and an
+		//	even number of presents the index comes back to where it started,
+		//	so comparing once at the end proves nothing at all.
+		if(alternated && backend.GetFrameIndex()!=before) *alternated = true;
+	}
+	return *allOk;
+}
+
 static bool RS2D3D12_SmokeLifecycleFrames(HWND window){
 	CRS2D3D12Backend backend;
 
@@ -140,29 +177,76 @@ static bool RS2D3D12_SmokeLifecycleFrames(HWND window){
 	backend.ClearTarget(RS2D3D12_SMOKE_COLOR);
 	RS2D3D12_SmokeStep("clear target outside a frame", true);
 
-	const unsigned int firstIndex = backend.GetFrameIndex();
 	bool allPasses = true;
 	bool indexMoved = false;
-	int frame;
 
-	for(frame = 0; frame<RS2D3D12_SMOKE_FRAMES; frame++){
-		if(!backend.BeginRenderPass(RS2D3D12_SMOKE_COLOR, true)) allPasses = false;
-		backend.EndRenderPass();
-
-		//	Second pass, keeping the colour: depth is still cleared.
-		if(!backend.BeginRenderPass(0, false)) allPasses = false;
-		backend.EndRenderPass();
-
-		backend.Present();
-
-		if(backend.GetFrameIndex()!=firstIndex) indexMoved = true;
-	}
+	RS2D3D12_SmokeFrames(backend, RS2D3D12_SMOKE_FRAMES, &allPasses, &indexMoved);
 
 	RS2D3D12_SmokeStep("two passes per frame", allPasses);
 	RS2D3D12_SmokeStep("back buffer alternates", indexMoved);
 
+	//	Resize while presenting.  svw is what the window procedure writes on
+	//	WM_SIZE, and this test has no message pump, so setting it directly is
+	//	what a real resize looks like from the backend's side.
+	svw.winW = 800;
+	svw.winH = 600;
+	AdjustWindow();
+
+	bool resized = true;
+
+	RS2D3D12_SmokeFrames(backend, 60, &resized, NULL);
+
+	unsigned int w = 0, h = 0;
+
+	backend.GetViewportSize(&w, &h);
+	RS2D3D12_SmokeStep("resize to 800 x 600", resized && w==800 && h==600);
+
+	//	Minimised: a client area of zero, which DXGI will not accept.  The
+	//	frames still have to be survivable.
+	const int keepW = svw.winW, keepH = svw.winH;
+
+	svw.winW = 0;
+	svw.winH = 0;
+
+	bool minimised = true;
+
+	RS2D3D12_SmokeFrames(backend, 10, &minimised, NULL);
+	backend.GetViewportSize(&w, &h);
+	RS2D3D12_SmokeStep("zero size does not resize", minimised && w==800 && h==600);
+
+	svw.winW = keepW;
+	svw.winH = keepH;
+
+	//	Back to the original size, which is also a resize in the other
+	//	direction - shrinking releases buffers that growing had just made.
+	svw.winW = 640;
+	svw.winH = 480;
+	AdjustWindow();
+
+	bool restored = true;
+
+	RS2D3D12_SmokeFrames(backend, 60, &restored, NULL);
+	backend.GetViewportSize(&w, &h);
+	RS2D3D12_SmokeStep("restore to 640 x 480", restored && w==640 && h==480);
+
 	backend.WaitForGpu();
 	RS2D3D12_SmokeStep("wait after presenting", true);
+
+	//	Read before shutdown, while the info queue still exists.  A release
+	//	build has no debug layer, and a zero count there would mean "nothing
+	//	was checked" rather than "nothing was wrong", so it is not counted as
+	//	a step at all.
+	if(backend.HasDebugLayer()){
+		const unsigned int errors =
+			backend.CountDebugMessages(D3D12_MESSAGE_SEVERITY_ERROR);
+		const unsigned int warnings =
+			backend.CountDebugMessages(D3D12_MESSAGE_SEVERITY_WARNING);
+
+		Debug("RS2D3D12SMOKE|debug layer errors=%u warnings=%u\n", errors, warnings);
+		RS2D3D12_SmokeStep("no debug layer errors", errors==0);
+	}else{
+		Debug("RS2D3D12SMOKE|debug layer not available, nothing checked\n");
+	}
 
 	backend.Shutdown();
 	RS2D3D12_SmokeStep("shutdown after presenting", true);

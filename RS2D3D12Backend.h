@@ -56,6 +56,9 @@ private:
 
 	bool m_Windowed;
 
+	//	So a minimised window says so once instead of once per frame.
+	bool m_ZeroSizeLogged;
+
 	//	The command list is open across every logical pass of one displayed
 	//	frame, because RailSim runs several - stereo, window division - before
 	//	a single Present.
@@ -67,6 +70,10 @@ private:
 	D3D12_VIEWPORT m_Viewport;
 	D3D12_RECT m_Scissor;
 
+
+	//	The debug layer's message queue, when there is one.  Null in release
+	//	builds and on a machine without the graphics tools.
+	ID3D12InfoQueue *m_InfoQueue;
 
 	ID3D12Fence *m_Fence;
 	HANDLE m_FenceEvent;
@@ -101,6 +108,7 @@ private:
 		D3D12_RESOURCE_STATES after);
 	void BindTargets();
 	bool BeginRecording();
+	bool ResizeIfNeeded();
 
 public:
 	CRS2D3D12Backend();
@@ -154,6 +162,27 @@ public:
 	 *	silently break stencil work rather than fail it.
 	 */
 	bool HasStencil() const{ return m_HasStencil; }
+
+	/*
+	 *	How many debug-layer messages of this severity or worse are stored,
+	 *	logging the first few.
+	 *
+	 *	severity	: D3D12_MESSAGE_SEVERITY_ERROR and so on
+	 *	returns		: the count, and 0 when there is no debug layer
+	 *
+	 *	Those messages go to OutputDebugString, which the program's own log
+	 *	never sees, so without this a claim that the debug layer said nothing
+	 *	would just be an assumption.
+	 */
+	unsigned int CountDebugMessages(int severity);
+
+	/*
+	 *	Whether there is a debug layer to read at all.
+	 *
+	 *	Release builds do not enable it, so a zero error count there means
+	 *	"nothing was checked" rather than "nothing was wrong".
+	 */
+	bool HasDebugLayer() const{ return m_InfoQueue!=0; }
 
 	/*
 	 *	Whether a swap chain and its render targets exist.

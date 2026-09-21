@@ -51,6 +51,8 @@ CRS2D3D12Backend::CRS2D3D12Backend()
 	  m_DepthFormat(DXGI_FORMAT_UNKNOWN),
 	  m_HasStencil(false),
 	  m_Windowed(true),
+	  m_InfoQueue(0),
+	  m_ZeroSizeLogged(false),
 	  m_FrameRecording(false),
 	  m_PassActive(false),
 	  m_Fence(0),
@@ -123,6 +125,10 @@ bool CRS2D3D12Backend::CreateDevice(){
 				index, name, (unsigned)desc.VendorId, (unsigned)desc.DeviceId);
 			Debug("[RS2EX D3D12] video memory %u MB\n",
 				(unsigned)(desc.DedicatedVideoMemory/(1024*1024)));
+
+			//	Only succeeds when the debug layer is active, which is the
+			//	only time there is anything to read.
+			m_Device->QueryInterface(IID_PPV_ARGS(&m_InfoQueue));
 
 			adapter->Release();
 			return true;
@@ -526,6 +532,7 @@ void CRS2D3D12Backend::Shutdown(){
 		m_FenceEvent = NULL;
 	}
 
+	RELEASE(m_InfoQueue);
 	RELEASE(m_Fence);
 	RELEASE(m_CommandList);
 
@@ -673,7 +680,13 @@ bool CRS2D3D12Backend::BeginRecording(){
 bool CRS2D3D12Backend::BeginRenderPass(unsigned int clearColor, bool clearColorBuffer){
 	if(!m_SwapChain || !m_CommandList) return false;
 
-	if(!m_FrameRecording && !BeginRecording()) return false;
+	//	Checked once per displayed frame, before anything is recorded.  Doing
+	//	it between logical passes would resize out from under a frame that is
+	//	half submitted.
+	if(!m_FrameRecording){
+		if(!ResizeIfNeeded()) return false;
+		if(!BeginRecording()) return false;
+	}
 
 	BindTargets();
 
@@ -762,12 +775,96 @@ void CRS2D3D12Backend::Present(){
 }
 
 /*
- *	Reset means "rebuild the size-dependent swap-chain resources" for this
- *	backend, not the Direct3D 8 device reset it is named after.  Resize
- *	arrives in the next work package; there is nothing to rebuild yet.
+ *	Rebuild the resources that depend on the back-buffer size.
+ *
+ *	Reset() means this for a Direct3D 12 backend, not the device reset it is
+ *	named after.  There is no such thing as a lost Direct3D 12 device to
+ *	recover from: a device that goes away is removed, which is a different
+ *	situation with a different answer.
+ *
+ *	The device, queue, allocators, fence and descriptor heaps all survive.
+ *	Only the back buffers, the depth buffer and the views into the heaps are
+ *	rebuilt.
  */
 bool CRS2D3D12Backend::Reset(){
+	if(!m_SwapChain) return false;
+
+	const unsigned int width = (svw.winW>0) ? (unsigned int)svw.winW : 0;
+	const unsigned int height = (svw.winH>0) ? (unsigned int)svw.winH : 0;
+
+	if(!width || !height){
+		Debug("[RS2EX D3D12] refusing to resize to %u x %u\n", width, height);
+		return false;
+	}
+
+	//	Everything in flight has to finish first: ResizeBuffers releases the
+	//	back buffers, and releasing one the GPU is still writing into is the
+	//	same crash as resetting a live allocator, with the same silence.
+	WaitForGpu();
+	ReleaseSizeDependentResources();
+
+	m_Width = width;
+	m_Height = height;
+
+	//	DXGI_FORMAT_UNKNOWN keeps the format the swap chain already has, which
+	//	is the point: resize changes the size and nothing else.
+	const HRESULT hr = m_SwapChain->ResizeBuffers(
+		RS2D3D12_FRAME_COUNT, m_Width, m_Height, DXGI_FORMAT_UNKNOWN, 0);
+
+	if(FAILED(hr)){
+		Debug("[RS2EX D3D12] ResizeBuffers failed (0x%08lx)\n", (unsigned long)hr);
+		if(hr==DXGI_ERROR_DEVICE_REMOVED || hr==DXGI_ERROR_DEVICE_RESET)
+			Debug("[RS2EX D3D12] device removed: 0x%08lx\n",
+				(unsigned long)m_Device->GetDeviceRemovedReason());
+		return false;
+	}
+
+	//	Flip-model buffer order changes across a resize, so the current index
+	//	has to be asked for again rather than assumed to be unchanged.
+	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
+
+	//	Nothing is outstanding after the wait above, so the recorded fence
+	//	values would only make the next frame wait on work that has already
+	//	finished.
+	unsigned int i;
+
+	for(i = 0; i<RS2D3D12_FRAME_COUNT; i++) m_FenceValue[i] = 0;
+
+	if(!CreateRenderTargets() || !CreateDepthBuffer()) return false;
+
+	SetViewport(0, 0, m_Width, m_Height, 0.0f, 1.0f);
+
+	Debug("[RS2EX D3D12] resized to %u x %u\n", m_Width, m_Height);
 	return true;
+}
+
+/*
+ *	Resize when the window has changed size, and not otherwise.
+ *
+ *	returns	: false only when a resize was needed and failed
+ *
+ *	A minimised window reports a client area of zero, and asking DXGI for a
+ *	zero-sized back buffer is an error rather than a no-op.  Skipping is all
+ *	this does: the tracked size is left alone, the frame renders into the
+ *	buffers that already exist, and the first frame with a real size resizes
+ *	normally.  Nothing is latched, so no resize can be lost.  The Direct3D 8
+ *	backend has the same guard for the same reason.
+ */
+bool CRS2D3D12Backend::ResizeIfNeeded(){
+	if(svw.winW<=0 || svw.winH<=0){
+		if(!m_ZeroSizeLogged){
+			Debug("[RS2EX D3D12] window has zero size: skipping resize\n");
+			m_ZeroSizeLogged = true;
+		}
+		return true;
+	}
+
+	m_ZeroSizeLogged = false;
+
+	if((unsigned int)svw.winW==m_Width && (unsigned int)svw.winH==m_Height)
+		return true;
+
+	return Reset();
 }
 
 /*
@@ -876,6 +973,39 @@ void CRS2D3D12Backend::GetViewportSize(
 ) const{
 	if(width) *width = m_Width;
 	if(height) *height = m_Height;
+}
+
+unsigned int CRS2D3D12Backend::CountDebugMessages(
+	int severity	//	D3D12_MESSAGE_SEVERITY_ERROR and so on
+){
+	if(!m_InfoQueue) return 0;
+
+	const UINT64 stored = m_InfoQueue->GetNumStoredMessages();
+	unsigned int matched = 0;
+	unsigned int logged = 0;
+	UINT64 i;
+
+	for(i = 0; i<stored; i++){
+		SIZE_T bytes = 0;
+
+		if(FAILED(m_InfoQueue->GetMessage(i, NULL, &bytes)) || !bytes) continue;
+
+		D3D12_MESSAGE *message = (D3D12_MESSAGE *)new char[bytes];
+
+		if(SUCCEEDED(m_InfoQueue->GetMessage(i, message, &bytes))
+				&& (int)message->Severity<=severity){
+			matched++;
+
+			//	A few is enough to identify what is wrong; the count says how
+			//	much of it there is.
+			if(logged<8){
+				logged++;
+				Debug("[RS2EX D3D12] debug layer: %s\n", message->pDescription);
+			}
+		}
+		delete [] (char *)message;
+	}
+	return matched;
 }
 
 const char *CRS2D3D12Backend::GetName() const{
