@@ -1,11 +1,11 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21.
 
 #include "headers.h"
 #include "debug.h"
 #include "graphic.h"
 #include "vertex.h"
-#include "..\RS2D3D8Resources.h"
+#include "..\RS2Draw.h"
 
 /*
  *	３角形の法線ベクトルを計算
@@ -26,7 +26,7 @@ void CalcNormal(VEC3 t[3], VEC3 *n){
  *	x1, y1	: 始点
  *	x2, y2	: 終点
  */
-void SetRectTL_LX(VTX_LX *vt, int x1, int y1, int x2, int y2, int z, D3DCOLOR c){
+void SetRectTL_LX(VTX_LX *vt, int x1, int y1, int x2, int y2, int z, RS2PackedColor c){
 	SetVTX_LX(vt , x1, y1, z, c, 0, 1);
 	SetVTX_LX(vt+1, x1, y2, z, c, 0, 0);
 	SetVTX_LX(vt+2, x2, y1, z, c, 1, 1);
@@ -39,9 +39,7 @@ void SetRectTL_LX(VTX_LX *vt, int x1, int y1, int x2, int y2, int z, D3DCOLOR c)
  *	コンストラクタ
  */
 CVertex::CVertex(){
-	m_pVB = NULL;
-	m_fvf = 0;
-	m_stride = 0;
+	m_Geometry = 0;
 	m_num = 0;
 }
 
@@ -55,40 +53,19 @@ CVertex::~CVertex(){
 /*
  *	頂点バッファ作成
  *
- *	pSrc	: 頂点が格納された配列
- *	fvf		: 頂点フォーマット
- *	size	: 配列のサイズ
+ *	pSrc			: 頂点が格納された配列
+ *	layout		: 頂点フォーマット
+ *	vertexCount	: 頂点数
  */
-BOOL CVertex::Create(LPVOID pSrc, DWORD fvf, UINT size){
-	Free();	//	既存ならバッファを解放
-	m_fvf = fvf;
+BOOL CVertex::Create(
+	const void *pSrc, const RS2MeshVertexLayout &layout, UINT vertexCount
+){
+	Free();	//	すでにあるバッファは解放
 
-	switch(m_fvf){
-	case FVF_TL:	m_stride = sizeof(VTX_TL);	m_num = size/sizeof(VTX_TL);	break;
-	case FVF_TLX:	m_stride = sizeof(VTX_TLX);	m_num = size/sizeof(VTX_TLX);	break;
-	case FVF_L:		m_stride = sizeof(VTX_L);	m_num = size/sizeof(VTX_L);		break;
-	case FVF_LX:	m_stride = sizeof(VTX_LX);	m_num = size/sizeof(VTX_LX);	break;
-	case FVF_LX2:	m_stride = sizeof(VTX_LX2);	m_num = size/sizeof(VTX_LX2);	break;
-	case FVF_N:		m_stride = sizeof(VTX_N);	m_num = size/sizeof(VTX_N);		break;
-	case FVF_NX:	m_stride = sizeof(VTX_NX);	m_num = size/sizeof(VTX_NX);	break;
-	case FVF_NX2:	m_stride = sizeof(VTX_NX2);	m_num = size/sizeof(VTX_NX2);	break;
-	default:		return FALSE;
-	}	//	D3DXGetFVFVertexSize()
+	m_Geometry = RS2CreateGeometry(layout, pSrc, vertexCount);
+	if(!m_Geometry) return FALSE;
 
-	//	バッファの作成
-	//	[RS2EX] The managed pool lives in the resource module now; that is what
-	//	keeps vertex buffers out of device-reset handling entirely.
-	if(!RS2D3D8_CreateVertexBuffer(size, fvf, &m_pVB)) return FALSE;
-
-	//	ロックして書込み
-	if(!RS2D3D8_UploadVertexBuffer(m_pVB, pSrc, size)){
-		//	[RS2EX] 2.15 returned FALSE here with the buffer still allocated and
-		//	its contents undefined.  Callers ignore the return value, so that
-		//	left a drawable buffer full of garbage; an empty one matches what
-		//	the unsupported-FVF path above already produces.
-		RS2D3D8_ReleaseVertexBuffer(&m_pVB);
-		return FALSE;
-	}
+	m_num = vertexCount;
 	return TRUE;
 }
 
@@ -96,100 +73,40 @@ BOOL CVertex::Create(LPVOID pSrc, DWORD fvf, UINT size){
  *	頂点バッファ解放
  */
 void CVertex::Free(){
-	RS2D3D8_ReleaseVertexBuffer(&m_pVB);
+	if(!m_Geometry) return;
+
+	RS2DestroyGeometry(m_Geometry);
+	m_Geometry = 0;
+	m_num = 0;
 }
 
 /*
- *	頂点バッファをロック
- *
- *	※ロック後は必ずアンロックすること。
- */
-BOOL CVertex::Lock(LPVOID *ppBuf){
-	return RS2D3D8_LockVertexBuffer(m_pVB, (void **)ppBuf);
-}
-
-/*
- *	頂点バッファをアンロック
- */
-void CVertex::Unlock(){
-	RS2D3D8_UnlockVertexBuffer(m_pVB);
-}
-
-/*
- *	※以下のメソッドはライト、マテリアル、テクスチャ、ワールドマトリクスの
+ *	以下のメソッドはライト、マテリアル、テクスチャ、ワールドマトリクスの
  *	影響を受けます。
- *	
- *	ラィティング済み頂点を使用する場合はライティングを無効にしてから、
- *	テクスチャなし頂点を使用する場合はテクスチャをNULLにしてから行ってください。
- */
-/*
- *	ポイントリスト
+ *
+ *	[RS2EX] The draw layer sets none of them - that is the v0.0.7 and v0.0.8
+ *	boundaries' job, and it stays the caller's responsibility here.
  */
 void CVertex::RenderPL(){
-	sv3.pDev->SetStreamSource(0, m_pVB, m_stride);
-	sv3.pDev->SetVertexShader(m_fvf);
-	sv3.pDev->DrawPrimitive(D3DPT_POINTLIST, 0, m_num);
+	RS2DrawBuffered(m_Geometry, RS2_PRIMITIVE_POINT_LIST, 0, m_num);
 }
 
-/*
- *	ラインリスト
- */
 void CVertex::RenderLL(){
-	sv3.pDev->SetStreamSource(0, m_pVB, m_stride);
-	sv3.pDev->SetVertexShader(m_fvf);
-	sv3.pDev->DrawPrimitive(D3DPT_LINELIST, 0, m_num/2);
+	RS2DrawBuffered(m_Geometry, RS2_PRIMITIVE_LINE_LIST, 0, m_num);
 }
 
-/*
- *	ラインストリップ
- *
- *	count	: 線の数
- */
-void CVertex::RenderLS(UINT count){
-	sv3.pDev->SetStreamSource(0, m_pVB, m_stride);
-	sv3.pDev->SetVertexShader(m_fvf);
-	sv3.pDev->DrawPrimitive(D3DPT_LINESTRIP, 0, count);
+void CVertex::RenderLS(){
+	RS2DrawBuffered(m_Geometry, RS2_PRIMITIVE_LINE_STRIP, 0, m_num);
 }
 
-/*
- *	トライアングルリスト
- */
 void CVertex::RenderTL(){
-	sv3.pDev->SetStreamSource(0, m_pVB, m_stride);
-	sv3.pDev->SetVertexShader(m_fvf);
-	sv3.pDev->DrawPrimitive(D3DPT_TRIANGLELIST, 0, m_num/3);
+	RS2DrawBuffered(m_Geometry, RS2_PRIMITIVE_TRIANGLE_LIST, 0, m_num);
 }
 
-/*
- *	トライアングルストリップ
- *
- *	count	: 3角形の数
- */
-void CVertex::RenderTS(UINT count){
-	sv3.pDev->SetStreamSource(0, m_pVB, m_stride);
-	sv3.pDev->SetVertexShader(m_fvf);
-	sv3.pDev->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, count);
+void CVertex::RenderTS(){
+	RS2DrawBuffered(m_Geometry, RS2_PRIMITIVE_TRIANGLE_STRIP, 0, m_num);
 }
 
-/*
- *	トライアングルファン
- *
- *	count	: 3角形の数
- */
-void CVertex::RenderTF(UINT count){
-	sv3.pDev->SetStreamSource(0, m_pVB, m_stride);
-	sv3.pDev->SetVertexShader(m_fvf);
-	sv3.pDev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, count);
-}
-
-/*
- *	タイプ指定
- *
- *	type	: プリミティブタイプ
- *	count	: 3角形の数
- */
-void CVertex::Render(PRIMTYPE type, UINT count){
-	sv3.pDev->SetStreamSource(0, m_pVB, m_stride);
-	sv3.pDev->SetVertexShader(m_fvf);
-	sv3.pDev->DrawPrimitive(type, 0, count);
+void CVertex::RenderTF(){
+	RS2DrawBuffered(m_Geometry, RS2_PRIMITIVE_TRIANGLE_FAN, 0, m_num);
 }

@@ -1,5 +1,7 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+
+#include "..\RS2Draw.h"
 
 #define SQRT2	1.41421356f	//	√2
 //	πはD3DX_PIを使用する
@@ -142,7 +144,7 @@ inline MTX4 MAKE_MTX_VEC3(VEC3 v){
  *	行列変換の実行
  */
 inline void devTransform(MTX4 *pMtx){
-	sv3.pDev->SetTransform(D3DTS_WORLD, pMtx);
+	RS2SetWorldTransform(*pMtx);
 }
 
 /*

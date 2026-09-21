@@ -1,8 +1,11 @@
 //	Copyright (c) 2002 Midikyou
 //	Modified for RS2EX on 2026-09-20, 2026-09-21.
 
-typedef LPDIRECT3DVERTEXBUFFER8 LPVB8;
-typedef D3DPRIMITIVETYPE PRIMTYPE;
+//	[RS2EX] LPVB8 and PRIMTYPE removed in v0.0.9.  The buffer is a
+//	CRS2GeometryResource and the primitive is an RS2PrimitiveType; neither
+//	name had a use outside this header once CVertex stopped drawing directly.
+
+#include "..\RS2Draw.h"
 
 void CalcNormal(VEC3 t[3], VEC3 *n);
 
@@ -13,94 +16,86 @@ void CalcNormal(VEC3 t[3], VEC3 *n);
  */
 
 //	座標3D変換済み、ライティング済み
-#define FVF_TL (D3DFVF_XYZRHW|D3DFVF_DIFFUSE)
 
 struct VTX_TL{
 	FLOAT x, y, z;
 	FLOAT rhw;
-	DWORD d;
+	RS2PackedColor d;
 };
 
 //	座標3D変換済み、ライティング済み、テクスチャ有り
-#define FVF_TLX (D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1)
 
 struct VTX_TLX{
 	FLOAT x, y, z;
 	FLOAT rhw;
-	DWORD d;
+	RS2PackedColor d;
 	FLOAT u;
 	FLOAT v;
 };
 
 //	ライティング済み
-#define FVF_L (D3DFVF_XYZ|D3DFVF_DIFFUSE)
 
 struct VTX_L{
 	FLOAT x, y, z;
-	DWORD d;
+	RS2PackedColor d;
 };
 
 //	ライティング済み、テクスチャ有り
-#define FVF_LX (D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX1)
 
 struct VTX_LX{
 	FLOAT x, y, z;
-	DWORD d;
+	RS2PackedColor d;
 	FLOAT u, v;
 };
 
-inline void SetVTX_LX(VTX_LX *vt, float x, float y, float z, D3DCOLOR d, float u, float v){
+inline void SetVTX_LX(VTX_LX *vt, float x, float y, float z, RS2PackedColor d, float u, float v){
 	vt->x = x, vt->y = y, vt->z = z, vt->d = d, vt->u = u, vt->v = v;
 }
 
-void SetRectTL_LX(VTX_LX *vt, int x1, int y1, int x2, int y2, int z, D3DCOLOR c);
+void SetRectTL_LX(VTX_LX *vt, int x1, int y1, int x2, int y2, int z, RS2PackedColor c);
 
 //	ライティング済み、テクスチャ×２
-#define FVF_LX2 (D3DFVF_XYZ|D3DFVF_DIFFUSE|D3DFVF_TEX2)
 
 struct VTX_LX2{
 	FLOAT x, y, z;
-	DWORD d;
+	RS2PackedColor d;
 	FLOAT u1, v1;
 	FLOAT u2, v2;
 };
 
 //	未ライティング
-#define FVF_N (D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_DIFFUSE)
 
 struct VTX_N{
 	FLOAT x, y, z;
 	VEC3 n;
-	DWORD d;
+	RS2PackedColor d;
 };
 
 inline void SetVTX_N(
-	VTX_N *vt, float x, float y, float z, VEC3 n, D3DCOLOR d){
+	VTX_N *vt, float x, float y, float z, VEC3 n, RS2PackedColor d){
 	vt->x = x, vt->y = y, vt->z = z, vt->n = n, vt->d = d;
 }
 
 //	未ライティング、テクスチャ有り
-#define FVF_NX (D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_DIFFUSE|D3DFVF_TEX1)
 
 struct VTX_NX{
 	FLOAT x, y, z;
 	VEC3 n;
-	DWORD d;
+	RS2PackedColor d;
 	FLOAT u, v;
 };
 
 inline void SetVTX_NX(
-	VTX_NX *vt, float x, float y, float z, VEC3 n, D3DCOLOR d, float u, float v){
+	VTX_NX *vt, float x, float y, float z, VEC3 n, RS2PackedColor d, float u, float v){
 	vt->x = x, vt->y = y, vt->z = z, vt->n = n, vt->d = d, vt->u = u, vt->v = v;
 }
 
 //	未ライティング、テクスチャ×２
-#define FVF_NX2 (D3DFVF_XYZ|D3DFVF_NORMAL|D3DFVF_DIFFUSE|D3DFVF_TEX2)
 
 struct VTX_NX2{
 	FLOAT x, y, z;
 	VEC3 n;
-	DWORD d;
+	RS2PackedColor d;
 	FLOAT u1, v1;
 	FLOAT u2, v2;
 };
@@ -228,40 +223,55 @@ inline RS2MeshVertexLayout RS2LayoutPositionOnly(){
 }
 
 //	頂点クラス
+/*
+ *	Vertices uploaded once and drawn repeatedly.
+ *
+ *	[RS2EX] The Direct3D vertex buffer, the FVF and the six direct draw calls
+ *	moved behind CRS2GeometryResource in v0.0.9.  What the class is for did
+ *	not change: the detail grid and the prepared dump batches still build
+ *	their vertices once and draw the whole buffer each frame.
+ *
+ *	Lock(), Unlock(), GetFVF() and the generic Render(type, count) are gone.
+ *	None had a caller in the compiled tree, and each would have had to become
+ *	a mapped-buffer or native-primitive escape in the new API to survive.
+ *
+ *	The strip and fan methods no longer take a count.  They took a primitive
+ *	count, which is the convention the draw boundary removed, and every
+ *	draw here covers the whole buffer anyway.
+ */
 class CVertex{
-	LPVB8 m_pVB;	//	頂点バッファ
-	DWORD m_fvf;	//	頂点フォーマット
-	UINT m_stride;	//	次の頂点データまでのバイト数
-	UINT m_num;		//	頂点数
+	CRS2GeometryResource *m_Geometry;
+	UINT m_num;		//	vertices, not primitives
 
-	//	コピーコンストラクタ封印
+	//	コピーコンストラクタ禁止
 	CVertex& operator = (const CVertex&){return *this;}
 public:
 	CVertex();
 	~CVertex();
 
-	BOOL Create(LPVOID pSrc, DWORD fvf, UINT size);
+	/*
+	 *	Upload vertices.
+	 *
+	 *	pSrc		: vertexCount * layout.stride bytes
+	 *	layout	: one of the RS2Layout*() builders above
+	 *
+	 *	2.15 took a byte size and derived the count from the FVF.  The count is
+	 *	now explicit, because the byte size was always count * stride at every
+	 *	call site and the division was a chance to be wrong.
+	 */
+	BOOL Create(const void *pSrc, const RS2MeshVertexLayout &layout, UINT vertexCount);
 	void Free();
-	BOOL Lock(LPVOID *ppBuf);
-	void Unlock();
 
+	//	Each draws the whole buffer.
 	void RenderPL();
 	void RenderLL();
-	void RenderLS(UINT count);
+	void RenderLS();
 	void RenderTL();
-	void RenderTS(UINT count);
-	void RenderTF(UINT count);
-	void Render(PRIMTYPE type, UINT count);
+	void RenderTS();
+	void RenderTF();
 
-	/*
-	 *	頂点フォーマットの取得
-	 */
-	DWORD GetFVF(){return m_fvf;}
 	/*
 	 *	頂点数の取得
 	 */
 	UINT Count(){return m_num;}
-	//	[RS2EX] GetObject() removed.  LPVB8 appeared nowhere outside this header,
-	//	so the buffer never escaped the class and no compatibility accessor is
-	//	needed - unlike CTexture, whose handle 11 call sites still require.
 };

@@ -78,15 +78,15 @@ void CLineDumpTL::Preview(
 	buf->x = p1.x; buf->y = p1.y; buf->z = 0.0f; buf->d = c1;
 	buf++;
 	buf->x = p2.x; buf->y = p2.y; buf->z = 0.0f; buf->d = c2;
-	sv3.pDev->SetVertexShader(FVF_TL);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, 1, prev, sizeof(VTX_TL));
+	RS2DrawImmediate(RS2LayoutTL(), RS2_PRIMITIVE_LINE_LIST,
+		prev, 2);
 }
 
 /*
  *	バーテックス準備
  */
 void CLineDumpTL::PrepareVertex(){
-	m_Vertex.Create(m_Buffer, FVF_TL, m_Count*2*sizeof(VTX_TL));
+	m_Vertex.Create(m_Buffer, RS2LayoutTL(), m_Count*2);
 	if(m_Next) m_Next->PrepareVertex();
 }
 
@@ -99,8 +99,8 @@ void CLineDumpTL::Render(
 	RS2BindTexture(0, RS2TextureRef());
 	if(m_Next) m_Next->Render(drawup);
 	if(drawup){
-		sv3.pDev->SetVertexShader(FVF_TL);
-		sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, m_Count, m_Buffer, sizeof(VTX_TL));
+		RS2DrawImmediate(RS2LayoutTL(), RS2_PRIMITIVE_LINE_LIST,
+			m_Buffer, (m_Count)*2);
 	}else{
 		m_Vertex.RenderLL();
 	}
@@ -177,15 +177,15 @@ void CLineDumpL::Preview(
 	buf->x = p1.x; buf->y = p1.y; buf->z = p1.z; buf->d = c1;
 	buf++;
 	buf->x = p2.x; buf->y = p2.y; buf->z = p2.z; buf->d = c2;
-	sv3.pDev->SetVertexShader(FVF_L);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, 1, prev, sizeof(VTX_L));
+	RS2DrawImmediate(RS2LayoutL(), RS2_PRIMITIVE_LINE_LIST,
+		prev, 2);
 }
 
 /*
  *	バーテックス準備
  */
 void CLineDumpL::PrepareVertex(){
-	m_Vertex.Create(m_Buffer, FVF_L, m_Count*2*sizeof(VTX_L));
+	m_Vertex.Create(m_Buffer, RS2LayoutL(), m_Count*2);
 	if(m_Next) m_Next->PrepareVertex();
 }
 
@@ -197,8 +197,8 @@ void CLineDumpL::Render(
 ){
 	RS2BindTexture(0, RS2TextureRef());
 	if(drawup){
-		sv3.pDev->SetVertexShader(FVF_L);
-		sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, m_Count, m_Buffer, sizeof(VTX_L));
+		RS2DrawImmediate(RS2LayoutL(), RS2_PRIMITIVE_LINE_LIST,
+			m_Buffer, (m_Count)*2);
 	}else{
 		m_Vertex.RenderLL();
 	}
@@ -276,15 +276,15 @@ void CLineDumpN::Preview(
 	buf->x = p1.x; buf->y = p1.y; buf->z = p1.z; buf->d = c1; buf->n = V3UP;
 	buf++;
 	buf->x = p2.x; buf->y = p2.y; buf->z = p2.z; buf->d = c2; buf->n = V3UP;
-	sv3.pDev->SetVertexShader(FVF_N);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, 1, prev, sizeof(VTX_N));
+	RS2DrawImmediate(RS2LayoutN(), RS2_PRIMITIVE_LINE_LIST,
+		prev, 2);
 }
 
 /*
  *	バーテックス準備
  */
 void CLineDumpN::PrepareVertex(){
-	m_Vertex.Create(m_Buffer, FVF_N, m_Count*2*sizeof(VTX_N));
+	m_Vertex.Create(m_Buffer, RS2LayoutN(), m_Count*2);
 	if(m_Next) m_Next->PrepareVertex();
 }
 
@@ -299,20 +299,20 @@ void CLineDumpN::Render(
 		int bx, by;
 		for(by = 0; by<g_HidefQuality; ++by){
 			for(bx = 0; bx<g_HidefQuality; ++bx){
-				sv3.pDev->SetTransform(D3DTS_PROJECTION, &g_BoldLineMtx[by][bx]);
+				RS2SetProjectionTransform(g_BoldLineMtx[by][bx]);
 				if(drawup){
-					sv3.pDev->SetVertexShader(FVF_N);
-					sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, m_Count, m_Buffer, sizeof(VTX_N));
+					RS2DrawImmediate(RS2LayoutN(), RS2_PRIMITIVE_LINE_LIST,
+						m_Buffer, (m_Count)*2);
 				}else{
 					m_Vertex.RenderLL();
 				}
 			}
 		}
-		sv3.pDev->SetTransform(D3DTS_PROJECTION, &sv3.mtxProj);
+		RS2SetProjectionTransform(sv3.mtxProj);
 	}else{
 		if(drawup){
-			sv3.pDev->SetVertexShader(FVF_N);
-			sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, m_Count, m_Buffer, sizeof(VTX_N));
+			RS2DrawImmediate(RS2LayoutN(), RS2_PRIMITIVE_LINE_LIST,
+				m_Buffer, (m_Count)*2);
 		}else{
 			m_Vertex.RenderLL();
 		}
@@ -423,15 +423,15 @@ void CQuadDumpN::Preview(
 	buf++;
 	buf->x = p1.x; buf->y = p1.y; buf->z = p1.z;
 	buf->n = n1; buf->d = c1;
-	sv3.pDev->SetVertexShader(FVF_N);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, 2, prev, sizeof(VTX_N));
+	RS2DrawImmediate(RS2LayoutN(), RS2_PRIMITIVE_TRIANGLE_LIST,
+		prev, 6);
 }
 
 /*
  *	バーテックス準備
  */
 void CQuadDumpN::PrepareVertex(){
-	m_Vertex.Create(m_Buffer, FVF_N, m_Count*6*sizeof(VTX_N));
+	m_Vertex.Create(m_Buffer, RS2LayoutN(), m_Count*6);
 	if(m_Next) m_Next->PrepareVertex();
 }
 
@@ -443,8 +443,8 @@ void CQuadDumpN::Render(
 ){
 	RS2BindTexture(0, RS2TextureRef());
 	if(drawup){
-		sv3.pDev->SetVertexShader(FVF_N);
-		sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, m_Count*2, m_Buffer, sizeof(VTX_N));
+		RS2DrawImmediate(RS2LayoutN(), RS2_PRIMITIVE_TRIANGLE_LIST,
+			m_Buffer, (m_Count*2)*3);
 	}else{
 		m_Vertex.RenderTL();
 	}
@@ -557,15 +557,15 @@ void CQuadDumpNX::Preview(
 	buf++;
 	buf->x = p1.x; buf->y = p1.y; buf->z = p1.z;
 	buf->n = n1; buf->d = c1; buf->u = u1; buf->v = v1;
-	sv3.pDev->SetVertexShader(FVF_NX);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, 2, prev, sizeof(VTX_NX));
+	RS2DrawImmediate(RS2LayoutNX(), RS2_PRIMITIVE_TRIANGLE_LIST,
+		prev, 6);
 }
 
 /*
  *	バーテックス準備
  */
 void CQuadDumpNX::PrepareVertex(){
-	m_Vertex.Create(m_Buffer, FVF_NX, m_Count*6*sizeof(VTX_NX));
+	m_Vertex.Create(m_Buffer, RS2LayoutNX(), m_Count*6);
 	if(m_Next) m_Next->PrepareVertex();
 }
 
@@ -577,8 +577,8 @@ void CQuadDumpNX::Render(
 ){
 	RS2BindTexture(0, m_Texture);
 	if(drawup){
-		sv3.pDev->SetVertexShader(FVF_NX);
-		sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, m_Count*2, m_Buffer, sizeof(VTX_NX));
+		RS2DrawImmediate(RS2LayoutNX(), RS2_PRIMITIVE_TRIANGLE_LIST,
+			m_Buffer, (m_Count*2)*3);
 	}else{
 		m_Vertex.RenderTL();
 	}

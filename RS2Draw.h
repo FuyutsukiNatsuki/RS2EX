@@ -29,6 +29,7 @@
 #ifndef RS2DRAW_H_INCLUDED
 #define RS2DRAW_H_INCLUDED
 
+#include "RS2Color.h"		//	RS2PackedColor, for vertex diffuse
 #include "RS2MeshData.h"	//	RS2MeshVertexLayout
 
 /*

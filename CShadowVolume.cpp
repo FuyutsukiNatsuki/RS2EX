@@ -79,15 +79,15 @@ void CTriDumpS::Preview(
 	*buf = p1; buf++;
 	*buf = p2; buf++;
 	*buf = p3; buf++;
-	sv3.pDev->SetVertexShader(FVF_S);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, 1, prev, sizeof(VTX_S));
+	RS2DrawImmediate(RS2LayoutPositionOnly(), RS2_PRIMITIVE_TRIANGLE_LIST,
+		prev, 3);
 }
 
 /*
  *	バーテックス準備
  */
 void CTriDumpS::PrepareVertex(){
-	m_Vertex.Create(m_Buffer, FVF_S, m_Count*3*sizeof(VTX_S));
+	m_Vertex.Create(m_Buffer, RS2LayoutPositionOnly(), m_Count*3);
 	if(m_Next) m_Next->PrepareVertex();
 }
 
@@ -99,8 +99,8 @@ void CTriDumpS::Render(
 ){
 	RS2BindTexture(0, RS2TextureRef());
 	if(drawup){
-		sv3.pDev->SetVertexShader(FVF_S);
-		sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLELIST, m_Count, m_Buffer, sizeof(VTX_S));
+		RS2DrawImmediate(RS2LayoutPositionOnly(), RS2_PRIMITIVE_TRIANGLE_LIST,
+			m_Buffer, (m_Count)*3);
 	}else{
 		m_Vertex.RenderTL();
 	}

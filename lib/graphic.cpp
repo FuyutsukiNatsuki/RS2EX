@@ -70,7 +70,7 @@ void AffectWindowSize()
 		CLIP_PLANE_NEAR,
 		CLIP_PLANE_FAR
 	);
-	sv3.pDev->SetTransform(D3DTS_PROJECTION, &sv3.mtxProj);
+	RS2SetProjectionTransform(sv3.mtxProj);
 
 	//ビューポート行列の作成(ワールド→スクリーン座標変換用)
 	sv3.mtxVPort = MTX4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
@@ -98,14 +98,14 @@ void InitMetrics(){
 
 	//	各座標変換行列の指定
 	sv3.mtxWorld = MTX4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-	sv3.pDev->SetTransform(D3DTS_WORLD, &sv3.mtxWorld);
+	RS2SetWorldTransform(sv3.mtxWorld);
 
 	D3DXMatrixLookAtLH(
 		&sv3.mtxView,
 		&D3DXVECTOR3(0.0f, 0.0f, -1.0f),
 		&D3DXVECTOR3(0.0f, 0.0f, 0.0f),
 		&D3DXVECTOR3(0.0f, 1.0f, 0.0f));
-	sv3.pDev->SetTransform(D3DTS_VIEW, &sv3.mtxView);
+	RS2SetViewTransform(sv3.mtxView);
 
 	//	クリッピング設定
 	D3DCLIPSTATUS8 cs;

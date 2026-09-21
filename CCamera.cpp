@@ -339,7 +339,7 @@ void CCamera::ApplyProjection(
 		D3DXMatrixPerspectiveFovLH(&sv3.mtxProj, m_FieldOfViewEffect,
 			(float)viewportW/viewportH, zn, zf);
 	}
-	sv3.pDev->SetTransform(D3DTS_PROJECTION, &sv3.mtxProj);
+	RS2SetProjectionTransform(sv3.mtxProj);
 }
 
 /*

@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-21.
 
 #include "headers.h"
 #include "debug.h"
@@ -22,8 +23,8 @@ void Draw2DLine(int x1, int y1, int x2, int y2, D3DCOLOR c1, D3DCOLOR c2){
 	//CVertex v;
 	//v.Create(vt, FVF_TL, sizeof(vt));
 	//v.RenderLL();
-	sv3.pDev->SetVertexShader(FVF_TL);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, 1, vt, sizeof(VTX_TL));
+	RS2DrawImmediate(RS2LayoutTL(), RS2_PRIMITIVE_LINE_LIST,
+		vt, 2);
 }
 
 /*
@@ -40,8 +41,8 @@ void Draw3DLine(VEC3 p1, VEC3 p2, D3DCOLOR c1, D3DCOLOR c2){
 	//CVertex v;
 	//v.Create(vt, FVF_L, sizeof(vt));
 	//v.RenderLL();
-	sv3.pDev->SetVertexShader(FVF_L);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_LINELIST, 1, vt, sizeof(VTX_L));
+	RS2DrawImmediate(RS2LayoutL(), RS2_PRIMITIVE_LINE_LIST,
+		vt, 2);
 }
 
 /*
@@ -61,8 +62,8 @@ void Draw2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
 	//CVertex v;
 	//v.Create(vt, FVF_TL, sizeof(vt));
 	//v.RenderLS(4);
-	sv3.pDev->SetVertexShader(FVF_TL);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_LINESTRIP, 4, vt, sizeof(VTX_TL));
+	RS2DrawImmediate(RS2LayoutTL(), RS2_PRIMITIVE_LINE_STRIP,
+		vt, 5);
 }
 //	塗りつぶし
 void Fill2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
@@ -74,8 +75,8 @@ void Fill2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
 	//CVertex v;
 	//v.Create(vt, FVF_TL, sizeof(vt));
 	//v.RenderTF(2);
-	sv3.pDev->SetVertexShader(FVF_TL);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, vt, sizeof(VTX_TL));
+	RS2DrawImmediate(RS2LayoutTL(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 4);
 }
 //	塗りつぶし
 void Grad2DRect(int x1, int y1, int x2, int y2, D3DCOLOR *c){
@@ -85,8 +86,8 @@ void Grad2DRect(int x1, int y1, int x2, int y2, D3DCOLOR *c){
 		x2-0.5f, y1-0.5f, 0.0f, 1.0f, c[1], 0.0f, 0.0f,
 		x2-0.5f, y2-0.5f, 0.0f, 1.0f, c[2], 0.0f, 0.0f,
 		x1-0.5f, y2-0.5f, 0.0f, 1.0f, c[3], 0.0f, 0.0f};
-	sv3.pDev->SetVertexShader(FVF_TLX);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, vt, sizeof(VTX_TLX));
+	RS2DrawImmediate(RS2LayoutTLX(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 4);
 #else
 	VTX_TL vt[] = {
 		x1-0.5f, y1-0.5f, 0.0f, 1.0f, c[0],
@@ -96,8 +97,8 @@ void Grad2DRect(int x1, int y1, int x2, int y2, D3DCOLOR *c){
 	//CVertex v;
 	//v.Create(vt, FVF_TL, sizeof(vt));
 	//v.RenderTF(2);
-	sv3.pDev->SetVertexShader(FVF_TL);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, vt, sizeof(VTX_TL));
+	RS2DrawImmediate(RS2LayoutTL(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 4);
 #endif
 }
 //	テクスチャマッピング
@@ -110,8 +111,8 @@ void TexMap2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
 	//CVertex v;
 	//v.Create(vt, FVF_TLX, sizeof(vt));
 	//v.RenderTF(2);
-	sv3.pDev->SetVertexShader(FVF_TLX);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, vt, sizeof(VTX_TLX));
+	RS2DrawImmediate(RS2LayoutTLX(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 4);
 }
 //	テクスチャマッピング (右 90°回転)
 void TexMap2DRect90(int x1, int y1, int x2, int y2, D3DCOLOR c){
@@ -123,8 +124,8 @@ void TexMap2DRect90(int x1, int y1, int x2, int y2, D3DCOLOR c){
 	//CVertex v;
 	//v.Create(vt, FVF_TLX, sizeof(vt));
 	//v.RenderTF(2);
-	sv3.pDev->SetVertexShader(FVF_TLX);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, vt, sizeof(VTX_TLX));
+	RS2DrawImmediate(RS2LayoutTLX(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 4);
 }
 
 /*
@@ -145,8 +146,8 @@ void Draw3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
 	//CVertex v;
 	//v.Create(vt, FVF_L, sizeof(vt));
 	//v.RenderLS(4);
-	sv3.pDev->SetVertexShader(FVF_L);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_LINESTRIP, 4, vt, sizeof(VTX_L));
+	RS2DrawImmediate(RS2LayoutL(), RS2_PRIMITIVE_LINE_STRIP,
+		vt, 5);
 }
 //	塗りつぶし
 void Fill3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
@@ -158,8 +159,8 @@ void Fill3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
 	//CVertex v;
 	//v.Create(vt, FVF_L, sizeof(vt));
 	//v.RenderTF(2);
-	sv3.pDev->SetVertexShader(FVF_L);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, vt, sizeof(VTX_L));
+	RS2DrawImmediate(RS2LayoutL(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 4);
 }
 //	テクスチャーマッピング
 void TexMap3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
@@ -171,8 +172,8 @@ void TexMap3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
 	//CVertex v;
 	//v.Create(vt, FVF_LX, sizeof(vt));
 	//v.RenderTF(2);
-	sv3.pDev->SetVertexShader(FVF_LX);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, vt, sizeof(VTX_LX));
+	RS2DrawImmediate(RS2LayoutLX(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 4);
 }
 //	テクスチャーマッピング×2 (XY平面)
 void Tex2Map3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
@@ -184,8 +185,8 @@ void Tex2Map3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
 	//CVertex v;
 	//v.Create(vt, FVF_LX2, sizeof(vt));
 	//v.RenderTF(2);
-	sv3.pDev->SetVertexShader(FVF_LX2);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, vt, sizeof(VTX_LX2));
+	RS2DrawImmediate(RS2LayoutLX2(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 4);
 }
 
 /*
@@ -213,8 +214,8 @@ void Fill3DHex(VEC3 pos, float r, D3DCOLOR cc, D3DCOLOR ca){
 	//CVertex v;
 	//v.Create(vt, FVF_L, sizeof(vt));
 	//v.RenderTF(6);
-	sv3.pDev->SetVertexShader(FVF_L);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 6, vt, sizeof(VTX_L));
+	RS2DrawImmediate(RS2LayoutL(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 8);
 }
 
 /*
@@ -237,8 +238,8 @@ void Draw3DCircle(VEC3 pos, float r, D3DCOLOR c){
 	//CVertex v;
 	//v.Create(vt, FVF_L, sizeof(vt));
 	//v.RenderLS(36);
-	sv3.pDev->SetVertexShader(FVF_L);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_LINESTRIP, 36, vt, sizeof(VTX_L));
+	RS2DrawImmediate(RS2LayoutL(), RS2_PRIMITIVE_LINE_STRIP,
+		vt, 37);
 }
 //	塗りつぶし
 void Fill3DCircle(VEC3 pos, float r, D3DCOLOR cc, D3DCOLOR ca){
@@ -258,8 +259,8 @@ void Fill3DCircle(VEC3 pos, float r, D3DCOLOR cc, D3DCOLOR ca){
 	//CVertex v;
 	//v.Create(vt, FVF_L, sizeof(vt));
 	//v.RenderTF(36);
-	sv3.pDev->SetVertexShader(FVF_L);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 36, vt, sizeof(VTX_L));
+	RS2DrawImmediate(RS2LayoutL(), RS2_PRIMITIVE_TRIANGLE_FAN,
+		vt, 38);
 }
 
 /*
@@ -286,6 +287,6 @@ void DrawBox(BOX8 *pB, D3DCOLOR c){
 	Draw3DLine(pB->v[0], pB->v[4], c);
 	Draw3DLine(pB->v[1], pB->v[5], c);
 	Draw3DLine(pB->v[3], pB->v[7], c);
-	sv3.pDev->SetVertexShader(FVF_L);
-	sv3.pDev->DrawPrimitiveUP(D3DPT_LINESTRIP, 9, vt, sizeof(VTX_L));
+	RS2DrawImmediate(RS2LayoutL(), RS2_PRIMITIVE_LINE_STRIP,
+		vt, 10);
 }

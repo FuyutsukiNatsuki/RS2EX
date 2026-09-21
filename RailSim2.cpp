@@ -108,8 +108,8 @@ void Opening(){
 					x2+sft2-0.5f, y1-sfty-0.5f, 0.0f, 1.0f, sdw&0xff000000, sv3.u[1], sv3.v[0],
 					x2-0.5f, y2-0.5f, 0.0f, 1.0f, sdw, sv3.u[1], sv3.v[1],
 					x1-0.5f, y2-0.5f, 0.0f, 1.0f, sdw, sv3.u[0], sv3.v[1]};
-				sv3.pDev->SetVertexShader(FVF_TLX);
-				sv3.pDev->DrawPrimitiveUP(D3DPT_TRIANGLEFAN, 2, vt, sizeof(VTX_TLX));
+				RS2DrawImmediate(RS2LayoutTLX(), RS2_PRIMITIVE_TRIANGLE_FAN,
+					vt, 4);
 			}
 			TexMap2DRect(x1, y1, x2, y2, col);
 		//	Dialog("%d %d %p", x, y, col);

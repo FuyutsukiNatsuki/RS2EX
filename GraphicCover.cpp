@@ -130,7 +130,7 @@ void InitGrid(){
 		grid[cnt].x = 0.0f; grid[cnt].y = 0.0f; grid[cnt].z = i;
 		grid[cnt].d = color|alpha; cnt++;
 	}
-	g_DetailGridVertex.Create(grid, FVF_L, sizeof(VTX_L)*(GRID_SIZE-1)*8);
+	g_DetailGridVertex.Create(grid, RS2LayoutL(), (GRID_SIZE-1)*8);
 }
 
 /*

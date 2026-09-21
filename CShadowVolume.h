@@ -1,10 +1,11 @@
+//	Modified for RS2EX on 2026-09-21.
 #ifndef CSHADOWVOLUME_H_INCLUDED
 #define CSHADOWVOLUME_H_INCLUDED
 
 #define TRI_DUMP_MAX (sv3.capsMaxPrim/3)	//	三角形ダンプ最大値
 
-//	シャドウボリューム用 FVF
-#define FVF_S (D3DFVF_XYZ)
+//	[RS2EX] FVF_S removed in v0.0.9; the layout is RS2LayoutPositionOnly().
+//	VTX_S stays a VEC3 - the shadow vertex really is just a position.
 typedef VEC3 VTX_S;
 
 /*
