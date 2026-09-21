@@ -357,6 +357,9 @@
     <ClCompile Include="RS2D3D8RenderState.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
+    <ClCompile Include="RS2D3D8Draw.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
     <ClCompile Include="CSkinSelectMode.cpp">
       <Filter>Source Files\RS2 Source\Mode Class Source\SystemMode Class Source</Filter>
     </ClCompile>
@@ -1052,6 +1055,15 @@
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2D3D8Lighting.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
+    <ClInclude Include="RS2Color.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
+    <ClInclude Include="RS2Draw.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
+    <ClInclude Include="RS2D3D8Draw.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RSPV.H">

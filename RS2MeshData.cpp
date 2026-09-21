@@ -7,6 +7,9 @@
 void RS2MeshVertexLayout::Clear(){
 	stride = 0;
 	positionOffset = NOT_PRESENT;
+	//	Imported meshes are always pipeline-transformed; the screen-space
+	//	semantic only ever comes from a 2D helper building its own layout.
+	positionSemantic = RS2_POSITION_TRANSFORMED_BY_PIPELINE;
 	normalOffset = NOT_PRESENT;
 	diffuseOffset = NOT_PRESENT;
 	texCoordCount = 0;

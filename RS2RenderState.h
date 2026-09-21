@@ -31,14 +31,10 @@
 #ifndef RS2RENDERSTATE_H_INCLUDED
 #define RS2RENDERSTATE_H_INCLUDED
 
-/*
- *	A packed 0xAARRGGBB colour.
- *
- *	Distinct from RS2Color4, which is four floats.  Ambient light is packed in
- *	this program and material colours are not; conflating them, or casting one
- *	to the other, would be wrong in both directions.
- */
-typedef unsigned long RS2PackedColor;
+//	[RS2EX] RS2PackedColor moved to RS2Color.h in v0.0.9 - drawing needs the
+//	same type, and render state should not be the header everything includes
+//	to get a colour.
+#include "RS2Color.h"
 
 enum RS2CompareFunc
 {

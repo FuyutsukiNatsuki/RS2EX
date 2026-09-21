@@ -36,6 +36,20 @@ struct RS2TexCoordLayout
  *	No D3DFVF_*, no D3DVERTEXELEMENT, no Direct3D pointer: translating this into
  *	whatever a backend wants is the backend's job.
  */
+/*
+ *	How the position in a vertex is interpreted.
+ *
+ *	Meshes are always Position.  The 2D helpers and the UI draw with vertices
+ *	that are already in screen space with a reciprocal w, which is a different
+ *	thing rather than a flag on the same thing: one goes through the world,
+ *	view and projection transforms, the other goes through none of them.
+ */
+enum RS2PositionSemantic
+{
+	RS2_POSITION_TRANSFORMED_BY_PIPELINE,	//	XYZ
+	RS2_POSITION_ALREADY_TRANSFORMED		//	XYZRHW, screen space
+};
+
 struct RS2MeshVertexLayout
 {
 	enum { NOT_PRESENT = -1, MAX_TEXCOORD = 8 };
@@ -43,6 +57,7 @@ struct RS2MeshVertexLayout
 	unsigned int stride;
 
 	int positionOffset;	//	always present in a valid layout
+	RS2PositionSemantic positionSemantic;
 	int normalOffset;
 	int diffuseOffset;	//	packed 32-bit colour
 
