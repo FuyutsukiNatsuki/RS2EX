@@ -1,9 +1,10 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21.
 //	Copyright (c) 2002 Midikyou
 
 #include "udx.h"
 #include "libraries.h"
 #include "sysvalue.h"
+#include "..\RS2D3D12Smoke.h"
 
 /*
  *	コンパイル・オプション
@@ -21,6 +22,10 @@
  *	-win	:ウインドウモードで実行する。
  *	-2nd	:2枚目のビデオカードを使用する（Voodoo等）。
  *	-dbf	:デバッグ出力先をファイルにする。
+ *	-fixture:RS2EX: run a fixed number of simulation ticks, then stop the
+ *		 world so captures are reproducible.
+ *	-dx12	:RS2EX: select the Direct3D 12 backend.  No fallback.
+ *	-dx12smoke:RS2EX: run the Direct3D 12 bootstrap test and exit.
  *	/3ds	:3Dサウンドを使用しない。
  *	/fx		:サウンドにエフェクトを使用しない。
  */
@@ -87,6 +92,16 @@ BOOL CApp::Init(HINSTANCE hInst){
 
 	if(!InitDebugStream()) return FALSE;		//	デバッグ出力の初期化
 	if(!CreateMainWindow(hInst)) return FALSE;	//	ウインドウの作成
+
+	//	[RS2EX] -dx12smoke exercises the Direct3D 12 backend and exits.  It
+	//	runs here because it needs the window and nothing else: no Direct3D 8
+	//	device, no input, no sound, no layout.  Returning FALSE leaves through
+	//	the same path as any other start-up refusal, so nothing is half
+	//	initialised behind it.
+	if(RS2D3D12SmokeRequested()){
+		RS2D3D12SmokeRun(svw.hWnd);
+		return FALSE;
+	}
 	//	DirectX関連の初期化
 	if(!InitDirect3D()) return FALSE;
 	if(!InitDirectInput()) return FALSE;

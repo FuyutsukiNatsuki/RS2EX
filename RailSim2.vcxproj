@@ -209,6 +209,8 @@
     <ClCompile Include="RS2LegacyImportDevice.cpp" />
     <ClCompile Include="RS2Fixture.cpp" />
     <ClCompile Include="RS2D3D12Availability.cpp" />
+    <ClCompile Include="RS2D3D12Backend.cpp" />
+    <ClCompile Include="RS2D3D12Smoke.cpp" />
     <ClCompile Include="RS2TextureResource.cpp" />
     <ClCompile Include="RS2D3D8MaterialBinding.cpp" />
     <ClCompile Include="RS2Lighting.cpp" />
@@ -448,6 +450,8 @@
     <ClInclude Include="RS2Fixture.h" />
     <ClInclude Include="RS2D3D12.h" />
     <ClInclude Include="RS2D3D12Availability.h" />
+    <ClInclude Include="RS2D3D12Backend.h" />
+    <ClInclude Include="RS2D3D12Smoke.h" />
     <ClInclude Include="RS2Material.h" />
     <ClInclude Include="RS2TextureResource.h" />
     <ClInclude Include="RS2MaterialBinding.h" />
