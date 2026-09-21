@@ -51,6 +51,8 @@ CRS2D3D12Backend::CRS2D3D12Backend()
 	  m_DepthFormat(DXGI_FORMAT_UNKNOWN),
 	  m_HasStencil(false),
 	  m_Windowed(true),
+	  m_FrameRecording(false),
+	  m_PassActive(false),
 	  m_Fence(0),
 	  m_FenceEvent(NULL),
 	  m_NextFenceValue(1),
@@ -65,6 +67,8 @@ CRS2D3D12Backend::CRS2D3D12Backend()
 		m_BackBuffer[i] = 0;
 		m_FenceValue[i] = 0;
 	}
+	ZeroMemory(&m_Viewport, sizeof(m_Viewport));
+	ZeroMemory(&m_Scissor, sizeof(m_Scissor));
 	lstrcpynA(m_Name, "Direct3D 12", sizeof(m_Name));
 }
 
@@ -480,6 +484,11 @@ bool CRS2D3D12Backend::Initialize(int width, int height){
 		return false;
 	}
 
+	//	The whole target, until something asks for less.  Leaving this zeroed
+	//	would clip every pass away and look exactly like a backend that draws
+	//	nothing.
+	SetViewport(0, 0, m_Width, m_Height, 0.0f, 1.0f);
+
 	Debug("[RS2EX D3D12] ready: %d frame contexts, %s\n",
 		RS2D3D12_FRAME_COUNT, GetName());
 	return true;
@@ -555,51 +564,310 @@ void CRS2D3D12Backend::Shutdown(){
 }
 
 /*
- *	Frame lifecycle: not this work package.
+ *	Wait until one frame context's submitted work has finished.
  *
- *	There is no swap chain to render into, so refusing is the truthful answer.
- *	CRS2Renderer will not select this backend for a normal run until the
- *	lifecycle exists; -dx12smoke exercises what is built so far.
+ *	index	: frame context to wait for
+ *
+ *	This is the only wait a normal frame does, and usually it does not block at
+ *	all: by the time a context comes round again the GPU has long finished with
+ *	it.  Waiting for the whole GPU here instead would serialise the pipeline
+ *	for nothing.
+ */
+void CRS2D3D12Backend::WaitForFrame(
+	unsigned int index	//	frame context
+){
+	if(!m_Fence || !m_FenceEvent) return;
+	if(index>=RS2D3D12_FRAME_COUNT) return;
+
+	const UINT64 target = m_FenceValue[index];
+
+	if(!target || m_Fence->GetCompletedValue()>=target) return;
+
+	if(SUCCEEDED(m_Fence->SetEventOnCompletion(target, m_FenceEvent)))
+		WaitForSingleObject(m_FenceEvent, INFINITE);
+}
+
+/*
+ *	One resource transition.
+ *
+ *	resource	: what is changing state
+ *	before		: the state it is in
+ *	after		: the state it should be in
+ *
+ *	Written out rather than taken from d3dx12.h: that header is a sample
+ *	convenience, not part of the SDK, and this build has no other reason to
+ *	carry it.
+ */
+void CRS2D3D12Backend::SubmitBarrier(
+	ID3D12Resource *resource,		//	resource to transition
+	D3D12_RESOURCE_STATES before,	//	current state
+	D3D12_RESOURCE_STATES after		//	wanted state
+){
+	if(!m_CommandList || !resource) return;
+
+	D3D12_RESOURCE_BARRIER barrier;
+
+	ZeroMemory(&barrier, sizeof(barrier));
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = resource;
+	barrier.Transition.StateBefore = before;
+	barrier.Transition.StateAfter = after;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+	m_CommandList->ResourceBarrier(1, &barrier);
+}
+
+/*
+ *	Point the command list at the current back buffer and the depth buffer, and
+ *	restore the viewport and scissor.
+ *
+ *	Done on every pass rather than only on the first.  A logical pass may have
+ *	changed the viewport - window division does exactly that - and a command
+ *	list reset forgets both, so there is no state here worth trying to track.
+ */
+void CRS2D3D12Backend::BindTargets(){
+	D3D12_CPU_DESCRIPTOR_HANDLE rtv = m_RtvHeap->GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE dsv = m_DsvHeap->GetCPUDescriptorHandleForHeapStart();
+
+	rtv.ptr += m_FrameIndex*m_RtvStride;
+
+	m_CommandList->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+	m_CommandList->RSSetViewports(1, &m_Viewport);
+	m_CommandList->RSSetScissorRects(1, &m_Scissor);
+}
+
+/*
+ *	Open the command list for a displayed frame.
+ *
+ *	returns	: false if the list could not be opened
+ *
+ *	The allocator is only reset once its frame context has finished on the GPU.
+ *	Resetting one the GPU is still reading is the classic Direct3D 12 crash,
+ *	and it is silent until it is not.
+ */
+bool CRS2D3D12Backend::BeginRecording(){
+	WaitForFrame(m_FrameIndex);
+
+	if(FAILED(m_Allocator[m_FrameIndex]->Reset())) return false;
+	if(FAILED(m_CommandList->Reset(m_Allocator[m_FrameIndex], NULL))) return false;
+
+	SubmitBarrier(m_BackBuffer[m_FrameIndex],
+		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	m_FrameRecording = true;
+	return true;
+}
+
+/*
+ *	Begin a logical render pass.
+ *
+ *	clearColor		: clear colour, used only when clearColorBuffer is true
+ *	clearColorBuffer: false to keep the colour buffer and clear depth only
+ *
+ *	Several of these happen before one Present - stereo draws twice, window
+ *	division up to four times - so only the first opens the command list.  The
+ *	Direct3D 8 backend has the same split; here it decides whether a frame is
+ *	being recorded at all.
  */
 bool CRS2D3D12Backend::BeginRenderPass(unsigned int clearColor, bool clearColorBuffer){
-	(void)clearColor;
-	(void)clearColorBuffer;
-	return false;
+	if(!m_SwapChain || !m_CommandList) return false;
+
+	if(!m_FrameRecording && !BeginRecording()) return false;
+
+	BindTargets();
+
+	if(clearColorBuffer){
+		D3D12_CPU_DESCRIPTOR_HANDLE rtv =
+			m_RtvHeap->GetCPUDescriptorHandleForHeapStart();
+
+		rtv.ptr += m_FrameIndex*m_RtvStride;
+
+		//	The engine colour is 0xAARRGGBB, the same as the Direct3D 8
+		//	backend receives.  Alpha is dropped rather than carried into the
+		//	back buffer: there is nothing behind it to blend with.
+		const float rgba[4] = {
+			((clearColor>>16)&0xff)/255.0f,
+			((clearColor>>8)&0xff)/255.0f,
+			(clearColor&0xff)/255.0f,
+			1.0f
+		};
+
+		m_CommandList->ClearRenderTargetView(rtv, rgba, 0, NULL);
+	}
+
+	//	Depth is cleared on every pass whether or not the colour is, which is
+	//	the promise the interface has made since v0.0.4.  Stencil goes with it
+	//	only when the format actually has stencil bits.
+	D3D12_CLEAR_FLAGS flags = D3D12_CLEAR_FLAG_DEPTH;
+
+	if(m_HasStencil)
+		flags = (D3D12_CLEAR_FLAGS)(flags|D3D12_CLEAR_FLAG_STENCIL);
+
+	m_CommandList->ClearDepthStencilView(
+		m_DsvHeap->GetCPUDescriptorHandleForHeapStart(), flags, 1.0f, 0, 0, NULL);
+
+	m_PassActive = true;
+	return true;
 }
 
+/*
+ *	End a logical pass.
+ *
+ *	The command list stays open.  Closing it here would turn every logical pass
+ *	into its own submission, which is not what the interface means and would
+ *	present a half-drawn frame in stereo or window-division mode.
+ */
 void CRS2D3D12Backend::EndRenderPass(){
+	m_PassActive = false;
 }
 
+/*
+ *	Submit the frame and show it.
+ *
+ *	Present(1, 0) keeps the vertical sync the Direct3D 8 backend has always
+ *	presented with; RailSim's simulation is driven by its own clock, so the
+ *	frame rate is a display decision and changing it here would be an
+ *	unrelated change.
+ */
 void CRS2D3D12Backend::Present(){
+	if(!m_SwapChain || !m_FrameRecording) return;
+
+	SubmitBarrier(m_BackBuffer[m_FrameIndex],
+		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+	if(FAILED(m_CommandList->Close())){
+		Debug("[RS2EX D3D12] command list would not close\n");
+		m_FrameRecording = false;
+		return;
+	}
+
+	ID3D12CommandList *lists[1] = { m_CommandList };
+
+	m_Queue->ExecuteCommandLists(1, lists);
+
+	const HRESULT hr = m_SwapChain->Present(1, 0);
+
+	if(FAILED(hr)) Debug("[RS2EX D3D12] Present failed (0x%08lx)\n", (unsigned long)hr);
+
+	//	Remember what this context has to finish before its allocator may be
+	//	reset again, then move on to the buffer DXGI has just made current.
+	m_FenceValue[m_FrameIndex] = m_NextFenceValue;
+	m_Queue->Signal(m_Fence, m_NextFenceValue);
+	m_NextFenceValue++;
+
+	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
+	m_FrameRecording = false;
+	m_PassActive = false;
 }
 
 /*
  *	Reset means "rebuild the size-dependent swap-chain resources" for this
- *	backend, not the Direct3D 8 device reset it is named after.  There are no
- *	such resources yet.
+ *	backend, not the Direct3D 8 device reset it is named after.  Resize
+ *	arrives in the next work package; there is nothing to rebuild yet.
  */
 bool CRS2D3D12Backend::Reset(){
 	return true;
 }
 
+/*
+ *	Clear the whole target, outside any frame.
+ *
+ *	color	: clear colour, 0xAARRGGBB
+ *
+ *	This is the one-time start-up clear, and it can arrive when no frame is
+ *	being recorded, so it records and submits its own work and waits for it.
+ *	Nothing here is on a hot path - it runs once - so correctness is the only
+ *	consideration.
+ */
 void CRS2D3D12Backend::ClearTarget(unsigned int color){
-	(void)color;
+	if(!m_SwapChain || !m_CommandList) return;
+
+	//	Not while a frame is open: that command list belongs to the frame, and
+	//	borrowing it would submit half of one.
+	if(m_FrameRecording) return;
+
+	WaitForGpu();
+
+	if(FAILED(m_Allocator[m_FrameIndex]->Reset())) return;
+	if(FAILED(m_CommandList->Reset(m_Allocator[m_FrameIndex], NULL))) return;
+
+	SubmitBarrier(m_BackBuffer[m_FrameIndex],
+		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE rtv = m_RtvHeap->GetCPUDescriptorHandleForHeapStart();
+
+	rtv.ptr += m_FrameIndex*m_RtvStride;
+
+	const float rgba[4] = {
+		((color>>16)&0xff)/255.0f,
+		((color>>8)&0xff)/255.0f,
+		(color&0xff)/255.0f,
+		1.0f
+	};
+
+	D3D12_CLEAR_FLAGS flags = D3D12_CLEAR_FLAG_DEPTH;
+
+	if(m_HasStencil)
+		flags = (D3D12_CLEAR_FLAGS)(flags|D3D12_CLEAR_FLAG_STENCIL);
+
+	m_CommandList->ClearRenderTargetView(rtv, rgba, 0, NULL);
+	m_CommandList->ClearDepthStencilView(
+		m_DsvHeap->GetCPUDescriptorHandleForHeapStart(), flags, 1.0f, 0, 0, NULL);
+
+	SubmitBarrier(m_BackBuffer[m_FrameIndex],
+		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+	if(FAILED(m_CommandList->Close())) return;
+
+	ID3D12CommandList *lists[1] = { m_CommandList };
+
+	m_Queue->ExecuteCommandLists(1, lists);
+	WaitForGpu();
 }
 
+/*
+ *	Set the viewport, and the scissor that goes with it.
+ *
+ *	x, y			: top-left corner
+ *	width, height	: size
+ *	minZ, maxZ		: depth range
+ *
+ *	Cached unconditionally and submitted only when a command list is open.
+ *	Window division calls this between logical passes of the same frame, and
+ *	the first call of a frame arrives before the list has been reset, so a
+ *	version that only submitted would lose it.
+ *
+ *	Direct3D 12 has no implicit scissor: geometry outside the viewport is still
+ *	rasterised unless a scissor rectangle says otherwise, where Direct3D 8
+ *	clipped to the viewport on its own.  Deriving the scissor from the same
+ *	rectangle keeps the behaviour the engine already expects, without adding a
+ *	scissor concept to the interface that nothing would set.
+ */
 void CRS2D3D12Backend::SetViewport(
-	unsigned int x,
-	unsigned int y,
-	unsigned int width,
-	unsigned int height,
-	float minZ,
-	float maxZ
+	unsigned int x,			//	left
+	unsigned int y,			//	top
+	unsigned int width,		//	width
+	unsigned int height,	//	height
+	float minZ,				//	near depth
+	float maxZ				//	far depth
 ){
-	(void)x;
-	(void)y;
-	(void)width;
-	(void)height;
-	(void)minZ;
-	(void)maxZ;
+	m_Viewport.TopLeftX = (FLOAT)x;
+	m_Viewport.TopLeftY = (FLOAT)y;
+	m_Viewport.Width = (FLOAT)width;
+	m_Viewport.Height = (FLOAT)height;
+	m_Viewport.MinDepth = minZ;
+	m_Viewport.MaxDepth = maxZ;
+
+	m_Scissor.left = (LONG)x;
+	m_Scissor.top = (LONG)y;
+	m_Scissor.right = (LONG)(x+width);
+	m_Scissor.bottom = (LONG)(y+height);
+
+	if(m_FrameRecording && m_CommandList){
+		m_CommandList->RSSetViewports(1, &m_Viewport);
+		m_CommandList->RSSetScissorRects(1, &m_Scissor);
+	}
 }
 
 void CRS2D3D12Backend::GetViewportSize(

@@ -56,6 +56,18 @@ private:
 
 	bool m_Windowed;
 
+	//	The command list is open across every logical pass of one displayed
+	//	frame, because RailSim runs several - stereo, window division - before
+	//	a single Present.
+	bool m_FrameRecording;
+	bool m_PassActive;
+
+	//	What SetViewport() was last told.  Re-submitted whenever the command
+	//	list is reset, because a reset forgets it.
+	D3D12_VIEWPORT m_Viewport;
+	D3D12_RECT m_Scissor;
+
+
 	ID3D12Fence *m_Fence;
 	HANDLE m_FenceEvent;
 
@@ -81,6 +93,14 @@ private:
 	bool CreateDepthBuffer();
 	void ReleaseSizeDependentResources();
 	DXGI_FORMAT ChooseDepthFormat();
+
+	void WaitForFrame(unsigned int index);
+	void SubmitBarrier(
+		ID3D12Resource *resource,
+		D3D12_RESOURCE_STATES before,
+		D3D12_RESOURCE_STATES after);
+	void BindTargets();
+	bool BeginRecording();
 
 public:
 	CRS2D3D12Backend();
@@ -139,6 +159,15 @@ public:
 	 *	Whether a swap chain and its render targets exist.
 	 */
 	bool HasSwapChain() const{ return m_SwapChain!=0; }
+
+	/*
+	 *	Which frame context the next frame will use.
+	 *
+	 *	Exposed for the smoke test, which checks that it actually alternates -
+	 *	a swap chain that never advances presents the same buffer for ever and
+	 *	looks fine until something moves.
+	 */
+	unsigned int GetFrameIndex() const{ return m_FrameIndex; }
 };
 
 #endif	//	RS2D3D12BACKEND_H_INCLUDED

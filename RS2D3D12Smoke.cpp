@@ -13,6 +13,16 @@
 //	failure that shows up later as a leak or a crash on the second run.
 static const int RS2D3D12_SMOKE_CYCLES = 3;
 
+//	Frames to present in the lifecycle step.  Present(1, 0) waits for vertical
+//	sync, so this is also how long the window shows the test colour: five
+//	seconds at sixty hertz, which is enough for a capture harness to find
+//	the window, move it and photograph it without racing the exit.
+static const int RS2D3D12_SMOKE_FRAMES = 300;
+
+//	Deliberately not black, not white and not a colour the program uses, so a
+//	screenshot of it cannot be mistaken for anything else.
+static const unsigned int RS2D3D12_SMOKE_COLOR = 0x00336699;
+
 static int s_Passed = 0;
 static int s_Failed = 0;
 
@@ -87,6 +97,78 @@ static bool RS2D3D12_SmokeLifecycle(){
 	return allOk;
 }
 
+/*
+ *	Clear and present, for long enough to be photographed.
+ *
+ *	window	: the application window, shown so the result is visible
+ *
+ *	Two logical passes per displayed frame, because that is the shape RailSim
+ *	uses for stereo and window division and the part of the lifecycle most
+ *	likely to be got wrong: the command list has to stay open across them and
+ *	close exactly once.  The second pass keeps the colour buffer, so if
+ *	EndRenderPass were closing the list this would present a frame that had
+ *	only been half recorded.
+ */
+static bool RS2D3D12_SmokeLifecycleFrames(HWND window){
+	CRS2D3D12Backend backend;
+
+	if(!backend.Initialize(640, 480)){
+		RS2D3D12_SmokeStep("initialize for frames", false);
+		return false;
+	}
+	RS2D3D12_SmokeStep("initialize for frames", true);
+
+	//	The window is created before the display size is known, so it has no
+	//	area until the Direct3D 8 start-up sizes it - and this test runs
+	//	instead of that start-up.  Size it the same way the program does, so
+	//	the presented colour is actually visible: a log line saying Present
+	//	succeeded is a weaker claim than a window anyone can photograph.
+	svw.winW = 640;
+	svw.winH = 480;
+	AdjustWindow();
+	ShowWindow(window, SW_SHOW);
+	UpdateWindow(window);
+
+	{
+		RECT rect;
+
+		GetWindowRect(window, &rect);
+		Debug("RS2D3D12SMOKE|window %ld x %ld at %ld,%ld\n",
+			rect.right-rect.left, rect.bottom-rect.top, rect.left, rect.top);
+	}
+
+	backend.ClearTarget(RS2D3D12_SMOKE_COLOR);
+	RS2D3D12_SmokeStep("clear target outside a frame", true);
+
+	const unsigned int firstIndex = backend.GetFrameIndex();
+	bool allPasses = true;
+	bool indexMoved = false;
+	int frame;
+
+	for(frame = 0; frame<RS2D3D12_SMOKE_FRAMES; frame++){
+		if(!backend.BeginRenderPass(RS2D3D12_SMOKE_COLOR, true)) allPasses = false;
+		backend.EndRenderPass();
+
+		//	Second pass, keeping the colour: depth is still cleared.
+		if(!backend.BeginRenderPass(0, false)) allPasses = false;
+		backend.EndRenderPass();
+
+		backend.Present();
+
+		if(backend.GetFrameIndex()!=firstIndex) indexMoved = true;
+	}
+
+	RS2D3D12_SmokeStep("two passes per frame", allPasses);
+	RS2D3D12_SmokeStep("back buffer alternates", indexMoved);
+
+	backend.WaitForGpu();
+	RS2D3D12_SmokeStep("wait after presenting", true);
+
+	backend.Shutdown();
+	RS2D3D12_SmokeStep("shutdown after presenting", true);
+	return allPasses && indexMoved;
+}
+
 bool RS2D3D12SmokeRun(
 	HWND window	//	application window the swap chain presents to
 ){
@@ -102,6 +184,7 @@ bool RS2D3D12SmokeRun(
 	}
 
 	RS2D3D12_SmokeLifecycle();
+	RS2D3D12_SmokeLifecycleFrames(window);
 
 	Debug("RS2D3D12SMOKE|end|passed=%d|failed=%d\n", s_Passed, s_Failed);
 	return s_Failed==0;
