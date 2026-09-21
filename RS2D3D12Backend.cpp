@@ -323,9 +323,17 @@ bool CRS2D3D12Backend::CreateSwapChain(
 	m_Factory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER);
 	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();
 
-	Debug("[RS2EX D3D12] swap chain %u x %u, %d buffers, %s\n",
+	//	What was asked for and what was granted are different questions.
+	//	DXGI can refuse exclusive fullscreen and hand back a windowed swap
+	//	chain, and a log that only recorded the request would not show it.
+	BOOL actuallyFullscreen = FALSE;
+
+	m_SwapChain->GetFullscreenState(&actuallyFullscreen, NULL);
+
+	Debug("[RS2EX D3D12] swap chain %u x %u, %d buffers, %s requested, %s granted\n",
 		m_Width, m_Height, RS2D3D12_FRAME_COUNT,
-		m_Windowed ? "windowed" : "fullscreen requested");
+		m_Windowed ? "windowed" : "fullscreen",
+		actuallyFullscreen ? "fullscreen" : "windowed");
 	return true;
 }
 
