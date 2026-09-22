@@ -21,6 +21,9 @@
 #ifndef RS2D3D8RESOURCES_H_INCLUDED
 #define RS2D3D8RESOURCES_H_INCLUDED
 
+struct RS2TextureLock;
+struct RS2TexturePayloadOps;
+
 /*
  *	Vertex buffers
  *
@@ -62,6 +65,23 @@ HRESULT RS2D3D8_CreateTextureFromResource(
 HRESULT RS2D3D8_CreateMutableTexture(LPTEX8 *ppOut, int w, int h);
 
 void RS2D3D8_ReleaseTexture(LPTEX8 *ppTex);
+
+/*
+ *	Opaque sampled-texture payload boundary.
+ *
+ *	RS2TextureResource.cpp uses these entry points and never sees LPTEX8.  The
+ *	older native helpers above remain for D3D8-only resources such as COffScreen.
+ */
+bool RS2D3D8_CreateTexturePayloadFromFile(
+	void **outPayload, int *outWidth, int *outHeight,
+	const char *strFile, unsigned long cTrans, int nMipLv);
+bool RS2D3D8_CreateTexturePayloadFromResource(
+	void **outPayload, int *outWidth, int *outHeight,
+	const char *strRes, unsigned long cTrans, int nMipLv);
+bool RS2D3D8_CreateMutableTexturePayload(
+	void **outPayload, int *outWidth, int *outHeight, int w, int h);
+
+const RS2TexturePayloadOps *RS2D3D8_GetTexturePayloadOps();
 
 /*
  *	Offscreen render target

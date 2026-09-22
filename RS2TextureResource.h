@@ -13,10 +13,13 @@
 //	stay explicit, exactly as they were, because that is the lifetime contract the
 //	whole texture cache is built on.
 //
-//	This header deliberately does not include d3d8.h, and exposes no native handle.
+//	This header deliberately does not include d3d8.h or d3d12.h, and exposes no
+//	native handle.
 
 #ifndef RS2TEXTURERESOURCE_H_INCLUDED
 #define RS2TEXTURERESOURCE_H_INCLUDED
+
+#include "RS2Renderer.h"
 
 class CRS2TextureResource;
 
@@ -32,6 +35,21 @@ struct RS2TextureLock
 
 	RS2TextureLock() : bits(0), pitch(0){}
 	bool IsValid() const{ return bits!=0; }
+};
+
+/*
+ *	Backend operations for one opaque payload.
+ *
+ *	These signatures are renderer-neutral.  The D3D8 implementation owns all
+ *	native casts and supplies its table when a resource adopts a D3D8 payload;
+ *	the D3D12 implementation can supply a different table without changing the
+ *	owner or ever being interpreted as an IDirect3DTexture8*.
+ */
+struct RS2TexturePayloadOps
+{
+	void (*destroy)(void *payload);
+	bool (*lock)(void *payload, RS2TextureLock *out);
+	void (*unlock)(void *payload);
 };
 
 /*
@@ -72,7 +90,9 @@ public:
 class CRS2TextureResource
 {
 private:
-	void *m_Native;		//	IDirect3DTexture8*, opaque above the backend
+	RS2RendererBackendType m_Backend;
+	void *m_Payload;	//	backend-private; neutral code never interprets it
+	const RS2TexturePayloadOps *m_Ops;
 	int m_Width;
 	int m_Height;
 
@@ -84,7 +104,7 @@ public:
 	~CRS2TextureResource();
 
 	void Free();
-	bool IsValid() const{ return m_Native!=0; }
+	bool IsValid() const{ return m_Payload!=0; }
 
 	RS2TextureRef GetRef(){ return RS2TextureRef(this); }
 
@@ -101,10 +121,19 @@ public:
 	void Unlock();
 
 	//	--- backend use only ---
-	//	Resolving this outside the backend would recreate the problem v0.0.7
-	//	exists to remove.  Declared here because C++ has no better place.
-	void *GetNativeForBackend() const{ return m_Native; }
-	void AdoptNativeFromBackend(void *native, int width, int height);
+	//	The payload is opaque here.  Only code for the backend named by
+	//	GetBackendForBackend() may interpret it.
+	RS2RendererBackendType GetBackendForBackend() const{ return m_Backend; }
+	void *GetPayloadForBackend() const{ return m_Payload; }
+	bool IsOwnedByBackend(RS2RendererBackendType backend) const{
+		return m_Payload && m_Backend==backend;
+	}
+	void AdoptPayloadFromBackend(
+		RS2RendererBackendType backend,
+		void *payload,
+		int width,
+		int height,
+		const RS2TexturePayloadOps *ops);
 };
 
 /*
@@ -118,5 +147,9 @@ CRS2TextureResource *RS2CreateTextureFromResource(
 CRS2TextureResource *RS2CreateMutableTexture(int w, int h);
 
 void RS2DestroyTexture(CRS2TextureResource *resource);
+
+//	CPU-only ownership validation used by -dx12smoke.  It creates no native
+//	resource and changes no runtime state.
+bool RS2TextureOwnershipSmoke();
 
 #endif	//	RS2TEXTURERESOURCE_H_INCLUDED

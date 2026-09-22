@@ -57,7 +57,17 @@ void RS2D3D8_SetMaterial(const RS2Material &material){
  */
 void RS2D3D8_BindTexture(unsigned int stage, const RS2TextureRef &texture){
 	const CRS2TextureResource *resource = texture.GetResource();
-	LPTEX8 native = resource ? (LPTEX8)resource->GetNativeForBackend() : NULL;
+	LPTEX8 native = NULL;
+
+	if(resource && resource->IsOwnedByBackend(RS2_RENDERER_D3D8)){
+		native = (LPTEX8)resource->GetPayloadForBackend();
+	}else if(resource && resource->IsValid()){
+		static bool reported = false;
+		if(!reported){
+			reported = true;
+			Debug("[RS2EX Texture] D3D8 bind rejected a texture owned by another backend\n");
+		}
+	}
 
 	RS2TextureAuditRecordBind(stage, native!=NULL);
 	sv3.pDev->SetTexture(stage, native);

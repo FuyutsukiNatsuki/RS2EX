@@ -8,6 +8,7 @@
 
 #include "stdafx.h"
 #include "RS2D3D8Resources.h"
+#include "RS2TextureResource.h"
 #include "RS2TextureAudit.h"
 
 //	Live-resource counters.  Incremented on successful creation, decremented on
@@ -272,6 +273,135 @@ void RS2D3D8_ReleaseTexture(LPTEX8 *ppTex){
 	*ppTex = NULL;
 	if(s_LiveTextures) s_LiveTextures--;
 	RS2TextureAuditRecordRelease(s_LiveTextures);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//	Opaque sampled-texture payload
+////////////////////////////////////////////////////////////////////////////////
+
+/*
+ *	Move a freshly-created D3D8 texture across the neutral ownership boundary.
+ *
+ *	Getting the description belongs here because it is a native operation.  A
+ *	description failure preserves the old behaviour: the resource remains valid
+ *	and reports a 0 x 0 size rather than discarding a successfully-created texture.
+ */
+static bool RS2D3D8_ExportTexturePayload(
+	LPTEX8 texture,
+	void **outPayload,
+	int *outWidth,
+	int *outHeight
+){
+	if(outPayload) *outPayload = 0;
+	if(outWidth) *outWidth = 0;
+	if(outHeight) *outHeight = 0;
+	if(!texture || !outPayload) return false;
+
+	D3DSURFACE_DESC desc;
+	if(SUCCEEDED(texture->GetLevelDesc(0, &desc))){
+		if(outWidth) *outWidth = (int)desc.Width;
+		if(outHeight) *outHeight = (int)desc.Height;
+	}
+
+	*outPayload = texture;
+	return true;
+}
+
+bool RS2D3D8_CreateTexturePayloadFromFile(
+	void **outPayload,
+	int *outWidth,
+	int *outHeight,
+	const char *strFile,
+	unsigned long cTrans,
+	int nMipLv
+){
+	if(!outPayload) return false;
+
+	LPTEX8 texture = 0;
+	if(FAILED(RS2D3D8_CreateTextureFromFile(
+		&texture, strFile, (D3DCOLOR)cTrans, nMipLv))) return false;
+
+	return RS2D3D8_ExportTexturePayload(
+		texture, outPayload, outWidth, outHeight);
+}
+
+bool RS2D3D8_CreateTexturePayloadFromResource(
+	void **outPayload,
+	int *outWidth,
+	int *outHeight,
+	const char *strRes,
+	unsigned long cTrans,
+	int nMipLv
+){
+	if(!outPayload) return false;
+
+	LPTEX8 texture = 0;
+	if(FAILED(RS2D3D8_CreateTextureFromResource(
+		&texture, strRes, (D3DCOLOR)cTrans, nMipLv))) return false;
+
+	return RS2D3D8_ExportTexturePayload(
+		texture, outPayload, outWidth, outHeight);
+}
+
+bool RS2D3D8_CreateMutableTexturePayload(
+	void **outPayload,
+	int *outWidth,
+	int *outHeight,
+	int w,
+	int h
+){
+	if(!outPayload) return false;
+
+	LPTEX8 texture = 0;
+	if(FAILED(RS2D3D8_CreateMutableTexture(&texture, w, h))) return false;
+
+	return RS2D3D8_ExportTexturePayload(
+		texture, outPayload, outWidth, outHeight);
+}
+
+static void RS2D3D8_DestroyTexturePayload(void *payload){
+	LPTEX8 texture = (LPTEX8)payload;
+	RS2D3D8_ReleaseTexture(&texture);
+}
+
+static bool RS2D3D8_LockTexturePayload(void *payload, RS2TextureLock *out){
+	if(!out) return false;
+
+	out->bits = 0;
+	out->pitch = 0;
+	LPTEX8 texture = (LPTEX8)payload;
+	if(!texture){
+		RS2TextureAuditRecordLock(false);
+		return false;
+	}
+
+	D3DLOCKED_RECT rect;
+	if(FAILED(texture->LockRect(0, &rect, NULL, 0))){
+		RS2TextureAuditRecordLock(false);
+		return false;
+	}
+
+	out->bits = rect.pBits;
+	out->pitch = rect.Pitch;
+	RS2TextureAuditRecordLock(true);
+	return true;
+}
+
+static void RS2D3D8_UnlockTexturePayload(void *payload){
+	LPTEX8 texture = (LPTEX8)payload;
+	if(!texture) return;
+
+	texture->UnlockRect(0);
+	RS2TextureAuditRecordUnlock();
+}
+
+const RS2TexturePayloadOps *RS2D3D8_GetTexturePayloadOps(){
+	static const RS2TexturePayloadOps ops = {
+		RS2D3D8_DestroyTexturePayload,
+		RS2D3D8_LockTexturePayload,
+		RS2D3D8_UnlockTexturePayload
+	};
+	return &ops;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

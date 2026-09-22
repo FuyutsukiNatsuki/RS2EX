@@ -2,16 +2,14 @@
 //	Created for RS2EX on 2026-09-20.
 //	Modified for RS2EX on 2026-09-22.
 //
-//	The pool and format choices below are not made here - they live in
-//	RS2D3D8Resources, where v0.0.5 centralised them.  This file owns lifetime and
-//	identity; that file owns how a texture is actually created.
+//	This file owns neutral lifetime and identity.  It never interprets a payload:
+//	the backend that created one supplies the operations that destroy or lock it.
 
 #include "stdafx.h"
 #include "RS2Renderer.h"
 #include "RS2D3D12Unsupported.h"
 #include "RS2TextureResource.h"
 #include "RS2D3D8Resources.h"
-#include "RS2TextureAudit.h"
 
 bool RS2TextureRef::GetSize(int *width, int *height) const{
 	if(!m_Resource) return false;
@@ -22,7 +20,11 @@ bool RS2TextureRef::GetSize(int *width, int *height) const{
 }
 
 CRS2TextureResource::CRS2TextureResource()
-	: m_Native(0), m_Width(0), m_Height(0)
+	: m_Backend(RS2_RENDERER_D3D8),
+	  m_Payload(0),
+	  m_Ops(0),
+	  m_Width(0),
+	  m_Height(0)
 {
 }
 
@@ -31,12 +33,11 @@ CRS2TextureResource::~CRS2TextureResource(){
 }
 
 void CRS2TextureResource::Free(){
-	if(!m_Native) return;
+	if(m_Payload && m_Ops && m_Ops->destroy) m_Ops->destroy(m_Payload);
 
-	LPTEX8 tex = (LPTEX8)m_Native;
-	RS2D3D8_ReleaseTexture(&tex);
-
-	m_Native = 0;
+	m_Backend = RS2_RENDERER_D3D8;
+	m_Payload = 0;
+	m_Ops = 0;
 	m_Width = 0;
 	m_Height = 0;
 }
@@ -47,10 +48,18 @@ void CRS2TextureResource::Free(){
  *	The size is read once, here, so callers never have to ask the device how big
  *	a texture is.
  */
-void CRS2TextureResource::AdoptNativeFromBackend(void *native, int width, int height){
+void CRS2TextureResource::AdoptPayloadFromBackend(
+	RS2RendererBackendType backend,
+	void *payload,
+	int width,
+	int height,
+	const RS2TexturePayloadOps *ops
+){
 	Free();
 
-	m_Native = native;
+	m_Backend = backend;
+	m_Payload = payload;
+	m_Ops = ops;
 	m_Width = width;
 	m_Height = height;
 }
@@ -68,28 +77,12 @@ bool CRS2TextureResource::Lock(RS2TextureLock *out){
 	out->bits = 0;
 	out->pitch = 0;
 
-	if(!m_Native){
-		RS2TextureAuditRecordLock(false);
-		return false;
-	}
-
-	D3DLOCKED_RECT rect;
-	if(FAILED(((LPTEX8)m_Native)->LockRect(0, &rect, NULL, 0))){
-		RS2TextureAuditRecordLock(false);
-		return false;
-	}
-
-	out->bits = rect.pBits;
-	out->pitch = rect.Pitch;
-	RS2TextureAuditRecordLock(true);
-	return true;
+	if(!m_Payload || !m_Ops || !m_Ops->lock) return false;
+	return m_Ops->lock(m_Payload, out);
 }
 
 void CRS2TextureResource::Unlock(){
-	if(!m_Native) return;
-
-	((LPTEX8)m_Native)->UnlockRect(0);
-	RS2TextureAuditRecordUnlock();
+	if(m_Payload && m_Ops && m_Ops->unlock) m_Ops->unlock(m_Payload);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -97,24 +90,23 @@ void CRS2TextureResource::Unlock(){
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
- *	Wrap a created backend texture, reading its real size.
- *
- *	D3DX rounds non-power-of-two images up, so the requested size and the actual
- *	size are not the same thing - callers have always wanted the actual one.
+ *	Wrap a created D3D8 payload.  Its real size was resolved by the backend, so
+ *	this neutral file does not have to know how a texture describes itself.
  */
-static CRS2TextureResource *RS2AdoptTexture(LPTEX8 tex){
-	if(!tex) return 0;
-
-	D3DSURFACE_DESC desc;
-	int w = 0, h = 0;
-
-	if(SUCCEEDED(tex->GetLevelDesc(0, &desc))){
-		w = (int)desc.Width;
-		h = (int)desc.Height;
-	}
+static CRS2TextureResource *RS2AdoptD3D8Texture(
+	void *payload,
+	int width,
+	int height
+){
+	if(!payload) return 0;
 
 	CRS2TextureResource *resource = new CRS2TextureResource;
-	resource->AdoptNativeFromBackend(tex, w, h);
+	resource->AdoptPayloadFromBackend(
+		RS2_RENDERER_D3D8,
+		payload,
+		width,
+		height,
+		RS2D3D8_GetTexturePayloadOps());
 
 	return resource;
 }
@@ -131,10 +123,12 @@ CRS2TextureResource *RS2CreateTextureFromFile(
 		return 0;
 	}
 
-	LPTEX8 tex = 0;
+	void *payload = 0;
+	int width = 0, height = 0;
 
-	if(FAILED(RS2D3D8_CreateTextureFromFile(&tex, strFile, cTrans, nMipLv))) return 0;
-	return RS2AdoptTexture(tex);
+	if(!RS2D3D8_CreateTexturePayloadFromFile(
+		&payload, &width, &height, strFile, cTrans, nMipLv)) return 0;
+	return RS2AdoptD3D8Texture(payload, width, height);
 }
 
 CRS2TextureResource *RS2CreateTextureFromResource(
@@ -149,10 +143,12 @@ CRS2TextureResource *RS2CreateTextureFromResource(
 		return 0;
 	}
 
-	LPTEX8 tex = 0;
+	void *payload = 0;
+	int width = 0, height = 0;
 
-	if(FAILED(RS2D3D8_CreateTextureFromResource(&tex, strRes, cTrans, nMipLv))) return 0;
-	return RS2AdoptTexture(tex);
+	if(!RS2D3D8_CreateTexturePayloadFromResource(
+		&payload, &width, &height, strRes, cTrans, nMipLv)) return 0;
+	return RS2AdoptD3D8Texture(payload, width, height);
 }
 
 CRS2TextureResource *RS2CreateMutableTexture(int w, int h){
@@ -165,14 +161,99 @@ CRS2TextureResource *RS2CreateMutableTexture(int w, int h){
 		return 0;
 	}
 
-	LPTEX8 tex = 0;
+	void *payload = 0;
+	int width = 0, height = 0;
 
-	if(FAILED(RS2D3D8_CreateMutableTexture(&tex, w, h))) return 0;
-	return RS2AdoptTexture(tex);
+	if(!RS2D3D8_CreateMutableTexturePayload(
+		&payload, &width, &height, w, h)) return 0;
+	return RS2AdoptD3D8Texture(payload, width, height);
 }
 
 void RS2DestroyTexture(CRS2TextureResource *resource){
 	if(!resource) return;
 
 	delete resource;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//	Neutral ownership smoke
+////////////////////////////////////////////////////////////////////////////////
+
+struct RS2TextureOwnershipProbe
+{
+	int *destroyed;
+	int *locked;
+	int *unlocked;
+};
+
+static void RS2TextureOwnershipProbeDestroy(void *payload){
+	RS2TextureOwnershipProbe *probe = (RS2TextureOwnershipProbe *)payload;
+	if(!probe) return;
+	(*probe->destroyed)++;
+	delete probe;
+}
+
+static bool RS2TextureOwnershipProbeLock(void *payload, RS2TextureLock *out){
+	RS2TextureOwnershipProbe *probe = (RS2TextureOwnershipProbe *)payload;
+	if(!probe || !out) return false;
+
+	(*probe->locked)++;
+	out->bits = probe;
+	out->pitch = 128;
+	return true;
+}
+
+static void RS2TextureOwnershipProbeUnlock(void *payload){
+	RS2TextureOwnershipProbe *probe = (RS2TextureOwnershipProbe *)payload;
+	if(probe) (*probe->unlocked)++;
+}
+
+bool RS2TextureOwnershipSmoke(){
+	static const RS2TexturePayloadOps ops = {
+		RS2TextureOwnershipProbeDestroy,
+		RS2TextureOwnershipProbeLock,
+		RS2TextureOwnershipProbeUnlock
+	};
+
+	int destroyed = 0;
+	int locked = 0;
+	int unlocked = 0;
+	int cycle;
+
+	for(cycle = 0; cycle<3; cycle++){
+		RS2TextureOwnershipProbe *probe = new RS2TextureOwnershipProbe;
+		probe->destroyed = &destroyed;
+		probe->locked = &locked;
+		probe->unlocked = &unlocked;
+
+		CRS2TextureResource *resource = new CRS2TextureResource;
+		resource->AdoptPayloadFromBackend(
+			RS2_RENDERER_D3D12, probe, 32, 16, &ops);
+
+		RS2TextureRef ref = resource->GetRef();
+		RS2TextureRef copy = ref;
+		int width = 0, height = 0;
+		RS2TextureLock lock;
+
+		const bool valid =
+			resource->IsValid() &&
+			resource->GetBackendForBackend()==RS2_RENDERER_D3D12 &&
+			resource->GetPayloadForBackend()==probe &&
+			resource->IsOwnedByBackend(RS2_RENDERER_D3D12) &&
+			!resource->IsOwnedByBackend(RS2_RENDERER_D3D8) &&
+			ref==copy &&
+			ref.GetSize(&width, &height) &&
+			width==32 && height==16 &&
+			resource->Lock(&lock) && lock.bits==probe && lock.pitch==128;
+
+		resource->Unlock();
+		resource->Free();
+		const bool released = !resource->IsValid() && destroyed==cycle+1;
+		RS2DestroyTexture(resource); // destructor must make a second Free harmless
+
+		if(!valid || !released || locked!=cycle+1 || unlocked!=cycle+1)
+			return false;
+	}
+
+	return destroyed==3 && locked==3 && unlocked==3;
 }

@@ -8,6 +8,7 @@
 #include "RS2D3D12Smoke.h"
 #include "RS2D3D12Backend.h"
 #include "RS2Renderer.h"
+#include "RS2TextureResource.h"
 
 //	How many times the create/shutdown step repeats.  Once proves it works;
 //	repeating proves shutdown actually released what it created, which is the
@@ -288,6 +289,10 @@ bool RS2D3D12SmokeRun(
 		Debug("RS2D3D12SMOKE|end|passed=%d|failed=%d\n", s_Passed, s_Failed);
 		return false;
 	}
+
+	//	WP1: a texture with D3D12 ownership must keep its opaque payload,
+	//	dimensions and operations without neutral code interpreting it as D3D8.
+	RS2D3D12_SmokeStep("neutral texture ownership", RS2TextureOwnershipSmoke());
 
 	RS2D3D12_SmokeLifecycle();
 	RS2D3D12_SmokeLifecycleFrames(window);
