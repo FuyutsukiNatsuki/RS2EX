@@ -27,6 +27,7 @@
 #include "RS2D3D12Descriptors.h"
 #include "RS2D3D12Texture.h"
 #include "RS2D3D12Upload.h"
+#include <list>
 
 //	One command allocator per swap-chain buffer, so the allocator being reset
 //	is never one the GPU is still reading.  Two buffers, two contexts.
@@ -102,6 +103,13 @@ private:
 	//	possibly open frame list without a whole-GPU wait per texture.
 	CRS2D3D12TextureUpload m_TextureUpload;
 	CRS2D3D12Descriptors m_Descriptors;
+	struct RetiredTexture
+	{
+		ID3D12Resource *resource;
+		RS2D3D12SrvSlot slot;
+		UINT64 fenceValue;
+	};
+	std::list<RetiredTexture> m_RetiredTextures;
 
 	ID3D12Fence *m_Fence;
 	HANDLE m_FenceEvent;
@@ -241,6 +249,8 @@ public:
 	CRS2D3D12TextureUpload *GetTextureUpload(){ return &m_TextureUpload; }
 	CRS2D3D12Descriptors *GetDescriptors(){ return &m_Descriptors; }
 	ID3D12Device *GetDevice() const{ return m_Device; }
+	void RetireTexture(ID3D12Resource *resource, const RS2D3D12SrvSlot &slot);
+	void CollectRetiredTextures();
 
 	/*
 	 *	Whether the device has been reported gone.

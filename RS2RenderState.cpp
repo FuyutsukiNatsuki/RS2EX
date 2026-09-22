@@ -17,6 +17,7 @@
 #include "RS2RenderStateBackend.h"
 #include "RS2D3D12Unsupported.h"
 #include "RS2D3D12Draw.h"
+#include "RS2D3D12TextureBackend.h"
 
 void RS2SetDepthTest(bool enable){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
@@ -171,13 +172,13 @@ void RS2DisableFog(){
 void RS2SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetTextureFilter(stage, filter);
-	else RS2D3D12Unsupported("RS2SetTextureFilter");
+	else RS2D3D12_SetTextureFilter(stage, filter);
 }
 
 void RS2SetBaseTextureCombine(){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetBaseTextureCombine();
-	else RS2D3D12Unsupported("RS2SetBaseTextureCombine");
+	// D3D12's Stage 0 shader always multiplies texture by diffuse colour.
 }
 
 void RS2SetSecondaryTextureCombine(unsigned int stage, bool enable){

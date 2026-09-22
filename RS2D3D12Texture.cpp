@@ -5,6 +5,7 @@
 
 #include "stdafx.h"
 #include "RS2D3D12Texture.h"
+#include "RS2D3D12Backend.h"
 #include "RS2TextureResource.h"
 
 struct RS2D3D12TexturePayload
@@ -12,6 +13,8 @@ struct RS2D3D12TexturePayload
 	ID3D12Resource *texture;
 	unsigned int mipCount;
 	D3D12_RESOURCE_STATES finalState;
+	CRS2D3D12Backend *owner;
+	RS2D3D12SrvSlot slot;
 };
 
 struct RS2D3D12PendingTextureUpload
@@ -25,6 +28,8 @@ struct RS2D3D12PendingTextureUpload
 
 static unsigned int s_LiveTextures = 0;
 static unsigned int s_PeakTextures = 0;
+static RS2D3D12TexturePayload *s_BoundTexture = 0;
+static RS2TextureFilter s_Stage0Filter = RS2_FILTER_POINT;
 
 static bool RS2D3D12TextureError(std::string *error, const char *what, HRESULT hr){
 	char text[256];
@@ -40,7 +45,11 @@ static void RS2D3D12DestroyTexturePayload(void *opaque){
 	RS2D3D12TexturePayload *payload = (RS2D3D12TexturePayload *)opaque;
 	if(!payload) return;
 
-	RELEASE(payload->texture);
+	if(s_BoundTexture==payload) s_BoundTexture = 0;
+	if(payload->owner && RS2D3D12GetActiveBackend()==payload->owner){
+		payload->owner->RetireTexture(payload->texture, payload->slot);
+		payload->texture = 0;
+	}else RELEASE(payload->texture);
 	delete payload;
 	if(s_LiveTextures) s_LiveTextures--;
 }
@@ -54,6 +63,106 @@ static const RS2TexturePayloadOps s_TextureOps = {
 const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps(){ return &s_TextureOps; }
 unsigned int RS2D3D12_GetLiveTextureCount(){ return s_LiveTextures; }
 unsigned int RS2D3D12_GetPeakTextureCount(){ return s_PeakTextures; }
+
+void RS2D3D12_ResetTextureBinding(){
+	s_BoundTexture = 0;
+	s_Stage0Filter = RS2_FILTER_POINT;
+}
+
+void RS2D3D12_BindTexture(unsigned int stage, const RS2TextureRef &texture){
+	if(stage!=0){
+		Debug("[RS2EX D3D12 Texture] Stage %u is not supported\n", stage);
+		return;
+	}
+	const CRS2TextureResource *resource = texture.GetResource();
+	if(!resource){ s_BoundTexture = 0; return; }
+	if(!resource->IsOwnedByBackend(RS2_RENDERER_D3D12)){
+		Debug("[RS2EX D3D12 Texture] bind rejected a foreign texture\n");
+		s_BoundTexture = 0;
+		return;
+	}
+	RS2D3D12TexturePayload *payload =
+		(RS2D3D12TexturePayload *)resource->GetPayloadForBackend();
+	s_BoundTexture = payload && payload->owner==RS2D3D12GetActiveBackend()
+		&& payload->owner && payload->owner->GetDescriptors()->IsLive(payload->slot)
+		? payload : 0;
+}
+
+void RS2D3D12_SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
+	if(stage!=0 || (filter!=RS2_FILTER_POINT && filter!=RS2_FILTER_LINEAR)){
+		Debug("[RS2EX D3D12 Texture] unsupported filter or stage\n");
+		return;
+	}
+	s_Stage0Filter = filter;
+}
+
+bool RS2D3D12_GetBoundTexture(
+	CRS2D3D12Backend *backend, RS2D3D12SrvSlot *slot, RS2TextureFilter *filter
+){
+	if(!backend || !s_BoundTexture || s_BoundTexture->owner!=backend
+			|| !backend->GetDescriptors()->IsLive(s_BoundTexture->slot)) return false;
+	if(slot) *slot = s_BoundTexture->slot;
+	if(filter) *filter = s_Stage0Filter;
+	return true;
+}
+
+static bool RS2D3D12_CreatePublicTexture(
+	void **outPayload, int *width, int *height,
+	const char *source, unsigned long colourKey, int mipArgument, bool fromResource
+){
+	if(outPayload) *outPayload = 0;
+	if(width) *width = 0;
+	if(height) *height = 0;
+	if(!outPayload || !width || !height) return false;
+	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
+	if(!backend) return false;
+	CRS2DecodedImage image;
+	std::string error;
+	const bool decoded = fromResource
+		? RS2DecodeImageResource(source, colourKey, mipArgument, &image, &error)
+		: RS2DecodeImageFile(source, colourKey, mipArgument, &image, &error);
+	if(!decoded){
+		Debug("[RS2EX D3D12 Texture] decode failed: %s\n", error.c_str());
+		return false;
+	}
+	backend->CollectRetiredTextures();
+	void *opaque = 0;
+	if(!backend->GetTextureUpload()->CreateTexture(image, &opaque, &error)) return false;
+	RS2D3D12TexturePayload *payload = (RS2D3D12TexturePayload *)opaque;
+	RS2D3D12SrvSlot slot;
+	if(!backend->GetDescriptors()->Allocate(&slot)){
+		RS2D3D12DestroyTexturePayload(payload);
+		return false;
+	}
+	if(!backend->GetDescriptors()->WriteTexture(
+			backend->GetDevice(), slot, payload->texture, payload->mipCount)){
+		backend->GetDescriptors()->Free(slot);
+		RS2D3D12DestroyTexturePayload(payload);
+		return false;
+	}
+	payload->owner = backend;
+	payload->slot = slot;
+	*width = (int)image.GetWidth();
+	*height = (int)image.GetHeight();
+	*outPayload = payload;
+	return true;
+}
+
+bool RS2D3D12_CreateTexturePayloadFromFile(
+	void **payload, int *width, int *height,
+	const char *path, unsigned long colourKey, int mipArgument
+){
+	return RS2D3D12_CreatePublicTexture(
+		payload, width, height, path, colourKey, mipArgument, false);
+}
+
+bool RS2D3D12_CreateTexturePayloadFromResource(
+	void **payload, int *width, int *height,
+	const char *name, unsigned long colourKey, int mipArgument
+){
+	return RS2D3D12_CreatePublicTexture(
+		payload, width, height, name, colourKey, mipArgument, true);
+}
 
 CRS2D3D12TextureUpload::CRS2D3D12TextureUpload()
 	: m_Device(0),
@@ -337,6 +446,7 @@ bool CRS2D3D12TextureUpload::CreateTexture(
 	payload->texture = texture;
 	payload->mipCount = mipCount;
 	payload->finalState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	payload->owner = 0;
 	s_LiveTextures++;
 	if(s_LiveTextures>s_PeakTextures) s_PeakTextures = s_LiveTextures;
 

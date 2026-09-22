@@ -18,6 +18,11 @@
 #include "RS2Renderer.h"
 #include "RS2Draw.h"
 #include "RS2MeshData.h"
+#include "RS2TextureResource.h"
+#include "RS2MaterialBinding.h"
+#include "RS2RenderState.h"
+#include "RS2D3D12Texture.h"
+#include "RS2D3D12Backend.h"
 
 //	Enough draws to prove repeated submission. Present is not guaranteed to
 //	pace an occluded or background window on every machine, so a separate hold
@@ -48,6 +53,13 @@ struct RS2DrawSmokeVertexS
 {
 	float x, y, z, rhw;
 	unsigned int diffuse;
+};
+
+struct RS2DrawSmokeVertexSUV
+{
+	float x, y, z, rhw;
+	unsigned int diffuse;
+	float u, v;
 };
 
 bool RS2D3D12DrawSmokeRequested(){
@@ -103,6 +115,11 @@ bool RS2D3D12DrawSmokeRun(){
 
 	RS2DrawSmokeLayoutP(&layoutP);
 	RS2DrawSmokeLayoutS(&layoutS);
+	RS2MeshVertexLayout layoutTexture = layoutS;
+	layoutTexture.stride = sizeof(RS2DrawSmokeVertexSUV);
+	layoutTexture.texCoordCount = 1;
+	layoutTexture.texCoord[0].offset = sizeof(RS2DrawSmokeVertexS);
+	layoutTexture.texCoord[0].components = 2;
 
 	unsigned int width = 0, height = 0;
 
@@ -177,6 +194,32 @@ bool RS2D3D12DrawSmokeRun(){
 		{ width*0.58f, height*0.92f, 0.5f, 1.0f, RS2D3D12_DRAW_YELLOW }
 	};
 	const unsigned int indexedQuadIndices[6] = { 0, 1, 2, 0, 2, 3 };
+	const RS2DrawSmokeVertexSUV texturedQuad[4] = {
+		{ width*0.38f, height*0.10f, 0.3f, 1.0f, 0xffffffff, 0.0f, 0.0f },
+		{ width*0.62f, height*0.10f, 0.3f, 1.0f, 0xffffffff, 1.0f, 0.0f },
+		{ width*0.62f, height*0.50f, 0.3f, 1.0f, 0xffffffff, 1.0f, 1.0f },
+		{ width*0.38f, height*0.50f, 0.3f, 1.0f, 0xffffffff, 0.0f, 1.0f }
+	};
+	const unsigned int textureBaseline = RS2D3D12_GetLiveTextureCount();
+	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
+	if(!backend) return false;
+	const unsigned int descriptorBaseline = backend->GetDescriptors()->GetLive();
+	CRS2TextureResource *fileTexture = RS2CreateTextureFromFile(
+		"Help\\logo.png", 0, 0);
+	const bool fileCreated = fileTexture && fileTexture->IsValid();
+	RS2DestroyTexture(fileTexture);
+	CRS2TextureResource *sampledTexture = RS2CreateTextureFromResource(
+		"OPENING", 0, 0);
+	const bool textureCreated = fileCreated && sampledTexture
+		&& sampledTexture->IsValid()
+		&& RS2D3D12_GetLiveTextureCount()==textureBaseline+1;
+	Debug("RS2D3D12DRAW|public file/resource texture |%s\n",
+		textureCreated ? "pass" : "FAIL");
+	if(!textureCreated){
+		RS2DestroyTexture(sampledTexture);
+		return false;
+	}
+	RS2SetBaseTextureCombine();
 
 	const unsigned int liveBaseline = RS2GetLiveGeometryCount();
 	const unsigned int vertexBaseline = RS2GetGeometryVertexBytes();
@@ -243,6 +286,7 @@ bool RS2D3D12DrawSmokeRun(){
 	if(!buffered || !indexed){
 		RS2DestroyGeometry(indexed);
 		RS2DestroyGeometry(buffered);
+		RS2DestroyTexture(sampledTexture);
 		return false;
 	}
 
@@ -271,6 +315,11 @@ bool RS2D3D12DrawSmokeRun(){
 		RS2DrawImmediate(layoutS, RS2_PRIMITIVE_TRIANGLE_FAN, quad, 4);
 		RS2DrawBuffered(buffered, RS2_PRIMITIVE_TRIANGLE_LIST, 0, 3);
 		RS2DrawIndexed(indexed, RS2_PRIMITIVE_TRIANGLE_LIST, 0, 6);
+		RS2SetTextureFilter(0, frame%2 ? RS2_FILTER_LINEAR : RS2_FILTER_POINT);
+		RS2BindTexture(0, sampledTexture->GetRef());
+		RS2DrawImmediate(layoutTexture, RS2_PRIMITIVE_TRIANGLE_FAN,
+			texturedQuad, 4);
+		RS2BindTexture(0, RS2TextureRef());
 
 		//	One frame proves both range guards and both whole-primitive guards.
 		//	The final refusal count is exact, so an unrelated refusal fails too.
@@ -288,9 +337,18 @@ bool RS2D3D12DrawSmokeRun(){
 	const unsigned int submitted = RS2D3D12_GetDrawCount()-drawBaseline;
 	const unsigned int refused = RS2D3D12_GetRefusedDrawCount()-refusedBaseline;
 
+	RS2DestroyTexture(sampledTexture);
+	backend->WaitForGpu();
+	backend->CollectRetiredTextures();
 	RS2DestroyGeometry(indexed);
 	RS2DestroyGeometry(buffered);
+	const unsigned int debugWarnings = backend->HasDebugLayer()
+		? backend->CountDebugMessages(D3D12_MESSAGE_SEVERITY_WARNING) : 0;
+	Debug("RS2D3D12DRAW|debug errors/warnings=%u\n", debugWarnings);
 	resourceOk = resourceOk
+		&& RS2D3D12_GetLiveTextureCount()==textureBaseline
+		&& backend->GetDescriptors()->GetLive()==descriptorBaseline
+		&& debugWarnings==0
 		&& RS2GetLiveGeometryCount()==liveBaseline
 		&& RS2GetGeometryVertexBytes()==vertexBaseline
 		&& RS2GetGeometryIndexBytes()==indexBaseline;
@@ -300,9 +358,9 @@ bool RS2D3D12DrawSmokeRun(){
 	Debug("RS2D3D12DRAW|resource destroy/baseline   |%s\n",
 		resourceOk ? "pass" : "FAIL");
 
-	//	Five valid draws a frame, and exactly four deliberately refused calls.
+	// Six valid draws a frame, one through Stage 0, and four intentional refusals.
 	const bool ok = framesOk && resourceOk
-		&& submitted==(unsigned int)(RS2D3D12_DRAW_FRAMES*5)
+		&& submitted==(unsigned int)(RS2D3D12_DRAW_FRAMES*6)
 		&& refused==4;
 
 	Debug("RS2D3D12DRAW|%s\n", ok ? "pass" : "FAIL");

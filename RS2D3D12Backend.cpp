@@ -547,34 +547,41 @@ bool CRS2D3D12Backend::CreatePipeline(){
 	Debug("[RS2EX D3D12] %d frame scratch blocks of %u KB\n",
 		RS2D3D12_FRAME_COUNT, (unsigned)(RS2D3D12_UPLOAD_BYTES/1024));
 
-	//	Build one state for each of the two vertex shaders now rather than on
-	//	the first draw.  It proves the whole chain - root signature, compiled
-	//	shader, input layout, pipeline state - at start-up, where a failure is
-	//	reported rather than discovered as missing geometry, and it costs two
-	//	objects out of a cache that holds sixty-four.
-	//
-	//	This is a warm-up and not a pre-build: everything else is still created
-	//	when a draw asks for it.
-	unsigned int semantic;
+	// Prove both position paths, both diffuse cases, and the Stage 0 shader
+	// path before any game draw. A layout with UV but no bound texture must
+	// still select the untextured shader. Other state combinations remain lazy.
+	unsigned int semantic, diffuse, variant;
 
-	for(semantic = 0; semantic<2; semantic++){
+	for(semantic = 0; semantic<2; semantic++)
+	for(diffuse = 0; diffuse<2; diffuse++)
+	for(variant = 0; variant<3; variant++){
 		RS2MeshVertexLayout layout;
 		RS2D3D12PipelineKey key;
 
-		//	Position and a packed colour - the least a visible draw can have.
 		layout.Clear();
 		layout.positionSemantic = semantic
 			? RS2_POSITION_ALREADY_TRANSFORMED : RS2_POSITION_TRANSFORMED_BY_PIPELINE;
 		layout.positionOffset = 0;
-		layout.diffuseOffset = semantic ? 16 : 12;
-		layout.stride = semantic ? 20 : 16;
+		layout.stride = semantic ? 16 : 12;
+		if(diffuse){
+			layout.diffuseOffset = (int)layout.stride;
+			layout.stride += 4;
+		}
+		if(variant){
+			layout.texCoordCount = 1;
+			layout.texCoord[0].offset = (int)layout.stride;
+			layout.texCoord[0].components = 2;
+			layout.stride += 8;
+		}
 
 		ZeroMemory(&key, sizeof(key));
 		if(!RS2D3D12_DescribeLayout(layout, &key)){
-			Debug("[RS2EX D3D12] warm-up layout %u could not be described\n", semantic);
+			Debug("[RS2EX D3D12] warm-up layout %u/%u/%u failed\n",
+				semantic, diffuse, variant);
 			return false;
 		}
 
+		key.textured = variant==2 ? 1 : 0;
 		key.topology = (unsigned char)D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		key.depthTest = 1;
 		key.depthWrite = 1;
@@ -583,7 +590,8 @@ bool CRS2D3D12Backend::CreatePipeline(){
 		key.blendMode = (unsigned char)RS2_BLEND_ALPHA;
 
 		if(!m_Pipeline.Get(key)){
-			Debug("[RS2EX D3D12] warm-up pipeline %u could not be built\n", semantic);
+			Debug("[RS2EX D3D12] warm-up pipeline %u/%u/%u failed\n",
+				semantic, diffuse, variant);
 			return false;
 		}
 	}
@@ -721,6 +729,33 @@ void CRS2D3D12Backend::WaitForGpu(){
 	}
 }
 
+void CRS2D3D12Backend::CollectRetiredTextures(){
+	if(!m_Fence) return;
+	const UINT64 completed = m_Fence->GetCompletedValue();
+	std::list<RetiredTexture>::iterator it = m_RetiredTextures.begin();
+	while(it!=m_RetiredTextures.end()){
+		if(it->fenceValue>completed){ ++it; continue; }
+		m_Descriptors.Free(it->slot);
+		RELEASE(it->resource);
+		it = m_RetiredTextures.erase(it);
+	}
+}
+
+void CRS2D3D12Backend::RetireTexture(
+	ID3D12Resource *resource, const RS2D3D12SrvSlot &slot
+){
+	if(!resource) return;
+	RetiredTexture retired;
+	retired.resource = resource;
+	retired.slot = slot;
+	// A currently recorded draw has no fence value until Present submits it.
+	// Do not guess the next value: another queue signal may occur meanwhile.
+	retired.fenceValue = m_FrameRecording ? ~UINT64(0)
+		: (m_NextFenceValue ? m_NextFenceValue-1 : 0);
+	m_RetiredTextures.push_back(retired);
+	CollectRetiredTextures();
+}
+
 /*
  *	Release everything, in the reverse order of creation.
  *
@@ -734,8 +769,17 @@ void CRS2D3D12Backend::WaitForGpu(){
  */
 void CRS2D3D12Backend::Shutdown(){
 	if(s_Active==this) s_Active = 0;
+	RS2D3D12_ResetTextureBinding();
 
 	WaitForGpu();
+	CollectRetiredTextures();
+	// A recording never presented during shutdown has no GPU work to await.
+	while(!m_RetiredTextures.empty()){
+		RetiredTexture &retired = m_RetiredTextures.front();
+		m_Descriptors.Free(retired.slot);
+		RELEASE(retired.resource);
+		m_RetiredTextures.pop_front();
+	}
 	m_TextureUpload.Destroy();
 	m_Descriptors.Destroy();
 
@@ -904,6 +948,7 @@ void CRS2D3D12Backend::BindTargets(){
  */
 bool CRS2D3D12Backend::BeginRecording(){
 	WaitForFrame(m_FrameIndex);
+	CollectRetiredTextures();
 
 	//	Safe here and nowhere else: the wait above is what says the GPU has
 	//	finished reading everything this context handed it last time round.
@@ -1035,6 +1080,9 @@ void CRS2D3D12Backend::Present(){
 	//	reset again, then move on to the buffer DXGI has just made current.
 	m_FenceValue[m_FrameIndex] = m_NextFenceValue;
 	m_Queue->Signal(m_Fence, m_NextFenceValue);
+	for(std::list<RetiredTexture>::iterator it = m_RetiredTextures.begin();
+			it!=m_RetiredTextures.end(); ++it)
+		if(it->fenceValue==~UINT64(0)) it->fenceValue = m_NextFenceValue;
 	m_NextFenceValue++;
 
 	m_FrameIndex = m_SwapChain->GetCurrentBackBufferIndex();

@@ -224,6 +224,12 @@ static bool RS2D3D12_BindPipeline(
 	key->depthFunc = (unsigned char)s_DepthFunc;
 	key->cullMode = (unsigned char)s_CullMode;
 	key->blendMode = (unsigned char)s_BlendMode;
+	RS2D3D12SrvSlot textureSlot;
+	RS2TextureFilter filter = RS2_FILTER_POINT;
+	// A bound texture without TEXCOORD0 remains an untextured draw. The PSO
+	// key records only the shader variant, never the texture or sampler.
+	key->textured = key->texCoordCount && RS2D3D12_GetBoundTexture(
+		backend, &textureSlot, &filter) ? 1 : 0;
 
 	ID3D12PipelineState *state = backend->GetPipeline()->Get(*key);
 
@@ -261,6 +267,17 @@ static bool RS2D3D12_BindPipeline(
 	list->SetGraphicsRootSignature(backend->GetPipeline()->GetRootSignature());
 	list->SetPipelineState(state);
 	list->SetGraphicsRootConstantBufferView(0, constantAddress);
+	if(key->textured){
+		D3D12_GPU_DESCRIPTOR_HANDLE srv, sampler;
+		if(!backend->GetDescriptors()->GetSrvHandles(textureSlot, 0, &srv)
+				|| !backend->GetDescriptors()->GetSamplerHandle(filter, &sampler)){
+			RS2D3D12_Refuse("Stage 0 descriptors are unavailable");
+			return false;
+		}
+		backend->GetDescriptors()->BindHeaps(list);
+		list->SetGraphicsRootDescriptorTable(1, srv);
+		list->SetGraphicsRootDescriptorTable(2, sampler);
+	}
 	list->IASetPrimitiveTopology(topology);
 	return true;
 }

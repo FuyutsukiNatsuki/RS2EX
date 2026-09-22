@@ -10,6 +10,8 @@
 #define RS2D3D12TEXTURE_H_INCLUDED
 
 #include "RS2D3D12.h"
+#include "RS2D3D12Descriptors.h"
+#include "RS2D3D12TextureBackend.h"
 #include "RS2DecodedImage.h"
 
 #include <list>
@@ -17,6 +19,8 @@
 
 struct RS2TexturePayloadOps;
 struct RS2D3D12PendingTextureUpload;
+class CRS2D3D12Backend;
+class RS2TextureRef;
 
 class CRS2D3D12TextureUpload
 {
@@ -62,6 +66,9 @@ public:
 const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps();
 unsigned int RS2D3D12_GetLiveTextureCount();
 unsigned int RS2D3D12_GetPeakTextureCount();
+
+bool RS2D3D12_GetBoundTexture(
+	CRS2D3D12Backend *backend, RS2D3D12SrvSlot *slot, RS2TextureFilter *filter);
 
 //	WP3 validation.  Repeatedly decodes, submits and destroys textures without
 //	a descriptor or draw, then performs one batch wait and verifies baselines.

@@ -12,10 +12,8 @@
 //	combination in advance would be thousands of objects for a scene that uses
 //	a handful, and most of the key space is unreachable anyway.
 //
-//	No texture sampling and no lighting in v0.1.1.  The pixel shader writes the
-//	interpolated vertex colour, which is what RailSim's untextured geometry
-//	wanted anyway, and what textured geometry will look like until textures
-//	arrive.
+//	v0.1.2 adds Stage 0 texture sampling. Untextured draws still use the
+//	interpolated vertex colour; lighting remains outside this pipeline.
 
 #ifndef RS2D3D12PIPELINE_H_INCLUDED
 #define RS2D3D12PIPELINE_H_INCLUDED
@@ -75,7 +73,8 @@ struct RS2D3D12PipelineKey
 	unsigned char cullMode;			//	RS2CullMode
 	unsigned char blendMode;		//	RS2BlendMode
 
-	unsigned char pad[2];
+	unsigned char textured;		// Stage 0 shader variant, never texture identity
+	unsigned char pad[1];
 };
 
 class CRS2D3D12Pipeline
@@ -84,12 +83,12 @@ private:
 	ID3D12Device *m_Device;
 	ID3D12RootSignature *m_RootSignature;
 
-	//	[position semantic][vertex has a colour].  A vertex shader has to
+	//	[position semantic][vertex has a colour][textured]. A vertex shader has to
 	//	declare exactly the inputs the layout supplies - an input the layout
 	//	does not provide is not ignored, it fails pipeline creation - so a
 	//	layout without a diffuse colour needs its own variant.
-	ID3DBlob *m_Vertex[2][2];
-	ID3DBlob *m_Pixel;
+	ID3DBlob *m_Vertex[2][2][2];
+	ID3DBlob *m_Pixel[2];
 
 	//	Small and linear on purpose: a scene reaches a handful of states, and a
 	//	linear scan over a handful is faster than anything with a hash in it.

@@ -55,12 +55,18 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "#if RS2_HAS_DIFFUSE\n"
 "	float4 col : COLOR0;\n"
 "#endif\n"
+"#if RS2_TEXTURED\n"
+"	float2 uv : TEXCOORD0;\n"
+"#endif\n"
 "};\n"
 "\n"
 "struct VSOut\n"
 "{\n"
 "	float4 pos : SV_POSITION;\n"
 "	float4 col : COLOR0;\n"
+"#if RS2_TEXTURED\n"
+"	float2 uv : TEXCOORD0;\n"
+"#endif\n"
 "};\n"
 "\n"
 "//	Ordinary geometry: the engine's matrices do the work.\n"
@@ -69,6 +75,9 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	VSOut output;\n"
 "	output.pos = mul(float4(input.pos.xyz, 1.0f), g_WorldViewProj);\n"
 "	output.col = RS2_VERTEX_COLOUR(input);\n"
+"#if RS2_TEXTURED\n"
+"	output.uv = input.uv;\n"
+"#endif\n"
 "	return output;\n"
 "}\n"
 "\n"
@@ -85,24 +94,37 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	ndc.y = 1.0f - input.pos.y*g_Viewport.w*2.0f;\n"
 "	output.pos = float4(ndc.x*w, ndc.y*w, input.pos.z*w, w);\n"
 "	output.col = RS2_VERTEX_COLOUR(input);\n"
+"#if RS2_TEXTURED\n"
+"	output.uv = input.uv;\n"
+"#endif\n"
 "	return output;\n"
 "}\n"
 "\n"
+"#if RS2_TEXTURED\n"
+"Texture2D g_Texture : register(t0);\n"
+"SamplerState g_Sampler : register(s0);\n"
+"#endif\n"
 "float4 PSMain(VSOut input) : SV_TARGET\n"
 "{\n"
+"#if RS2_TEXTURED\n"
+"	return g_Texture.Sample(g_Sampler, input.uv)*input.col;\n"
+"#else\n"
 "	return input.col;\n"
+"#endif\n"
 "}\n";
 
 static ID3DBlob *RS2D3D12_Compile(
 	const char *entry,	//	function to compile
 	const char *target,	//	shader model
-	bool hasDiffuse		//	whether the layout supplies a vertex colour
+	bool hasDiffuse,		//	whether the layout supplies a vertex colour
+	bool textured		//	whether Stage 0 sampling is enabled
 ){
 	ID3DBlob *code = 0;
 	ID3DBlob *errors = 0;
 
-	const D3D_SHADER_MACRO macros[2] = {
+	const D3D_SHADER_MACRO macros[3] = {
 		{ "RS2_HAS_DIFFUSE", hasDiffuse ? "1" : "0" },
+		{ "RS2_TEXTURED", textured ? "1" : "0" },
 		{ NULL, NULL }
 	};
 
@@ -136,7 +158,6 @@ static ID3DBlob *RS2D3D12_Compile(
 CRS2D3D12Pipeline::CRS2D3D12Pipeline()
 	: m_Device(0),
 	  m_RootSignature(0),
-	  m_Pixel(0),
 	  m_Count(0),
 	  m_Full(false)
 {
@@ -144,6 +165,7 @@ CRS2D3D12Pipeline::CRS2D3D12Pipeline()
 
 	for(i = 0; i<RS2D3D12_MAX_PIPELINES; i++) m_State[i] = 0;
 	ZeroMemory(m_Vertex, sizeof(m_Vertex));
+	ZeroMemory(m_Pixel, sizeof(m_Pixel));
 	ZeroMemory(m_Key, sizeof(m_Key));
 }
 
@@ -152,17 +174,23 @@ CRS2D3D12Pipeline::~CRS2D3D12Pipeline(){
 }
 
 bool CRS2D3D12Pipeline::CompileShaders(){
-	unsigned int diffuse;
+	unsigned int diffuse, textured;
 
-	for(diffuse = 0; diffuse<2; diffuse++){
-		m_Vertex[0][diffuse] = RS2D3D12_Compile("VSPipeline", "vs_5_0", diffuse!=0);
-		m_Vertex[1][diffuse] = RS2D3D12_Compile("VSScreen", "vs_5_0", diffuse!=0);
+	for(diffuse = 0; diffuse<2; diffuse++) for(textured = 0; textured<2; textured++){
+		m_Vertex[0][diffuse][textured] = RS2D3D12_Compile(
+			"VSPipeline", "vs_5_0", diffuse!=0, textured!=0);
+		m_Vertex[1][diffuse][textured] = RS2D3D12_Compile(
+			"VSScreen", "vs_5_0", diffuse!=0, textured!=0);
 
-		if(!m_Vertex[0][diffuse] || !m_Vertex[1][diffuse]) return false;
+		if(!m_Vertex[0][diffuse][textured] || !m_Vertex[1][diffuse][textured])
+			return false;
 	}
 
-	m_Pixel = RS2D3D12_Compile("PSMain", "ps_5_0", true);
-	return m_Pixel!=0;
+	for(textured = 0; textured<2; textured++){
+		m_Pixel[textured] = RS2D3D12_Compile("PSMain", "ps_5_0", true, textured!=0);
+		if(!m_Pixel[textured]) return false;
+	}
+	return true;
 }
 
 bool CRS2D3D12Pipeline::Create(
@@ -171,22 +199,32 @@ bool CRS2D3D12Pipeline::Create(
 	Destroy();
 	m_Device = device;
 
-	//	One root parameter: the constant buffer, passed as an address rather
-	//	than through a descriptor heap.  A heap would be a second thing to
-	//	manage per frame for one buffer, and a root CBV costs nothing to bind.
-	D3D12_ROOT_PARAMETER parameter;
-
-	ZeroMemory(&parameter, sizeof(parameter));
-	parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	parameter.Descriptor.ShaderRegister = 0;
-	parameter.Descriptor.RegisterSpace = 0;
-	parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	// b0 is a root CBV; t0 and s0 are one-descriptor tables supplied by WP4.
+	D3D12_DESCRIPTOR_RANGE ranges[2];
+	D3D12_ROOT_PARAMETER parameters[3];
+	ZeroMemory(ranges, sizeof(ranges));
+	ZeroMemory(parameters, sizeof(parameters));
+	ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	ranges[0].NumDescriptors = 1;
+	ranges[0].BaseShaderRegister = 0;
+	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+	ranges[1].NumDescriptors = 1;
+	ranges[1].BaseShaderRegister = 0;
+	parameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	parameters[0].Descriptor.ShaderRegister = 0;
+	parameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	for(unsigned int i = 0; i<2; i++){
+		parameters[i+1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		parameters[i+1].DescriptorTable.NumDescriptorRanges = 1;
+		parameters[i+1].DescriptorTable.pDescriptorRanges = &ranges[i];
+		parameters[i+1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+	}
 
 	D3D12_ROOT_SIGNATURE_DESC desc;
 
 	ZeroMemory(&desc, sizeof(desc));
-	desc.NumParameters = 1;
-	desc.pParameters = &parameter;
+	desc.NumParameters = 3;
+	desc.pParameters = parameters;
 	desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 	ID3DBlob *serialised = 0;
@@ -230,13 +268,15 @@ void CRS2D3D12Pipeline::Destroy(){
 	m_Count = 0;
 	m_Full = false;
 
-	RELEASE(m_Pixel);
+	for(i = 0; i<2; i++) RELEASE(m_Pixel[i]);
 
 	{
-		unsigned int semantic, diffuse;
+		unsigned int semantic, diffuse, textured;
 
 		for(semantic = 0; semantic<2; semantic++)
-			for(diffuse = 0; diffuse<2; diffuse++) RELEASE(m_Vertex[semantic][diffuse]);
+			for(diffuse = 0; diffuse<2; diffuse++)
+				for(textured = 0; textured<2; textured++)
+					RELEASE(m_Vertex[semantic][diffuse][textured]);
 	}
 	RELEASE(m_RootSignature);
 
@@ -371,6 +411,7 @@ static DXGI_FORMAT RS2D3D12_TexCoordFormat(unsigned char components){
 ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 	const RS2D3D12PipelineKey &key	//	what the draw needs
 ){
+	if(key.textured && !key.texCoordCount) return 0;
 	D3D12_INPUT_ELEMENT_DESC elements[2+RS2MeshVertexLayout::MAX_TEXCOORD];
 	UINT count = 0;
 
@@ -401,10 +442,8 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 		count++;
 	}
 
-	//	Normals and texture coordinates are described but unused: the shaders
-	//	ignore them in v0.1.1.  They are in the layout so that the stride and
-	//	the offsets stay honest, and so adding lighting or texturing later is a
-	//	shader change rather than a layout change.
+	// The textured shader consumes TEXCOORD0; unused layout elements remain
+	// described so the vertex byte offsets match the public draw contract.
 	if(key.hasNormal){
 		elements[count].SemanticName = "NORMAL";
 		elements[count].SemanticIndex = 0;
@@ -435,9 +474,9 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 
 	ID3DBlob *vertex = m_Vertex
 		[(key.positionSemantic==RS2_POSITION_ALREADY_TRANSFORMED) ? 1 : 0]
-		[key.hasDiffuse ? 1 : 0];
+		[key.hasDiffuse ? 1 : 0][key.textured ? 1 : 0];
 
-	if(!vertex) return 0;
+	if(!vertex || !m_Pixel[key.textured ? 1 : 0]) return 0;
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC desc;
 
@@ -445,8 +484,8 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 	desc.pRootSignature = m_RootSignature;
 	desc.VS.pShaderBytecode = vertex->GetBufferPointer();
 	desc.VS.BytecodeLength = vertex->GetBufferSize();
-	desc.PS.pShaderBytecode = m_Pixel->GetBufferPointer();
-	desc.PS.BytecodeLength = m_Pixel->GetBufferSize();
+	desc.PS.pShaderBytecode = m_Pixel[key.textured ? 1 : 0]->GetBufferPointer();
+	desc.PS.BytecodeLength = m_Pixel[key.textured ? 1 : 0]->GetBufferSize();
 	desc.InputLayout.pInputElementDescs = elements;
 	desc.InputLayout.NumElements = count;
 	desc.PrimitiveTopologyType = (D3D12_PRIMITIVE_TOPOLOGY_TYPE)key.topology;

@@ -10,6 +10,7 @@
 #include "RS2D3D12Unsupported.h"
 #include "RS2TextureResource.h"
 #include "RS2D3D8Resources.h"
+#include "RS2D3D12TextureBackend.h"
 
 bool RS2TextureRef::GetSize(int *width, int *height) const{
 	if(!m_Resource) return false;
@@ -90,8 +91,8 @@ void CRS2TextureResource::Unlock(){
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
- *	Wrap a created D3D8 payload.  Its real size was resolved by the backend, so
- *	this neutral file does not have to know how a texture describes itself.
+ *	Wrap a created D3D8 payload. D3D12 uses the same neutral owner below,
+ *	with its own operations and no native handle crossing this boundary.
  */
 static CRS2TextureResource *RS2AdoptD3D8Texture(
 	void *payload,
@@ -114,17 +115,16 @@ static CRS2TextureResource *RS2AdoptD3D8Texture(
 CRS2TextureResource *RS2CreateTextureFromFile(
 	const char *strFile, unsigned long cTrans, int nMipLv
 ){
-	//	[RS2EX] Direct3D 12 has no texture creation in v0.1.0, and the
-	//	Direct3D 8 helper below would use a device this backend does not
-	//	own.  Failing is the honest answer; the caller already handles a
-	//	texture that would not load.
-	if(GetRS2Renderer().GetBackendType()!=RS2_RENDERER_D3D8){
-		RS2D3D12Unsupported("RS2CreateTextureFromFile");
-		return 0;
-	}
-
 	void *payload = 0;
 	int width = 0, height = 0;
+	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12){
+		if(!RS2D3D12_CreateTexturePayloadFromFile(
+				&payload, &width, &height, strFile, cTrans, nMipLv)) return 0;
+		CRS2TextureResource *resource = new CRS2TextureResource;
+		resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
+			payload, width, height, RS2D3D12_GetTexturePayloadOps());
+		return resource;
+	}
 
 	if(!RS2D3D8_CreateTexturePayloadFromFile(
 		&payload, &width, &height, strFile, cTrans, nMipLv)) return 0;
@@ -134,17 +134,16 @@ CRS2TextureResource *RS2CreateTextureFromFile(
 CRS2TextureResource *RS2CreateTextureFromResource(
 	const char *strRes, unsigned long cTrans, int nMipLv
 ){
-	//	[RS2EX] Direct3D 12 has no texture creation in v0.1.0, and the
-	//	Direct3D 8 helper below would use a device this backend does not
-	//	own.  Failing is the honest answer; the caller already handles a
-	//	texture that would not load.
-	if(GetRS2Renderer().GetBackendType()!=RS2_RENDERER_D3D8){
-		RS2D3D12Unsupported("RS2CreateTextureFromResource");
-		return 0;
-	}
-
 	void *payload = 0;
 	int width = 0, height = 0;
+	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12){
+		if(!RS2D3D12_CreateTexturePayloadFromResource(
+				&payload, &width, &height, strRes, cTrans, nMipLv)) return 0;
+		CRS2TextureResource *resource = new CRS2TextureResource;
+		resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
+			payload, width, height, RS2D3D12_GetTexturePayloadOps());
+		return resource;
+	}
 
 	if(!RS2D3D8_CreateTexturePayloadFromResource(
 		&payload, &width, &height, strRes, cTrans, nMipLv)) return 0;
