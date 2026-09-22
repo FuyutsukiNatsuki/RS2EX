@@ -62,6 +62,10 @@ static bool RS2D3D12_SmokeLifecycle(){
 			continue;
 		}
 
+		wsprintfA(label, "texture upload cycle %d", cycle+1);
+		RS2D3D12_SmokeStep(label,
+			RS2D3D12TextureUploadSmoke(backend.GetTextureUpload()));
+
 		//	Asking the GPU to catch up on a queue that has never been given
 		//	work should return promptly rather than hang: if the fence and its
 		//	event are wired up wrongly, this is where it shows.
@@ -178,6 +182,8 @@ static bool RS2D3D12_SmokeLifecycleFrames(HWND window){
 		return false;
 	}
 	RS2D3D12_SmokeStep("initialize for frames", true);
+	RS2D3D12_SmokeStep("texture upload with frames",
+		RS2D3D12TextureUploadSmoke(backend.GetTextureUpload()));
 
 	//	The window is created before the display size is known, so it has no
 	//	area until the Direct3D 8 start-up sizes it - and this test runs

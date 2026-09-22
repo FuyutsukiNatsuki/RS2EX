@@ -687,6 +687,7 @@ bool CRS2D3D12Backend::Initialize(int width, int height){
 	m_FrameIndex = 0;
 
 	if(!CreateDevice() || !CreateCommandObjects() || !CreateFence()
+			|| !m_TextureUpload.Create(m_Device, m_Queue)
 			|| !CreateSwapChain(svw.hWnd) || !CreateRenderTargets()
 			|| !CreateDepthBuffer() || !CreatePipeline()){
 		Shutdown();
@@ -734,6 +735,7 @@ void CRS2D3D12Backend::Shutdown(){
 	if(s_Active==this) s_Active = 0;
 
 	WaitForGpu();
+	m_TextureUpload.Destroy();
 
 	if(m_FenceEvent){
 		CloseHandle(m_FenceEvent);

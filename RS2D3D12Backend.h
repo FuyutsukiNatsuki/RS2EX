@@ -24,6 +24,7 @@
 #include "RS2Renderer.h"
 #include "RS2D3D12.h"
 #include "RS2D3D12Pipeline.h"
+#include "RS2D3D12Texture.h"
 #include "RS2D3D12Upload.h"
 
 //	One command allocator per swap-chain buffer, so the allocator being reset
@@ -94,6 +95,11 @@ private:
 	//	Scratch memory, one block per frame context.  Reset when its context is
 	//	reused, which only happens after that context's fence has completed.
 	CRS2D3D12Upload m_Upload[RS2D3D12_FRAME_COUNT];
+
+	//	Texture copies use independent one-shot command objects and a dedicated
+	//	fence timeline on the same direct queue.  This keeps uploads out of a
+	//	possibly open frame list without a whole-GPU wait per texture.
+	CRS2D3D12TextureUpload m_TextureUpload;
 
 	ID3D12Fence *m_Fence;
 	HANDLE m_FenceEvent;
@@ -230,6 +236,7 @@ public:
 	ID3D12GraphicsCommandList *GetCommandList() const{ return m_CommandList; }
 	CRS2D3D12Upload *GetUpload(){ return &m_Upload[m_FrameIndex]; }
 	CRS2D3D12Pipeline *GetPipeline(){ return &m_Pipeline; }
+	CRS2D3D12TextureUpload *GetTextureUpload(){ return &m_TextureUpload; }
 	ID3D12Device *GetDevice() const{ return m_Device; }
 
 	/*
