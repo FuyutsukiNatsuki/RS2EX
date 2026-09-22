@@ -7,6 +7,7 @@
 #include "RS2D3D8Backend.h"
 #include "RS2D3D12Availability.h"
 #include "RS2D3D12Backend.h"
+#include "RS2TextureAudit.h"
 
 /*
  *	The renderer instance
@@ -123,6 +124,7 @@ void CRS2Renderer::Shutdown(){
 	if(!m_Backend) return;
 
 	Debug("[RS2EX Renderer] shutdown\n");
+	if(m_BackendType==RS2_RENDERER_D3D8) RS2TextureAuditDump();
 
 	m_Backend->Shutdown();
 	delete m_Backend;

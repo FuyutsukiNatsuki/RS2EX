@@ -11,6 +11,7 @@
 #include "RS2D3D12Unsupported.h"
 #include "RS2TextureResource.h"
 #include "RS2D3D8Resources.h"
+#include "RS2TextureAudit.h"
 
 bool RS2TextureRef::GetSize(int *width, int *height) const{
 	if(!m_Resource) return false;
@@ -67,13 +68,20 @@ bool CRS2TextureResource::Lock(RS2TextureLock *out){
 	out->bits = 0;
 	out->pitch = 0;
 
-	if(!m_Native) return false;
+	if(!m_Native){
+		RS2TextureAuditRecordLock(false);
+		return false;
+	}
 
 	D3DLOCKED_RECT rect;
-	if(FAILED(((LPTEX8)m_Native)->LockRect(0, &rect, NULL, 0))) return false;
+	if(FAILED(((LPTEX8)m_Native)->LockRect(0, &rect, NULL, 0))){
+		RS2TextureAuditRecordLock(false);
+		return false;
+	}
 
 	out->bits = rect.pBits;
 	out->pitch = rect.Pitch;
+	RS2TextureAuditRecordLock(true);
 	return true;
 }
 
@@ -81,6 +89,7 @@ void CRS2TextureResource::Unlock(){
 	if(!m_Native) return;
 
 	((LPTEX8)m_Native)->UnlockRect(0);
+	RS2TextureAuditRecordUnlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

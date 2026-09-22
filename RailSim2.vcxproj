@@ -222,6 +222,7 @@
     <ClCompile Include="RS2MaterialBinding.cpp" />
     <ClCompile Include="RS2Text.cpp" />
     <ClCompile Include="RS2TextureResource.cpp" />
+    <ClCompile Include="RS2TextureAudit.cpp" />
     <ClCompile Include="RS2D3D8MaterialBinding.cpp" />
     <ClCompile Include="RS2Lighting.cpp" />
     <ClCompile Include="RS2D3D8RenderState.cpp" />
@@ -474,6 +475,7 @@
     <ClInclude Include="RS2TextBackend.h" />
     <ClInclude Include="RS2Material.h" />
     <ClInclude Include="RS2TextureResource.h" />
+    <ClInclude Include="RS2TextureAudit.h" />
     <ClInclude Include="RS2MaterialBinding.h" />
     <ClInclude Include="RS2RenderState.h" />
     <ClInclude Include="RS2Lighting.h" />

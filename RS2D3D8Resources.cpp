@@ -8,6 +8,7 @@
 
 #include "stdafx.h"
 #include "RS2D3D8Resources.h"
+#include "RS2TextureAudit.h"
 
 //	Live-resource counters.  Incremented on successful creation, decremented on
 //	release, so a leak or a double release shows up as drift rather than silence.
@@ -153,14 +154,33 @@ HRESULT RS2D3D8_CreateTextureFromFile(
 	if(!ppOut) return E_POINTER;
 	*ppOut = NULL;
 
+	const bool audit = RS2TextureAuditEnabled();
+	D3DXIMAGE_INFO sourceInfo;
+	ZeroMemory(&sourceInfo, sizeof(sourceInfo));
+
 	HRESULT hr = D3DXCreateTextureFromFileExA(
 		sv3.pDev, strFile, 0, 0, nMipLv, 0,
 		D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
 		D3DX_DEFAULT, D3DX_DEFAULT,
-		cTrans, NULL, NULL, ppOut);
+		cTrans, audit ? &sourceInfo : NULL, NULL, ppOut);
 
 	if(SUCCEEDED(hr)) s_LiveTextures++;
 	else *ppOut = NULL;
+
+	if(audit){
+		D3DSURFACE_DESC actual;
+		ZeroMemory(&actual, sizeof(actual));
+		const bool success = SUCCEEDED(hr) && *ppOut;
+		if(success) (*ppOut)->GetLevelDesc(0, &actual);
+
+		RS2TextureAuditRecordCreate(
+			"file", strFile, success, 0, 0,
+			sourceInfo.Width, sourceInfo.Height,
+			actual.Width, actual.Height, cTrans, nMipLv,
+			success ? (*ppOut)->GetLevelCount() : 0,
+			(unsigned int)sourceInfo.Format, (unsigned int)actual.Format,
+			(unsigned int)sourceInfo.ImageFileFormat, s_LiveTextures);
+	}
 	return hr;
 }
 
@@ -176,14 +196,33 @@ HRESULT RS2D3D8_CreateTextureFromResource(
 	if(!ppOut) return E_POINTER;
 	*ppOut = NULL;
 
+	const bool audit = RS2TextureAuditEnabled();
+	D3DXIMAGE_INFO sourceInfo;
+	ZeroMemory(&sourceInfo, sizeof(sourceInfo));
+
 	HRESULT hr = D3DXCreateTextureFromResourceExA(
 		sv3.pDev, NULL, strRes, 0, 0, nMipLv, 0,
 		D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
 		D3DTEXF_POINT, D3DTEXF_POINT,
-		cTrans, NULL, NULL, ppOut);
+		cTrans, audit ? &sourceInfo : NULL, NULL, ppOut);
 
 	if(SUCCEEDED(hr)) s_LiveTextures++;
 	else *ppOut = NULL;
+
+	if(audit){
+		D3DSURFACE_DESC actual;
+		ZeroMemory(&actual, sizeof(actual));
+		const bool success = SUCCEEDED(hr) && *ppOut;
+		if(success) (*ppOut)->GetLevelDesc(0, &actual);
+
+		RS2TextureAuditRecordCreate(
+			"resource", strRes, success, 0, 0,
+			sourceInfo.Width, sourceInfo.Height,
+			actual.Width, actual.Height, cTrans, nMipLv,
+			success ? (*ppOut)->GetLevelCount() : 0,
+			(unsigned int)sourceInfo.Format, (unsigned int)actual.Format,
+			(unsigned int)sourceInfo.ImageFileFormat, s_LiveTextures);
+	}
 	return hr;
 }
 
@@ -210,6 +249,19 @@ HRESULT RS2D3D8_CreateMutableTexture(LPTEX8 *ppOut, int w, int h){
 
 	if(SUCCEEDED(hr)) s_LiveTextures++;
 	else *ppOut = NULL;
+
+	if(RS2TextureAuditEnabled()){
+		D3DSURFACE_DESC actual;
+		ZeroMemory(&actual, sizeof(actual));
+		const bool success = SUCCEEDED(hr) && *ppOut;
+		if(success) (*ppOut)->GetLevelDesc(0, &actual);
+
+		RS2TextureAuditRecordCreate(
+			"mutable", NULL, success, (unsigned int)w, (unsigned int)h,
+			0, 0, actual.Width, actual.Height, 0, 1,
+			success ? (*ppOut)->GetLevelCount() : 0,
+			0, (unsigned int)actual.Format, 0, s_LiveTextures);
+	}
 	return hr;
 }
 
@@ -219,6 +271,7 @@ void RS2D3D8_ReleaseTexture(LPTEX8 *ppTex){
 	(*ppTex)->Release();
 	*ppTex = NULL;
 	if(s_LiveTextures) s_LiveTextures--;
+	RS2TextureAuditRecordRelease(s_LiveTextures);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

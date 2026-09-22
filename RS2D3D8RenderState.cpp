@@ -16,6 +16,7 @@
 #include "RS2RenderState.h"
 #include "RS2Lighting.h"
 #include "RS2D3D8Lighting.h"
+#include "RS2TextureAudit.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //	Enum translation
@@ -120,14 +121,17 @@ void RS2D3D8_SetBlend(RS2BlendMode mode){
 ////////////////////////////////////////////////////////////////////////////////
 
 void RS2D3D8_SetAlphaTest(bool enable){
+	RS2TextureAuditRecordAlphaTest(enable);
 	sv3.pDev->SetRenderState(D3DRS_ALPHATESTENABLE, enable ? TRUE : FALSE);
 }
 
 void RS2D3D8_SetAlphaRef(unsigned int ref){
+	RS2TextureAuditRecordAlphaRef(ref);
 	sv3.pDev->SetRenderState(D3DRS_ALPHAREF, (DWORD)ref);
 }
 
 void RS2D3D8_SetAlphaFunc(RS2CompareFunc func){
+	RS2TextureAuditRecordAlphaFunc((unsigned int)func);
 	sv3.pDev->SetRenderState(D3DRS_ALPHAFUNC, RS2ToD3DCompare(func));
 }
 
@@ -229,6 +233,7 @@ void RS2D3D8_DisableFog(){
 void RS2D3D8_SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
 	const DWORD f = RS2ToD3DFilter(filter);
 
+	RS2TextureAuditRecordFilter(stage, filter==RS2_FILTER_LINEAR);
 	sv3.pDev->SetTextureStageState(stage, D3DTSS_MAGFILTER, f);
 	sv3.pDev->SetTextureStageState(stage, D3DTSS_MINFILTER, f);
 	sv3.pDev->SetTextureStageState(stage, D3DTSS_MIPFILTER, f);

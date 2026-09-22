@@ -9,6 +9,7 @@
 #include "stdafx.h"
 #include "RS2MaterialBindingBackend.h"
 #include "RS2MaterialBinding.h"
+#include "RS2TextureAudit.h"
 
 /*
  *	Set the material for subsequent geometry.
@@ -58,5 +59,6 @@ void RS2D3D8_BindTexture(unsigned int stage, const RS2TextureRef &texture){
 	const CRS2TextureResource *resource = texture.GetResource();
 	LPTEX8 native = resource ? (LPTEX8)resource->GetNativeForBackend() : NULL;
 
+	RS2TextureAuditRecordBind(stage, native!=NULL);
 	sv3.pDev->SetTexture(stage, native);
 }
