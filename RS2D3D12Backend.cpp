@@ -29,6 +29,48 @@ static CRS2D3D12Backend *s_Active = 0;
 CRS2D3D12Backend *RS2D3D12GetActiveBackend(){ return s_Active; }
 
 /*
+ *	Make the existing main window cover its monitor without taking exclusive
+ *	ownership of the display.
+ *
+ *	The legacy mesh importer creates its own tiny windowed Direct3D 8 device.
+ *	On the release test machine that device fails with D3DERR_NOTAVAILABLE
+ *	while a Direct3D 12 swap chain owns the adapter exclusively, leaving a real
+ *	scene with no imported meshes.  Borderless fullscreen has the same visible
+ *	contract, keeps the importer available, and is also explicit about who
+ *	shows and sizes the HWND - an exclusive Direct3D 8 device used to do that
+ *	for the application.
+ */
+static bool RS2D3D12_PrepareBorderlessWindow(HWND window){
+	HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
+	MONITORINFO info;
+
+	ZeroMemory(&info, sizeof(info));
+	info.cbSize = sizeof(info);
+
+	if(!monitor || !GetMonitorInfo(monitor, &info)){
+		Debug("[RS2EX D3D12] could not query the fullscreen monitor\n");
+		return false;
+	}
+
+	SetLastError(0);
+	const LONG previous = SetWindowLong(window, GWL_STYLE, WS_POPUP);
+	if(!previous && GetLastError()!=0){
+		Debug("[RS2EX D3D12] could not make the window borderless\n");
+		return false;
+	}
+
+	if(!SetWindowPos(window, HWND_TOP,
+			info.rcMonitor.left, info.rcMonitor.top,
+			info.rcMonitor.right-info.rcMonitor.left,
+			info.rcMonitor.bottom-info.rcMonitor.top,
+			SWP_NOACTIVATE|SWP_FRAMECHANGED)){
+		Debug("[RS2EX D3D12] could not size the borderless window\n");
+		return false;
+	}
+	return true;
+}
+
+/*
  *	Turn on the debug layer, if there is one.
  *
  *	Must happen before device creation or it has no effect.  A missing debug
@@ -296,8 +338,11 @@ bool CRS2D3D12Backend::CreateSwapChain(
 	}
 
 	//	The same question the Direct3D 8 backend asks, from the same inputs, so
-	//	the two backends agree about what was requested.
+	//	the two backends agree about what the user requested.  m_Windowed is the
+	//	engine-facing mode; the D3D12 swap chain itself stays windowed even for a
+	//	fullscreen request, using a monitor-sized borderless HWND instead.
 	m_Windowed = (!g_FullScreen || g_PluginViewArg || CheckArguments("-win"))!=0;
+	if(!m_Windowed && !RS2D3D12_PrepareBorderlessWindow(window)) return false;
 
 	DXGI_SWAP_CHAIN_DESC1 desc;
 
@@ -315,7 +360,7 @@ bool CRS2D3D12Backend::CreateSwapChain(
 	DXGI_SWAP_CHAIN_FULLSCREEN_DESC fs;
 
 	ZeroMemory(&fs, sizeof(fs));
-	fs.Windowed = m_Windowed ? TRUE : FALSE;
+	fs.Windowed = TRUE;
 
 	IDXGISwapChain1 *chain1 = 0;
 	HRESULT hr = m_Factory->CreateSwapChainForHwnd(
@@ -346,10 +391,13 @@ bool CRS2D3D12Backend::CreateSwapChain(
 
 	m_SwapChain->GetFullscreenState(&actuallyFullscreen, NULL);
 
+	const char *granted = actuallyFullscreen ? "exclusive fullscreen"
+		: (m_Windowed ? "windowed" : "borderless fullscreen");
+
 	Debug("[RS2EX D3D12] swap chain %u x %u, %d buffers, %s requested, %s granted\n",
 		m_Width, m_Height, RS2D3D12_FRAME_COUNT,
 		m_Windowed ? "windowed" : "fullscreen",
-		actuallyFullscreen ? "fullscreen" : "windowed");
+		granted);
 	return true;
 }
 
@@ -604,7 +652,7 @@ void CRS2D3D12Backend::PublishCompatibilityState(){
 	//	its device creation, so a windowed run under any other backend would
 	//	never appear at all.  It is not a device matter and does not belong to
 	//	either backend, but until it moves, both have to do it.
-	if(m_Windowed && svw.hWnd){
+	if(svw.hWnd){
 		ShowWindow(svw.hWnd, SW_SHOW);
 		UpdateWindow(svw.hWnd);
 	}

@@ -184,7 +184,7 @@ static bool RS2D3D12_SmokeLifecycleFrames(HWND window){
 	//	succeeded is a weaker claim than a window anyone can photograph.
 	svw.winW = 640;
 	svw.winH = 480;
-	AdjustWindow();
+	if(sv3.fWindowed) AdjustWindow();
 	ShowWindow(window, SW_SHOW);
 	UpdateWindow(window);
 
@@ -212,7 +212,7 @@ static bool RS2D3D12_SmokeLifecycleFrames(HWND window){
 	//	what a real resize looks like from the backend's side.
 	svw.winW = 800;
 	svw.winH = 600;
-	AdjustWindow();
+	if(sv3.fWindowed) AdjustWindow();
 
 	bool resized = true;
 
@@ -243,7 +243,7 @@ static bool RS2D3D12_SmokeLifecycleFrames(HWND window){
 	//	direction - shrinking releases buffers that growing had just made.
 	svw.winW = 640;
 	svw.winH = 480;
-	AdjustWindow();
+	if(sv3.fWindowed) AdjustWindow();
 
 	bool restored = true;
 

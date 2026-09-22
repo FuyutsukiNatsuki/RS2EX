@@ -56,6 +56,9 @@ private:
 	//	moment they were ported.
 	bool m_HasStencil;
 
+	//	Engine-facing mode.  A false value uses a borderless monitor-sized HWND;
+	//	the D3D12 swap chain itself deliberately remains windowed so the legacy
+	//	mesh importer's independent Direct3D 8 device remains available.
 	bool m_Windowed;
 
 	//	So a minimised window says so once instead of once per frame.

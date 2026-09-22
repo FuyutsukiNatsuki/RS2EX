@@ -103,6 +103,18 @@ $windowHandle = [IntPtr]::Zero
 try {
     if ($Fullscreen) {
         Start-Sleep -Seconds $Settle
+        $proc.Refresh()
+        if ($proc.HasExited) { throw "the program exited during start-up" }
+        $windowHandle = $proc.MainWindowHandle
+        if ($windowHandle -eq 0) { throw "no fullscreen window appeared" }
+
+        # A process started from a background test runner cannot activate its
+        # own window reliably.  Make it topmost without changing its size or
+        # focus so CopyFromScreen captures the borderless output, not Codex.
+        # HWND_TOPMOST, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE.
+        $null = $api::SetWindowPos($windowHandle, [IntPtr](-1), 0, 0, 0, 0, 0x0013)
+        Start-Sleep -Milliseconds $PositionSettleMilliseconds
+
         $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
         $left = $b.X; $top = $b.Y; $w = $b.Width; $h = $b.Height
     } else {
