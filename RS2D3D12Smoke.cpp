@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include "RS2D3D12Smoke.h"
 #include "RS2D3D12Backend.h"
+#include "RS2DecodedImage.h"
 #include "RS2Renderer.h"
 #include "RS2TextureResource.h"
 
@@ -293,6 +294,7 @@ bool RS2D3D12SmokeRun(
 	//	WP1: a texture with D3D12 ownership must keep its opaque payload,
 	//	dimensions and operations without neutral code interpreting it as D3D8.
 	RS2D3D12_SmokeStep("neutral texture ownership", RS2TextureOwnershipSmoke());
+	RS2D3D12_SmokeStep("neutral image decode", RS2DecodedImageSmoke());
 
 	RS2D3D12_SmokeLifecycle();
 	RS2D3D12_SmokeLifecycleFrames(window);
