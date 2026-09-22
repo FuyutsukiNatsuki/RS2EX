@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-22.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CShadowVolume.h"
@@ -131,6 +131,18 @@ void InitGrid(){
 		grid[cnt].d = color|alpha; cnt++;
 	}
 	g_DetailGridVertex.Create(grid, RS2LayoutL(), (GRID_SIZE-1)*8);
+}
+
+/*
+ *	Release the renderer resources owned by this module.
+ *
+ *	Both owners are globals and therefore outlive CApp.  FreeDirect3D() runs
+ *	from CApp's destructor, so waiting for their static destructors would keep
+ *	D3D resources alive across device shutdown.
+ */
+void FreeGraphicCoverResources(){
+	g_ShadowVolume.Free();
+	g_DetailGridVertex.Free();
 }
 
 /*

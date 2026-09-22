@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-22.
 #include "stdafx.h"
 #include "RSPV.h"
 #include "CPluginTree.h"
@@ -317,6 +317,7 @@ void Main(){
 	g_CursorLockable = true;
 	InitGrid();
 	CGameMode::MainLoop();
+	FreeGraphicCoverResources();
 	DELETE_V(g_SaveFile);
 	ClipCursor(NULL);
 	CTreeDirElement::FreeMenu();

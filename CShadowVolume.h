@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-22.
 #ifndef CSHADOWVOLUME_H_INCLUDED
 #define CSHADOWVOLUME_H_INCLUDED
 
@@ -66,6 +66,7 @@ private:
 public:
 	CShadowVolume();
 	~CShadowVolume();
+	void Free();
     void Reset();
     void BuildFromMesh(CObject *, VEC3);
 	void AddFaceEdge(VEC3 &, VEC3 &, VEC3 &);

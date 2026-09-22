@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-22.
 #ifndef GRAPHICCOVER_H_INCLUDED
 #define GRAPHICCOVER_H_INCLUDED
 
@@ -9,6 +10,7 @@ float LineLineDistance(VEC3 *, VEC3 *, VEC3 *, VEC3 *);
 void LinePointPosition(VEC3 *, VEC3 *, VEC3 *, VEC3 *, VEC3 *, float);
 
 void InitGrid();
+void FreeGraphicCoverResources();
 void DrawGrid(VEC3);
 void DrawTangent(VEC3, VEC3, D3DCOLOR, CLineDumpL *);
 void DrawFocus(VEC3);

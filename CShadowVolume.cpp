@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-22.
 #include "stdafx.h"
 #include "CJobTimer.h"
 #include "CShadowVolume.h"
@@ -121,6 +121,18 @@ CShadowVolume::CShadowVolume(){
  *	デストラクタ
  */
 CShadowVolume::~CShadowVolume(){
+	Free();
+}
+
+/*
+ *	Release renderer-owned data before the renderer itself shuts down.
+ *
+ *	The shadow volume is a global object, so its destructor normally runs
+ *	after CApp has already released the Direct3D device.  Keeping this
+ *	operation explicit makes both that early release and the later destructor
+ *	safe.
+ */
+void CShadowVolume::Free(){
 	DELETE_V(m_FaceVolume);
 }
 
