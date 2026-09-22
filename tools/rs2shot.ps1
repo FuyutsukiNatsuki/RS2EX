@@ -39,6 +39,16 @@ param(
     [int]$X = 660,
     [int]$Y = 30,
 
+    #   Do not send SetWindowPos to a smoke test that is deliberately holding
+    #   its final frame on the UI thread. The synchronous window message would
+    #   wait until the hold ends and lose the frame before capture.
+    [switch]$NoMove,
+
+    #   Short-lived smoke tests may finish before the normal scene-oriented
+    #   settle delays expire. Defaults preserve the established fixture path.
+    [int]$PositionSettleMilliseconds = 700,
+    [int]$CursorSettleMilliseconds = 300,
+
     [int]$TimeoutSeconds = 30
 )
 
@@ -64,6 +74,7 @@ if (-not (Test-Path $Exe)) { throw "no such executable: $Exe" }
 $exePath = (Resolve-Path $Exe).Path
 $workDir = Split-Path -Parent $exePath
 $procName = [System.IO.Path]::GetFileNameWithoutExtension($exePath)
+$log = Join-Path $workDir "debug.txt"
 
 $argList = @()
 if (-not $Fullscreen) { $argList += "-win" }
@@ -72,12 +83,22 @@ if ($ExtraArgs) { $argList += ($ExtraArgs -split '\s+' | Where-Object { $_ }) }
 Get-Process $procName -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Milliseconds 600
 
+$logStartBytes = 0
+if ($WaitForLog -and (Test-Path $log)) {
+    # Record the boundary only after the old process is gone. It may append
+    # shutdown lines after Stop-Process was requested, and those lines belong
+    # to the previous run, not the process launched below.
+    $logStartBytes = (Get-Item $log).Length
+}
+
 if ($argList.Count) {
     $proc = Start-Process -FilePath $exePath -ArgumentList $argList `
         -WorkingDirectory $workDir -PassThru
 } else {
     $proc = Start-Process -FilePath $exePath -WorkingDirectory $workDir -PassThru
 }
+
+$windowHandle = [IntPtr]::Zero
 
 try {
     if ($Fullscreen) {
@@ -90,23 +111,56 @@ try {
         while ((Get-Date) -lt $deadline) {
             $proc.Refresh()
             if ($proc.HasExited) { throw "the program exited during start-up" }
-            if ($proc.MainWindowHandle -ne 0) { break }
+            if ($proc.MainWindowHandle -ne 0) {
+                $windowHandle = $proc.MainWindowHandle
+                break
+            }
             Start-Sleep -Milliseconds 50
         }
-        if ($proc.MainWindowHandle -eq 0) { throw "no window appeared within ${TimeoutSeconds}s" }
+        if ($windowHandle -eq 0) { throw "no window appeared within ${TimeoutSeconds}s" }
 
         if ($WaitForLog) {
-            $log = Join-Path $workDir "debug.txt"
             $deadline = (Get-Date).AddSeconds($WaitForLogSeconds)
             $seen = $false
 
             while ((Get-Date) -lt $deadline) {
                 $proc.Refresh()
                 if ($proc.HasExited) { throw "the program exited before logging '$WaitForLog'" }
-                if ((Test-Path $log) -and
-                        (Select-String -Path $log -Pattern $WaitForLog -SimpleMatch -Quiet)) {
-                    $seen = $true
-                    break
+                if (Test-Path $log) {
+                    try {
+                        $stream = [System.IO.File]::Open(
+                            $log,
+                            [System.IO.FileMode]::Open,
+                            [System.IO.FileAccess]::Read,
+                            [System.IO.FileShare]::ReadWrite)
+                        try {
+                            $start = [Math]::Min($logStartBytes, $stream.Length)
+                            if ($stream.Length -gt $start) {
+                                $null = $stream.Seek($start, [System.IO.SeekOrigin]::Begin)
+                                $bytes = New-Object byte[] ($stream.Length - $start)
+                                $read = $stream.Read($bytes, 0, $bytes.Length)
+
+                                # The marker is ASCII. Reading only bytes appended by
+                                # this process prevents an earlier run from satisfying
+                                # the wait. FileShare.ReadWrite is essential: Debug()
+                                # appends one line at a time and must not be blocked.
+                                $newLog = [System.Text.Encoding]::ASCII.GetString(
+                                    $bytes, 0, $read)
+                                if ($newLog.Contains($WaitForLog)) {
+                                    $proc.Refresh()
+                                    Write-Host ("marker '{0}' seen ({1} appended bytes, exited={2})" -f `
+                                        $WaitForLog, $read, $proc.HasExited)
+                                    $seen = $true
+                                    break
+                                }
+                            }
+                        } finally {
+                            $stream.Dispose()
+                        }
+                    } catch [System.IO.IOException] {
+                        # Debug() opens and closes the file for every line. If this
+                        # poll overlaps a write, retry on the next interval.
+                    }
                 }
                 Start-Sleep -Milliseconds 200
             }
@@ -115,16 +169,31 @@ try {
 
         Start-Sleep -Seconds $Settle
 
+        #   RailSim replaces its loading window while the real scene starts.
+        #   Keep the early handle for short smoke tests, but prefer the current
+        #   main window once loading has completed.
+        $proc.Refresh()
+        if ($proc.MainWindowHandle -ne 0) {
+            $windowHandle = $proc.MainWindowHandle
+        }
+
         #   HWND_TOPMOST, SWP_NOSIZE | SWP_NOACTIVATE.
-        $null = $api::SetWindowPos($proc.MainWindowHandle, [IntPtr](-1), $X, $Y, 0, 0, 0x0011)
-        Start-Sleep -Milliseconds 700
+        $moved = $false
+        if (-not $NoMove) {
+            $moved = $api::SetWindowPos($windowHandle, [IntPtr](-1), $X, $Y, 0, 0, 0x0011)
+        }
+        Start-Sleep -Milliseconds $PositionSettleMilliseconds
 
         $rc = New-Object RS2EX.Shot+RECT
-        $null = $api::GetWindowRect($proc.MainWindowHandle, [ref]$rc)
+        $gotRect = $api::GetWindowRect($windowHandle, [ref]$rc)
         $left = $rc.L; $top = $rc.T; $w = $rc.R - $rc.L; $h = $rc.B - $rc.T
 
+        $proc.Refresh()
+        Write-Host ("capture hwnd={0} move={1} rect={2} exited={3}" -f `
+            $windowHandle, $moved, $gotRect, $proc.HasExited)
+
         $null = $api::SetCursorPos(($left + 300), ($top + 300))
-        Start-Sleep -Milliseconds 300
+        Start-Sleep -Milliseconds $CursorSettleMilliseconds
     }
 
     if ($w -le 0 -or $h -le 0) { throw "window has no area ($w x $h)" }
@@ -145,7 +214,8 @@ finally {
     $proc.Refresh()
     if (-not $proc.HasExited) {
         #   WM_CLOSE, so the program shuts down through its own path.
-        $null = $api::PostMessage($proc.MainWindowHandle, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)
+        $handle = if ($windowHandle -ne 0) { $windowHandle } else { $proc.MainWindowHandle }
+        $null = $api::PostMessage($handle, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)
         $deadline = (Get-Date).AddSeconds(20)
         while ((Get-Date) -lt $deadline -and -not $proc.HasExited) {
             Start-Sleep -Milliseconds 400

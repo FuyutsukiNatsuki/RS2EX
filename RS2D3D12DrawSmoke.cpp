@@ -19,9 +19,11 @@
 #include "RS2Draw.h"
 #include "RS2MeshData.h"
 
-//	Long enough to photograph without racing the exit, the same reasoning as
-//	the bootstrap smoke.
+//	Enough draws to prove repeated submission. Present is not guaranteed to
+//	pace an occluded or background window on every machine, so a separate hold
+//	below keeps the accepted final frame available for capture.
 static const int RS2D3D12_DRAW_FRAMES = 300;
+static const DWORD RS2D3D12_DRAW_CAPTURE_HOLD_MS = 8000;
 
 //	A background nothing else in the program uses, so a screenshot cannot be
 //	mistaken for a real scene or for an empty one.
@@ -33,6 +35,8 @@ static const unsigned int RS2D3D12_DRAW_CLEAR = 0x00202840;
 static const unsigned int RS2D3D12_DRAW_RED = 0xffcc2020;
 static const unsigned int RS2D3D12_DRAW_BLUE = 0xff2040cc;
 static const unsigned int RS2D3D12_DRAW_GREEN = 0xff20cc40;
+static const unsigned int RS2D3D12_DRAW_MAGENTA = 0xffcc40cc;
+static const unsigned int RS2D3D12_DRAW_YELLOW = 0xffe0c020;
 
 struct RS2DrawSmokeVertexP
 {
@@ -94,9 +98,6 @@ bool RS2D3D12DrawSmokeRun(){
 	float identity[16];
 
 	RS2DrawSmokeIdentity(identity);
-	RS2SetWorldTransform(identity);
-	RS2SetViewTransform(identity);
-	RS2SetProjectionTransform(identity);
 
 	RS2MeshVertexLayout layoutP, layoutS;
 
@@ -107,6 +108,15 @@ bool RS2D3D12DrawSmokeRun(){
 
 	GetRS2Renderer().GetViewportSize(&width, &height);
 	Debug("RS2D3D12DRAW|viewport %u x %u\n", width, height);
+
+	//	The capture harness cannot synchronously move this window once the smoke
+	//	holds its final frame on this UI thread. Put this developer-only window
+	//	above ordinary desktop windows before drawing instead. The window goes
+	//	away with the smoke, so no persistent application state is changed.
+	if(sv3.fWindowed){
+		SetWindowPos(svw.hWnd, HWND_TOPMOST, 0, 0, 0, 0,
+			SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
+	}
 
 	//	Where the window is, so a capture harness can find it without asking
 	//	the operating system which window belongs to this process - an answer
@@ -151,29 +161,151 @@ bool RS2D3D12DrawSmokeRun(){
 		{ left,  bottom, 0.5f, 1.0f, RS2D3D12_DRAW_GREEN }
 	};
 
+	//	Two more shapes use retained resources.  Their colours and positions do
+	//	not overlap the immediate shapes, so the screenshot proves both public
+	//	resource draw calls reached the pipeline rather than merely proving that
+	//	the resources could be allocated.
+	const RS2DrawSmokeVertexS bufferedTriangle[3] = {
+		{ width*0.58f, height*0.12f, 0.5f, 1.0f, RS2D3D12_DRAW_MAGENTA },
+		{ width*0.88f, height*0.12f, 0.5f, 1.0f, RS2D3D12_DRAW_MAGENTA },
+		{ width*0.73f, height*0.48f, 0.5f, 1.0f, RS2D3D12_DRAW_MAGENTA }
+	};
+	const RS2DrawSmokeVertexS indexedQuad[4] = {
+		{ width*0.58f, height*0.70f, 0.5f, 1.0f, RS2D3D12_DRAW_YELLOW },
+		{ width*0.88f, height*0.70f, 0.5f, 1.0f, RS2D3D12_DRAW_YELLOW },
+		{ width*0.88f, height*0.92f, 0.5f, 1.0f, RS2D3D12_DRAW_YELLOW },
+		{ width*0.58f, height*0.92f, 0.5f, 1.0f, RS2D3D12_DRAW_YELLOW }
+	};
+	const unsigned int indexedQuadIndices[6] = { 0, 1, 2, 0, 2, 3 };
+
+	const unsigned int liveBaseline = RS2GetLiveGeometryCount();
+	const unsigned int vertexBaseline = RS2GetGeometryVertexBytes();
+	const unsigned int indexBaseline = RS2GetGeometryIndexBytes();
+	bool resourceOk = true;
+
+	//	A failed build must leave all counters at baseline.  These cover an
+	//	unusable layout and an index outside the vertex buffer.
+	RS2MeshVertexLayout invalidLayout;
+	invalidLayout.Clear();
+	invalidLayout.stride = sizeof(RS2DrawSmokeVertexS);
+	CRS2GeometryResource *invalid = RS2CreateGeometry(
+		invalidLayout, bufferedTriangle, 3);
+	if(invalid){
+		resourceOk = false;
+		RS2DestroyGeometry(invalid);
+	}
+	const unsigned int invalidIndices[3] = { 0, 1, 4 };
+	invalid = RS2CreateIndexedGeometry(
+		layoutS, indexedQuad, 4, invalidIndices, 3);
+	if(invalid){
+		resourceOk = false;
+		RS2DestroyGeometry(invalid);
+	}
+	resourceOk = resourceOk
+		&& RS2GetLiveGeometryCount()==liveBaseline
+		&& RS2GetGeometryVertexBytes()==vertexBaseline
+		&& RS2GetGeometryIndexBytes()==indexBaseline;
+
+	//	Repeated creation/destruction is the useful drift test here.  Absolute
+	//	working-set values vary with the driver and allocator and are not treated
+	//	as correctness evidence.
+	int cycle;
+	for(cycle = 0; cycle<32 && resourceOk; cycle++){
+		CRS2GeometryResource *temporary = RS2CreateGeometry(
+			layoutS, bufferedTriangle, 3);
+		if(!temporary){
+			resourceOk = false;
+			break;
+		}
+		RS2DestroyGeometry(temporary);
+		resourceOk = RS2GetLiveGeometryCount()==liveBaseline
+			&& RS2GetGeometryVertexBytes()==vertexBaseline
+			&& RS2GetGeometryIndexBytes()==indexBaseline;
+	}
+
+	CRS2GeometryResource *buffered = RS2CreateGeometry(
+		layoutS, bufferedTriangle, 3);
+	CRS2GeometryResource *indexed = RS2CreateIndexedGeometry(
+		layoutS, indexedQuad, 4, indexedQuadIndices, 6);
+
+	resourceOk = resourceOk && buffered && indexed
+		&& RS2GetGeometryVertexCount(buffered)==3
+		&& RS2GetGeometryVertexCount(indexed)==4
+		&& RS2GetLiveGeometryCount()==liveBaseline+2
+		&& RS2GetGeometryVertexBytes()==vertexBaseline
+			+(unsigned int)(sizeof(bufferedTriangle)+sizeof(indexedQuad))
+		&& RS2GetGeometryIndexBytes()==indexBaseline
+			+(unsigned int)(6*sizeof(WORD));
+
+	Debug("RS2D3D12DRAW|resource create/counter drift |%s\n",
+		resourceOk ? "pass" : "FAIL");
+
+	if(!buffered || !indexed){
+		RS2DestroyGeometry(indexed);
+		RS2DestroyGeometry(buffered);
+		return false;
+	}
+
+	const unsigned int drawBaseline = RS2D3D12_GetDrawCount();
+	const unsigned int refusedBaseline = RS2D3D12_GetRefusedDrawCount();
+	bool framesOk = true;
+
 	int frame;
 
 	for(frame = 0; frame<RS2D3D12_DRAW_FRAMES; frame++){
 		if(!GetRS2Renderer().BeginRenderPass(RS2D3D12_DRAW_CLEAR, true)){
 			Debug("RS2D3D12DRAW|the render pass would not begin\n");
-			return false;
+			framesOk = false;
+			break;
 		}
+
+		//	BeginRenderPass currently imports the engine view matrix for the real
+		//	scene. Submit the smoke's known transforms after that compatibility
+		//	step, through the same public boundary the game uses.
+		RS2SetWorldTransform(identity);
+		RS2SetViewTransform(identity);
+		RS2SetProjectionTransform(identity);
 
 		RS2DrawImmediate(layoutP, RS2_PRIMITIVE_TRIANGLE_LIST, clockwise, 3);
 		RS2DrawImmediate(layoutP, RS2_PRIMITIVE_TRIANGLE_LIST, counterClockwise, 3);
 		RS2DrawImmediate(layoutS, RS2_PRIMITIVE_TRIANGLE_FAN, quad, 4);
+		RS2DrawBuffered(buffered, RS2_PRIMITIVE_TRIANGLE_LIST, 0, 3);
+		RS2DrawIndexed(indexed, RS2_PRIMITIVE_TRIANGLE_LIST, 0, 6);
+
+		//	One frame proves both range guards and both whole-primitive guards.
+		//	The final refusal count is exact, so an unrelated refusal fails too.
+		if(frame==0){
+			RS2DrawBuffered(buffered, RS2_PRIMITIVE_TRIANGLE_LIST, 2, 3);
+			RS2DrawBuffered(buffered, RS2_PRIMITIVE_TRIANGLE_LIST, 0, 2);
+			RS2DrawIndexed(indexed, RS2_PRIMITIVE_TRIANGLE_LIST, 4, 3);
+			RS2DrawIndexed(indexed, RS2_PRIMITIVE_TRIANGLE_LIST, 0, 5);
+		}
 
 		GetRS2Renderer().EndRenderPass();
 		GetRS2Renderer().Present();
 	}
 
-	Debug("RS2D3D12DRAW|submitted=%u refused=%u\n",
-		RS2D3D12_GetDrawCount(), RS2D3D12_GetRefusedDrawCount());
+	const unsigned int submitted = RS2D3D12_GetDrawCount()-drawBaseline;
+	const unsigned int refused = RS2D3D12_GetRefusedDrawCount()-refusedBaseline;
 
-	//	Three draws a frame, every frame, or something refused them.
-	const bool ok = RS2D3D12_GetDrawCount()>=(unsigned int)(RS2D3D12_DRAW_FRAMES*3)
-		&& RS2D3D12_GetRefusedDrawCount()==0;
+	RS2DestroyGeometry(indexed);
+	RS2DestroyGeometry(buffered);
+	resourceOk = resourceOk
+		&& RS2GetLiveGeometryCount()==liveBaseline
+		&& RS2GetGeometryVertexBytes()==vertexBaseline
+		&& RS2GetGeometryIndexBytes()==indexBaseline;
+
+	Debug("RS2D3D12DRAW|submitted=%u refused=%u intentional=4\n",
+		submitted, refused);
+	Debug("RS2D3D12DRAW|resource destroy/baseline   |%s\n",
+		resourceOk ? "pass" : "FAIL");
+
+	//	Five valid draws a frame, and exactly four deliberately refused calls.
+	const bool ok = framesOk && resourceOk
+		&& submitted==(unsigned int)(RS2D3D12_DRAW_FRAMES*5)
+		&& refused==4;
 
 	Debug("RS2D3D12DRAW|%s\n", ok ? "pass" : "FAIL");
+	if(ok) Sleep(RS2D3D12_DRAW_CAPTURE_HOLD_MS);
 	return ok;
 }
