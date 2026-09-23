@@ -174,7 +174,7 @@ public:
 	void CheckWarpEndScene(CScene *);
 	bool IsInsideGroup(int, float);
 	bool SetTrain(int, float, CGroupEndLocator *, bool,
-		ITrainSetBuffer *, ITrainSetBuffer *, CTrainGroup *, bool, bool);
+		ITrainSetBuffer *, ITrainSetBuffer *, ITrainSetBuffer, CTrainGroup *, bool, bool);
 	int MarchTrain(float *, CGroupEndLocator *, CTrainGroup *, CTrainGroup *);
 	bool CheckPlatformExtend(int, CPlatformInst *);
 	int GetPlatformState();

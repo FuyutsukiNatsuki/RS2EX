@@ -300,7 +300,8 @@ CTrainSetCurve::CTrainSetCurve(
 	CGroupEndLocator loc,	//	設置位置
 	CGroupEndLocator *tail,	//	終端格納先
 	ITrainSetBuffer *icur,	//	現在位置
-	ITrainSetBuffer *iend	//	終了位置
+	ITrainSetBuffer *iend,	//	終了位置
+	ITrainSetBuffer first	//	first valid node in reverse traversal
 ):
 	CRailTraceCurve(rpi, tpi, gpi, NULL)	//	基本クラス
 {
@@ -309,6 +310,7 @@ CTrainSetCurve::CTrainSetCurve(
 	m_Tail = tail;
 	m_Current = icur;
 	m_End = iend;
+	m_First = first;
 }
 
 /*
@@ -331,7 +333,10 @@ void CTrainSetCurve::FinishTrace(
 		VEC3 td = q1*dir1+q2*dir2;
 		cur->SetPosture(q1*pos1+q2*pos2+0.5f*seglen*q1*q2*(dir1-dir2),
 			m_Reverse ? td : -td, q1*up1+q2*up2, m_Location.m_SetRail);
-		if(m_Reverse) cur--; else cur++;
+		if(m_Reverse){
+			if(cur==m_First) cur=*m_End;
+			else --cur;
+		}else ++cur;
 		if(cur==*m_End){
 			m_Tail->m_Side = m_Location.m_Side;
 			m_Tail->m_Offset = tmp;

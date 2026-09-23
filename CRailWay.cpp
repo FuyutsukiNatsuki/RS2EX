@@ -969,6 +969,7 @@ bool CRailWay::SetTrain(
 	bool rev,				//	後退フラグ
 	ITrainSetBuffer *icur,	//	現在位置
 	ITrainSetBuffer *iend,	//	終了位置
+	ITrainSetBuffer first,	//	first valid node for reverse traversal
 	CTrainGroup *group,		//	編成
 	bool extend,			//	拡張トレール
 	bool hittest			//	衝突判定
@@ -981,7 +982,10 @@ bool CRailWay::SetTrain(
 		VEC3 pos = con.GetPos(), dir = -con.GetDir(), up = con.GetUp();
 		while((tmp = (rev ? -(*icur)->m_SumLen : (*icur)->m_SumLen)+ofs)<0.0f){
 			(*icur)->SetPosture(pos+dir*tmp, rev ? dir : -dir, up, ptr);
-			if(rev) (*icur)--; else (*icur)++;
+			if(rev){
+				if(*icur==first) *icur=*iend;
+				else --(*icur);
+			}else ++(*icur);
 			if(*icur==*iend){
 				tail->m_Side = !side;
 				tail->m_Offset = tmp;
@@ -997,7 +1001,7 @@ bool CRailWay::SetTrain(
 			group->NotifyWarp();
 		}else{
 			if(hittest){
-				tmp = (rev ? ++ITrainSetBuffer(*iend)
+				tmp = (rev ? first
 					: --ITrainSetBuffer(*iend))->m_SumLen+ofs;
 				IPGroupEndLocator ipge = ptr->m_GroupEnd.begin();
 				for(; ipge!=ptr->m_GroupEnd.end(); ipge++){
@@ -1009,7 +1013,7 @@ bool CRailWay::SetTrain(
 				}
 			}
 			CTrainSetCurve curve(ptr->m_RailPlugin, ptr->m_TiePlugin, ptr->m_GirderPlugin,
-				rev, CGroupEndLocator(!side, ofs, ptr, group), tail, icur, iend);
+				rev, CGroupEndLocator(!side, ofs, ptr, group), tail, icur, iend, first);
 			ptr->TraceRail(side, &curve);
 			if(*icur==*iend) return true;
 			ofs -= ptr->GetSegLen();
@@ -1031,7 +1035,10 @@ bool CRailWay::SetTrain(
 		while(*icur!=*iend){
 			tmp = (rev ? -(*icur)->m_SumLen : (*icur)->m_SumLen)+ofs;
 			(*icur)->SetPosture(pos+dir*tmp, rev ? dir : -dir, up, prev);
-			if(rev) (*icur)--; else (*icur)++;
+			if(rev){
+				if(*icur==first) *icur=*iend;
+				else --(*icur);
+			}else ++(*icur);
 		}
 		tail->m_Side = !side;
 		tail->m_Offset = prev->GetSegLen()+tmp;

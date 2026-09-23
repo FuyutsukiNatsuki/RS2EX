@@ -30,6 +30,7 @@ static unsigned int s_AlphaRef = 0;
 static RS2CompareFunc s_AlphaFunc = RS2_COMPARE_ALWAYS;
 
 static unsigned int s_DrawCount = 0;
+static unsigned int s_TexturedDrawCount = 0;
 static unsigned int s_RefusedCount = 0;
 
 static void RS2D3D12_Identity(float *m){
@@ -107,6 +108,7 @@ void RS2D3D12_ApplyInitialRenderState(){
 }
 
 unsigned int RS2D3D12_GetDrawCount(){ return s_DrawCount; }
+unsigned int RS2D3D12_GetTexturedDrawCount(){ return s_TexturedDrawCount; }
 unsigned int RS2D3D12_GetRefusedDrawCount(){ return s_RefusedCount; }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -369,6 +371,7 @@ void RS2D3D12_DrawImmediate(
 	backend->GetCommandList()->DrawInstanced(drawCount, 1, 0, 0);
 
 	s_DrawCount++;
+	if(key.textured) s_TexturedDrawCount++;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -631,6 +634,7 @@ void RS2D3D12_DrawBuffered(
 	backend->GetCommandList()->DrawInstanced(vertexCount, 1, firstVertex, 0);
 
 	s_DrawCount++;
+	if(key.textured) s_TexturedDrawCount++;
 }
 
 void RS2D3D12_DrawIndexed(
@@ -677,4 +681,5 @@ void RS2D3D12_DrawIndexed(
 	backend->GetCommandList()->DrawIndexedInstanced(indexCount, 1, firstIndex, 0, 0);
 
 	s_DrawCount++;
+	if(key.textured) s_TexturedDrawCount++;
 }

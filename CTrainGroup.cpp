@@ -705,10 +705,8 @@ bool CTrainGroup::Trail(
 	ITrainSetBuffer ibegin, iend;
 	if(m_Reverse){
 		ibegin = --m_SetBuffer.end();
-		iend = --m_SetBuffer.begin();
-		// 本来 std::list の --begin() は許可されないが、実質動くのでとりあえずこのまま。
-		// VC2010 だと怒られるので /D "_HAS_ITERATOR_DEBUGGING=0" してなんとか回避。
-		// ただし libcpmtd.lib の代わりに libcpmt.lib をリンクする必要がある。
+		// The reverse end is a valid iterator; --begin() was undefined.
+		iend = m_SetBuffer.end();
 	}else{
 		ibegin = m_SetBuffer.begin();
 		iend = m_SetBuffer.end();
@@ -720,9 +718,9 @@ bool CTrainGroup::Trail(
 	bool ret;
 	if(ret = m_Reverse
 		? head.m_SetRail->SetTrain(!head.m_Side, head.m_Offset+ibegin->m_SumLen,
-			tail, 1, &ibegin, &iend, this, extend, hittest)
+			tail, 1, &ibegin, &iend, m_SetBuffer.begin(), this, extend, hittest)
 		: head.m_SetRail->SetTrain(!head.m_Side, head.m_Offset,
-			tail, 0, &ibegin, &iend, this, extend, hittest)){
+			tail, 0, &ibegin, &iend, m_SetBuffer.begin(), this, extend, hittest)){
 		tail->m_Side = !tail->m_Side;
 		tail->m_Offset = tail->m_SetRail->GetSegLen()-tail->m_Offset;
 	}else{
@@ -1352,7 +1350,8 @@ void CTrainGroup::Save(
 		fprintf(df, "\t\tCurrentSpeed = %f;\n", m_CurrentSpeed);
 		fprintf(df, "\t\tStopTarget = %f;\n", m_StopTarget);
 		fprintf(df, "\t\tDepartureTime = %p, %p;\n",
-			*(PDWORD)&m_DepartureTime, *((PDWORD)&m_DepartureTime+1));
+			(void *)(ULONG_PTR)*(PDWORD)&m_DepartureTime,
+			(void *)(ULONG_PTR)*((PDWORD)&m_DepartureTime+1));
 		fprintf(df, "\t\tDoorWait = %d;\n", m_DoorWait);
 		fprintf(df, "\t\tOpenDoor = %s, %s;\n", YESNO[m_OpenDoor[0]], YESNO[m_OpenDoor[1]]);
 		fprintf(df, "\t\tReverse = %s;\n", YESNO[m_Reverse]);

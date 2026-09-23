@@ -91,6 +91,7 @@ void RS2D3D12_DrawIndexed(
  *	that is drawing something invisible, and this tells the two apart.
  */
 unsigned int RS2D3D12_GetDrawCount();
+unsigned int RS2D3D12_GetTexturedDrawCount();
 
 /*
  *	How many draws were refused, for any reason.

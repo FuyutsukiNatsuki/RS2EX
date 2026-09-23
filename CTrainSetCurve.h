@@ -14,9 +14,10 @@ private:
 	CGroupEndLocator *m_Tail;		//	終端格納先
 	ITrainSetBuffer *m_Current;		//	現在位置
 	ITrainSetBuffer *m_End;			//	終了位置
+	ITrainSetBuffer m_First;			//	first valid node in reverse traversal
 public:
 	CTrainSetCurve(CRailPlugin *, CTiePlugin *, CGirderPlugin *,
-		bool, CGroupEndLocator, CGroupEndLocator *, ITrainSetBuffer *, ITrainSetBuffer *);
+		bool, CGroupEndLocator, CGroupEndLocator *, ITrainSetBuffer *, ITrainSetBuffer *, ITrainSetBuffer);
 	bool Confirm(VEC3 &, VEC3 &){ return *m_Current!=*m_End; }
 	void FinishTrace(
 		VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &, VEC3 &,

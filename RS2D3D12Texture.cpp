@@ -6,6 +6,7 @@
 #include "stdafx.h"
 #include "RS2D3D12Texture.h"
 #include "RS2D3D12Backend.h"
+#include "RS2D3D12Unsupported.h"
 #include "RS2TextureResource.h"
 
 struct RS2D3D12TexturePayload
@@ -30,6 +31,7 @@ static unsigned int s_LiveTextures = 0;
 static unsigned int s_PeakTextures = 0;
 static RS2D3D12TexturePayload *s_BoundTexture = 0;
 static RS2TextureFilter s_Stage0Filter = RS2_FILTER_POINT;
+static RS2D3D12TextureRuntimeStats s_RuntimeStats;
 
 static bool RS2D3D12TextureError(std::string *error, const char *what, HRESULT hr){
 	char text[256];
@@ -63,6 +65,12 @@ static const RS2TexturePayloadOps s_TextureOps = {
 const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps(){ return &s_TextureOps; }
 unsigned int RS2D3D12_GetLiveTextureCount(){ return s_LiveTextures; }
 unsigned int RS2D3D12_GetPeakTextureCount(){ return s_PeakTextures; }
+void RS2D3D12_ResetTextureRuntimeStats(){
+	ZeroMemory(&s_RuntimeStats, sizeof(s_RuntimeStats));
+}
+const RS2D3D12TextureRuntimeStats &RS2D3D12_GetTextureRuntimeStats(){
+	return s_RuntimeStats;
+}
 
 void RS2D3D12_ResetTextureBinding(){
 	s_BoundTexture = 0;
@@ -71,12 +79,18 @@ void RS2D3D12_ResetTextureBinding(){
 
 void RS2D3D12_BindTexture(unsigned int stage, const RS2TextureRef &texture){
 	if(stage!=0){
-		Debug("[RS2EX D3D12 Texture] Stage %u is not supported\n", stage);
+		s_RuntimeStats.otherStageBinds++;
+		RS2D3D12Unsupported("RS2BindTexture(stage>0)");
 		return;
 	}
 	const CRS2TextureResource *resource = texture.GetResource();
-	if(!resource){ s_BoundTexture = 0; return; }
+	if(!resource){
+		s_RuntimeStats.stage0Unbinds++;
+		s_BoundTexture = 0;
+		return;
+	}
 	if(!resource->IsOwnedByBackend(RS2_RENDERER_D3D12)){
+		s_RuntimeStats.rejectedBinds++;
 		Debug("[RS2EX D3D12 Texture] bind rejected a foreign texture\n");
 		s_BoundTexture = 0;
 		return;
@@ -86,13 +100,23 @@ void RS2D3D12_BindTexture(unsigned int stage, const RS2TextureRef &texture){
 	s_BoundTexture = payload && payload->owner==RS2D3D12GetActiveBackend()
 		&& payload->owner && payload->owner->GetDescriptors()->IsLive(payload->slot)
 		? payload : 0;
+	if(s_BoundTexture) s_RuntimeStats.stage0Binds++;
+	else s_RuntimeStats.rejectedBinds++;
 }
 
 void RS2D3D12_SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
-	if(stage!=0 || (filter!=RS2_FILTER_POINT && filter!=RS2_FILTER_LINEAR)){
-		Debug("[RS2EX D3D12 Texture] unsupported filter or stage\n");
+	if(stage!=0){
+		s_RuntimeStats.rejectedFilters++;
+		RS2D3D12Unsupported("RS2SetTextureFilter(stage>0)");
 		return;
 	}
+	if(filter!=RS2_FILTER_POINT && filter!=RS2_FILTER_LINEAR){
+		s_RuntimeStats.rejectedFilters++;
+		RS2D3D12Unsupported("RS2SetTextureFilter(invalid filter)");
+		return;
+	}
+	if(filter==RS2_FILTER_LINEAR) s_RuntimeStats.linearFilters++;
+	else s_RuntimeStats.pointFilters++;
 	s_Stage0Filter = filter;
 }
 
@@ -116,6 +140,8 @@ static bool RS2D3D12_CreatePublicTexture(
 	if(!outPayload || !width || !height) return false;
 	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
 	if(!backend) return false;
+	if(fromResource) s_RuntimeStats.resourceAttempts++;
+	else s_RuntimeStats.fileAttempts++;
 	CRS2DecodedImage image;
 	std::string error;
 	const bool decoded = fromResource
@@ -145,6 +171,8 @@ static bool RS2D3D12_CreatePublicTexture(
 	*width = (int)image.GetWidth();
 	*height = (int)image.GetHeight();
 	*outPayload = payload;
+	if(fromResource) s_RuntimeStats.resourceSuccesses++;
+	else s_RuntimeStats.fileSuccesses++;
 	return true;
 }
 

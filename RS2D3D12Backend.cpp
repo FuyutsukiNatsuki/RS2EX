@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include "RS2D3D12Backend.h"
 #include "RS2D3D12Draw.h"
+#include "RS2D3D12Unsupported.h"
 
 //	The same inputs the Direct3D 8 backend consults, so both backends
 //	answer "windowed or not" the same way.
@@ -682,6 +683,7 @@ void CRS2D3D12Backend::PublishCompatibilityState(){
  */
 bool CRS2D3D12Backend::Initialize(int width, int height){
 	RS2D3D12_EnableDebugLayer();
+	RS2D3D12_ResetTextureRuntimeStats();
 
 	//	A window with no area cannot have a swap chain, and asking for one
 	//	is how a minimised start-up turns into a failure instead of a wait.
@@ -768,6 +770,7 @@ void CRS2D3D12Backend::RetireTexture(
  *	Initialize().
  */
 void CRS2D3D12Backend::Shutdown(){
+	const bool sceneAudit = m_Device && CheckArguments("-dx12sceneaudit")!=FALSE;
 	if(s_Active==this) s_Active = 0;
 	RS2D3D12_ResetTextureBinding();
 
@@ -779,6 +782,36 @@ void CRS2D3D12Backend::Shutdown(){
 		m_Descriptors.Free(retired.slot);
 		RELEASE(retired.resource);
 		m_RetiredTextures.pop_front();
+	}
+	if(sceneAudit && m_Device){
+		m_TextureUpload.WaitForAll();
+		const RS2D3D12TextureRuntimeStats &stats =
+			RS2D3D12_GetTextureRuntimeStats();
+		const unsigned int attempts = stats.fileAttempts+stats.resourceAttempts;
+		const unsigned int successes = stats.fileSuccesses+stats.resourceSuccesses;
+		const unsigned int errors = HasDebugLayer()
+			? CountDebugMessages(D3D12_MESSAGE_SEVERITY_ERROR) : 0;
+		const unsigned int warnings = HasDebugLayer()
+			? CountDebugMessages(D3D12_MESSAGE_SEVERITY_WARNING) : 0;
+		Debug("RS2D3D12SCENE|backend=%s|windowed=%u|infoQueue=%u\n",
+			GetName(),m_Windowed ? 1u : 0u,HasDebugLayer() ? 1u : 0u);
+		Debug("RS2D3D12SCENE|texture attempts=%u success=%u failed=%u file=%u/%u resource=%u/%u\n",
+			attempts,successes,attempts-successes,
+			stats.fileSuccesses,stats.fileAttempts,
+			stats.resourceSuccesses,stats.resourceAttempts);
+		Debug("RS2D3D12SCENE|stage0 bind=%u unbind=%u rejected=%u otherStage=%u point=%u linear=%u rejectedFilter=%u\n",
+			stats.stage0Binds,stats.stage0Unbinds,stats.rejectedBinds,
+			stats.otherStageBinds,stats.pointFilters,stats.linearFilters,
+			stats.rejectedFilters);
+		Debug("RS2D3D12SCENE|textures live=%u peak=%u descriptors live=%u peak=%u/%u uploadBytes=%llu pending=%u\n",
+			RS2D3D12_GetLiveTextureCount(),RS2D3D12_GetPeakTextureCount(),
+			m_Descriptors.GetLive(),m_Descriptors.GetPeak(),m_Descriptors.GetCapacity(),
+			(unsigned long long)m_TextureUpload.GetSubmittedBytes(),
+			m_TextureUpload.GetPendingCount());
+		Debug("RS2D3D12SCENE|draws=%u textured=%u refused=%u pso=%u unsupported=%u errors=%u warnings=%u\n",
+			RS2D3D12_GetDrawCount(),RS2D3D12_GetTexturedDrawCount(),
+			RS2D3D12_GetRefusedDrawCount(),m_Pipeline.GetStateCount(),
+			RS2D3D12UnsupportedCount(),errors,warnings);
 	}
 	m_TextureUpload.Destroy();
 	m_Descriptors.Destroy();
@@ -851,6 +884,9 @@ void CRS2D3D12Backend::Shutdown(){
 		m_Device = 0;
 		m_DeviceReferencesAfterShutdown = (unsigned int)remaining;
 	}
+	if(sceneAudit)
+		Debug("RS2D3D12SCENE|shutdownReferences=%u\n",
+			m_DeviceReferencesAfterShutdown);
 
 	RELEASE(m_Factory);
 

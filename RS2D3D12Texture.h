@@ -67,6 +67,18 @@ const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps();
 unsigned int RS2D3D12_GetLiveTextureCount();
 unsigned int RS2D3D12_GetPeakTextureCount();
 
+// Per-backend observations for WP9's real-scene re-inventory. These counters
+// do not change texture policy and are reset when a new backend starts.
+struct RS2D3D12TextureRuntimeStats
+{
+	unsigned int fileAttempts, fileSuccesses;
+	unsigned int resourceAttempts, resourceSuccesses;
+	unsigned int stage0Binds, stage0Unbinds, rejectedBinds, otherStageBinds;
+	unsigned int pointFilters, linearFilters, rejectedFilters;
+};
+void RS2D3D12_ResetTextureRuntimeStats();
+const RS2D3D12TextureRuntimeStats &RS2D3D12_GetTextureRuntimeStats();
+
 bool RS2D3D12_GetBoundTexture(
 	CRS2D3D12Backend *backend, RS2D3D12SrvSlot *slot, RS2TextureFilter *filter);
 

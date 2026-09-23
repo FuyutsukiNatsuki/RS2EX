@@ -42,6 +42,21 @@ python tools/texture_smoke_check.py path\to\texture-smoke.png
 The checker verifies 60 interior pixels. The linear-filter panel allows a
 one-channel rounding difference; all other samples are exact.
 
+## WP9 real-scene texture detail
+
+Run the accepted fixture with `-dx12 -fixture -dx12sceneaudit -dbf` and capture
+it using `rs2shot.ps1`. At shutdown, `RS2D3D12SCENE` lines report texture
+attempts/successes, Stage 0 binds and filters, texture/descriptor lifetime,
+textured draws, unsupported calls, InfoQueue messages, and final device refs.
+To measure the windowed image against the accepted v0.1.1 textureless capture:
+
+```
+python tools/texture_scene_check.py path\to\v011-textureless.png path\to\wp9-windowed.png
+```
+
+It checks a fixed ground region where the old D3D12 renderer was white and the
+Stage 0 renderer shows detailed grass. It does not claim full visual parity.
+
 ## WP7 alpha probe
 
 `-dx12 -dx12alphasmoke` draws a 6-column by 3-row grid from a known-alpha
