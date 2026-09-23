@@ -98,10 +98,84 @@ if ($argList.Count) {
     $proc = Start-Process -FilePath $exePath -WorkingDirectory $workDir -PassThru
 }
 
+#   Wait until this run has logged the marker.  Both display modes need it:
+#   a fixed settle time photographs the loading screen whenever loading is
+#   slower than usual, and closing the program mid-load ends in a forced
+#   kill that loses its shutdown lines.
+function Wait-RS2Marker {
+    $deadline = (Get-Date).AddSeconds($WaitForLogSeconds)
+    $seen = $false
+
+    while ((Get-Date) -lt $deadline) {
+        $proc.Refresh()
+        if ($proc.HasExited) { throw "the program exited before logging '$WaitForLog'" }
+        if (Test-Path $log) {
+            try {
+                $stream = [System.IO.File]::Open(
+                    $log,
+                    [System.IO.FileMode]::Open,
+                    [System.IO.FileAccess]::Read,
+                    [System.IO.FileShare]::ReadWrite)
+                try {
+                    $start = [Math]::Min($logStartBytes, $stream.Length)
+                    if ($stream.Length -gt $start) {
+                        $null = $stream.Seek($start, [System.IO.SeekOrigin]::Begin)
+                        $bytes = New-Object byte[] ($stream.Length - $start)
+                        $read = $stream.Read($bytes, 0, $bytes.Length)
+
+                        # The marker is ASCII. Reading only bytes appended by
+                        # this process prevents an earlier run from satisfying
+                        # the wait. FileShare.ReadWrite is essential: Debug()
+                        # appends one line at a time and must not be blocked.
+                        $newLog = [System.Text.Encoding]::ASCII.GetString(
+                            $bytes, 0, $read)
+                        if ($newLog.Contains($WaitForLog)) {
+                            $proc.Refresh()
+                            Write-Host ("marker '{0}' seen ({1} appended bytes, exited={2})" -f `
+                                $WaitForLog, $read, $proc.HasExited)
+                            $seen = $true
+                            break
+                        }
+                    }
+                } finally {
+                    $stream.Dispose()
+                }
+            } catch [System.IO.IOException] {
+                # Debug() opens and closes the file for every line. If this
+                # poll overlaps a write, retry on the next interval.
+            }
+        }
+        Start-Sleep -Milliseconds 200
+    }
+    if (-not $seen) {
+        #   RailSim only advances while its window is active: the
+        #   message loop calls WaitMessage() otherwise, so a window
+        #   that never gets activation loads, draws nothing and never
+        #   reaches the fixture's first tick.  The program logs the
+        #   change in Japanese; the bytes below are "<hi-akutibu>"
+        #   ("inactive") in CP932, matched as bytes so this file
+        #   stays ASCII.  Latin-1 maps every byte to one character.
+        $latin1 = [System.Text.Encoding]::GetEncoding(28591)
+        $inactive = $latin1.GetString([byte[]](
+            0x3c, 0x94, 0xf1, 0x83, 0x41, 0x83, 0x4e, 0x83, 0x65, 0x83, 0x42, 0x83, 0x75, 0x3e))
+        $hint = ""
+        try {
+            $all = [System.IO.File]::ReadAllBytes($log)
+            $start = [Math]::Min($logStartBytes, $all.Length)
+            $tail = $latin1.GetString($all, $start, $all.Length - $start)
+            if ($tail.Contains($inactive) -and -not $tail.Contains("[RS2EX Fixture]")) {
+                $hint = " - the window went inactive and the program paused; retry with nothing else taking focus"
+            }
+        } catch {}
+        throw "'$WaitForLog' did not appear within ${WaitForLogSeconds}s$hint"
+    }
+}
+
 $windowHandle = [IntPtr]::Zero
 
 try {
     if ($Fullscreen) {
+        if ($WaitForLog) { Wait-RS2Marker }
         Start-Sleep -Seconds $Settle
         $proc.Refresh()
         if ($proc.HasExited) { throw "the program exited during start-up" }
@@ -131,74 +205,7 @@ try {
         }
         if ($windowHandle -eq 0) { throw "no window appeared within ${TimeoutSeconds}s" }
 
-        if ($WaitForLog) {
-            $deadline = (Get-Date).AddSeconds($WaitForLogSeconds)
-            $seen = $false
-
-            while ((Get-Date) -lt $deadline) {
-                $proc.Refresh()
-                if ($proc.HasExited) { throw "the program exited before logging '$WaitForLog'" }
-                if (Test-Path $log) {
-                    try {
-                        $stream = [System.IO.File]::Open(
-                            $log,
-                            [System.IO.FileMode]::Open,
-                            [System.IO.FileAccess]::Read,
-                            [System.IO.FileShare]::ReadWrite)
-                        try {
-                            $start = [Math]::Min($logStartBytes, $stream.Length)
-                            if ($stream.Length -gt $start) {
-                                $null = $stream.Seek($start, [System.IO.SeekOrigin]::Begin)
-                                $bytes = New-Object byte[] ($stream.Length - $start)
-                                $read = $stream.Read($bytes, 0, $bytes.Length)
-
-                                # The marker is ASCII. Reading only bytes appended by
-                                # this process prevents an earlier run from satisfying
-                                # the wait. FileShare.ReadWrite is essential: Debug()
-                                # appends one line at a time and must not be blocked.
-                                $newLog = [System.Text.Encoding]::ASCII.GetString(
-                                    $bytes, 0, $read)
-                                if ($newLog.Contains($WaitForLog)) {
-                                    $proc.Refresh()
-                                    Write-Host ("marker '{0}' seen ({1} appended bytes, exited={2})" -f `
-                                        $WaitForLog, $read, $proc.HasExited)
-                                    $seen = $true
-                                    break
-                                }
-                            }
-                        } finally {
-                            $stream.Dispose()
-                        }
-                    } catch [System.IO.IOException] {
-                        # Debug() opens and closes the file for every line. If this
-                        # poll overlaps a write, retry on the next interval.
-                    }
-                }
-                Start-Sleep -Milliseconds 200
-            }
-            if (-not $seen) {
-                #   RailSim only advances while its window is active: the
-                #   message loop calls WaitMessage() otherwise, so a window
-                #   that never gets activation loads, draws nothing and never
-                #   reaches the fixture's first tick.  The program logs the
-                #   change in Japanese; the bytes below are "<hi-akutibu>"
-                #   ("inactive") in CP932, matched as bytes so this file
-                #   stays ASCII.  Latin-1 maps every byte to one character.
-                $latin1 = [System.Text.Encoding]::GetEncoding(28591)
-                $inactive = $latin1.GetString([byte[]](
-                    0x3c, 0x94, 0xf1, 0x83, 0x41, 0x83, 0x4e, 0x83, 0x65, 0x83, 0x42, 0x83, 0x75, 0x3e))
-                $hint = ""
-                try {
-                    $all = [System.IO.File]::ReadAllBytes($log)
-                    $start = [Math]::Min($logStartBytes, $all.Length)
-                    $tail = $latin1.GetString($all, $start, $all.Length - $start)
-                    if ($tail.Contains($inactive) -and -not $tail.Contains("[RS2EX Fixture]")) {
-                        $hint = " - the window went inactive and the program paused; retry with nothing else taking focus"
-                    }
-                } catch {}
-                throw "'$WaitForLog' did not appear within ${WaitForLogSeconds}s$hint"
-            }
-        }
+        if ($WaitForLog) { Wait-RS2Marker }
 
         Start-Sleep -Seconds $Settle
 
