@@ -8,6 +8,7 @@
 #include "..\RS2D3D12DrawSmoke.h"
 #include "..\RS2LightingProbe.h"
 #include "..\RS2StageProbe.h"
+#include "..\RS2D3D12Stage1Smoke.h"
 
 /*
  *	コンパイル・オプション
@@ -32,6 +33,7 @@
  *	-dx12drawsmoke:RS2EX: draw through the RS2 boundary and exit.
  *	-lightingprobe:RS2EX: draw the material / lighting probe and exit.
  *	-stageprobe:RS2EX: draw the texture-stage / environment / UV probe and exit.
+ *	-dx12stage1smoke:RS2EX: stage 1 / environment / UV through the boundary; exit.
  *	/3ds	:3Dサウンドを使用しない。
  *	/fx		:サウンドにエフェクトを使用しない。
  */
@@ -129,6 +131,10 @@ BOOL CApp::Init(HINSTANCE hInst){
 	}
 	if(RS2StageProbeRequested()){
 		RS2StageProbeRun();
+		return FALSE;
+	}
+	if(RS2D3D12Stage1SmokeRequested()){
+		RS2D3D12Stage1SmokeRun();
 		return FALSE;
 	}
 	if(!InitDirectInput()) return FALSE;
