@@ -88,5 +88,6 @@ bool RS2DecodedImageSmoke();
 
 // Smoke-only fixture: 2x2 palette PNG with known alpha bytes 255, 128, 0.
 bool RS2WriteKnownAlphaPngFixture(const char *path);
+bool RS2WriteColourKeyPngFixture(const char *path);
 
 #endif	//	RS2DECODEDIMAGE_H_INCLUDED

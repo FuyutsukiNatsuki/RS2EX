@@ -14,6 +14,7 @@
 
 #include "stdafx.h"
 #include "RS2D3D12DrawSmoke.h"
+#include "RS2D3D12TextureSmoke.h"
 #include "RS2D3D12Draw.h"
 #include "RS2Renderer.h"
 #include "RS2Draw.h"
@@ -65,7 +66,8 @@ struct RS2DrawSmokeVertexSUV
 
 bool RS2D3D12DrawSmokeRequested(){
 	return CheckArguments("-dx12drawsmoke")!=FALSE
-		|| CheckArguments("-dx12alphasmoke")!=FALSE;
+		|| CheckArguments("-dx12alphasmoke")!=FALSE
+		|| RS2D3D12TextureSmokeRequested();
 }
 
 static bool RS2D3D12AlphaSmokeRun();
@@ -100,6 +102,7 @@ static void RS2DrawSmokeIdentity(float *m){
 }
 
 bool RS2D3D12DrawSmokeRun(){
+	if(RS2D3D12TextureSmokeRequested()) return RS2D3D12TextureSmokeRun();
 	if(GetRS2Renderer().GetBackendType()!=RS2_RENDERER_D3D12){
 		Debug("RS2D3D12DRAW|this test needs -dx12; the active backend is %s\n",
 			GetRS2Renderer().GetBackendName());

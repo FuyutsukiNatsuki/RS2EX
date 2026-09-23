@@ -25,6 +25,23 @@ So: two tools here, and a fixture mode in the program itself.
 | `scenecheck.py` | measure whether a screenshot still has a scene in it |
 | `rs2state.ps1` | pin the world a fixture capture starts from |
 
+## WP8 Stage 0 texture probe
+
+`-dx12 -dx12texturesmoke` draws a 4-column by 3-row grid through the public
+texture, state and draw APIs for 300 frames. It covers file and resource
+textures, bind persistence and unbind, point/linear filtering, alpha test
+off/on, colour key, and untextured fallback. The log also checks invalid
+sources, 130 public create/destroy cycles (more than the 128 SRV slots),
+in-flight descriptor retirement, draw/refusal counts, upload bytes and
+live-count baselines. Check its screenshot with:
+
+```
+python tools/texture_smoke_check.py path\to\texture-smoke.png
+```
+
+The checker verifies 60 interior pixels. The linear-filter panel allows a
+one-channel rounding difference; all other samples are exact.
+
 ## WP7 alpha probe
 
 `-dx12 -dx12alphasmoke` draws a 6-column by 3-row grid from a known-alpha

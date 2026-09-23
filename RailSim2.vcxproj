@@ -217,6 +217,7 @@
     <ClCompile Include="RS2D3D12Pipeline.cpp" />
     <ClCompile Include="RS2D3D12Draw.cpp" />
     <ClCompile Include="RS2D3D12DrawSmoke.cpp" />
+    <ClCompile Include="RS2D3D12TextureSmoke.cpp" />
     <ClCompile Include="RS2D3D12Upload.cpp" />
     <ClCompile Include="RS2D3D12Texture.cpp" />
     <ClCompile Include="RS2D3D12Descriptors.cpp" />
@@ -473,6 +474,7 @@
     <ClInclude Include="RS2D3D12Pipeline.h" />
     <ClInclude Include="RS2D3D12Draw.h" />
     <ClInclude Include="RS2D3D12DrawSmoke.h" />
+    <ClInclude Include="RS2D3D12TextureSmoke.h" />
     <ClInclude Include="RS2D3D12Upload.h" />
     <ClInclude Include="RS2D3D12Texture.h" />
     <ClInclude Include="RS2D3D12Descriptors.h" />

@@ -14,7 +14,7 @@
 #define RS2D3D12DRAWSMOKE_H_INCLUDED
 
 /*
- *	Whether -dx12drawsmoke was given.
+ *	Whether a public draw, alpha, or texture smoke was requested.
  */
 bool RS2D3D12DrawSmokeRequested();
 

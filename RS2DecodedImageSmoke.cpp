@@ -62,6 +62,11 @@ bool RS2WriteKnownAlphaPngFixture(const char *path){
 		path, s_IndexedPngFixture, sizeof(s_IndexedPngFixture));
 }
 
+bool RS2WriteColourKeyPngFixture(const char *path){
+	return path && RS2WriteDecodedFixture(
+		path, s_PngFixture, sizeof(s_PngFixture));
+}
+
 static bool RS2DecodedPixelEquals(
 	const CRS2DecodedImage &image,
 	unsigned int mipIndex,
@@ -104,8 +109,7 @@ bool RS2DecodedImageSmoke(){
 	DeleteFileA(bmpPath);
 	DeleteFileA(indexedPath);
 	bool allPassed = true;
-	bool passed = RS2WriteDecodedFixture(
-		pngPath, s_PngFixture, sizeof(s_PngFixture));
+	bool passed = RS2WriteColourKeyPngFixture(pngPath);
 	passed = RS2WriteDecodedFixture(
 		bmpPath, s_BmpFixture, sizeof(s_BmpFixture)) && passed;
 	passed = RS2WriteKnownAlphaPngFixture(indexedPath) && passed;
