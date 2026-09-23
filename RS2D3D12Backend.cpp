@@ -813,6 +813,16 @@ void CRS2D3D12Backend::Shutdown(){
 			stats.ddsBC1,stats.ddsBC3,stats.ddsMipShortfalls,
 			stats.ddsUploadBytes,RS2D3D12_GetLiveDDSTextureCount(),
 			RS2D3D12_GetPeakDDSTextureCount(),RS2D3D12_GetDDSTexturedDrawCount());
+		{
+			const RS2D3D12LightingStats &light = RS2D3D12_GetLightingStats();
+
+			Debug("RS2D3D12SCENE|lighting material=%u lighting=%u ambient=%u light=%u specular=%u diffuseSource=%u ambientSource=%u\n",
+				light.materialCalls,light.lightingCalls,light.ambientCalls,light.lightCalls,
+				light.specularCalls,light.diffuseSourceCalls,light.ambientSourceCalls);
+			Debug("RS2D3D12SCENE|lit draws=%u unlit=%u litNormal=%u litNoNormal=%u specularDraws=%u\n",
+				light.litDraws,light.unlitDraws,light.litNormalDraws,light.litNoNormalDraws,
+				light.specularDraws);
+		}
 		Debug("RS2D3D12SCENE|stage0 bind=%u unbind=%u rejected=%u otherStage=%u point=%u linear=%u rejectedFilter=%u\n",
 			stats.stage0Binds,stats.stage0Unbinds,stats.rejectedBinds,
 			stats.otherStageBinds,stats.pointFilters,stats.linearFilters,

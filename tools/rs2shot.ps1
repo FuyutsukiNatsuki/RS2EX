@@ -176,7 +176,28 @@ try {
                 }
                 Start-Sleep -Milliseconds 200
             }
-            if (-not $seen) { throw "'$WaitForLog' did not appear within ${WaitForLogSeconds}s" }
+            if (-not $seen) {
+                #   RailSim only advances while its window is active: the
+                #   message loop calls WaitMessage() otherwise, so a window
+                #   that never gets activation loads, draws nothing and never
+                #   reaches the fixture's first tick.  The program logs the
+                #   change in Japanese; the bytes below are "<hi-akutibu>"
+                #   ("inactive") in CP932, matched as bytes so this file
+                #   stays ASCII.  Latin-1 maps every byte to one character.
+                $latin1 = [System.Text.Encoding]::GetEncoding(28591)
+                $inactive = $latin1.GetString([byte[]](
+                    0x3c, 0x94, 0xf1, 0x83, 0x41, 0x83, 0x4e, 0x83, 0x65, 0x83, 0x42, 0x83, 0x75, 0x3e))
+                $hint = ""
+                try {
+                    $all = [System.IO.File]::ReadAllBytes($log)
+                    $start = [Math]::Min($logStartBytes, $all.Length)
+                    $tail = $latin1.GetString($all, $start, $all.Length - $start)
+                    if ($tail.Contains($inactive) -and -not $tail.Contains("[RS2EX Fixture]")) {
+                        $hint = " - the window went inactive and the program paused; retry with nothing else taking focus"
+                    }
+                } catch {}
+                throw "'$WaitForLog' did not appear within ${WaitForLogSeconds}s$hint"
+            }
         }
 
         Start-Sleep -Seconds $Settle

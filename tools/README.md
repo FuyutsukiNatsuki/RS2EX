@@ -230,6 +230,14 @@ with four others:
   instead; under `-fixture` the marker is `world stopped`, which only appears
   once the layout is loaded and the world has been stopped.
 
+- **The window has to be active.** RailSim's message loop only runs the game
+  while its window is active and calls `WaitMessage()` otherwise. A window
+  that never gets activation - something else took the focus as it opened -
+  loads the layout, then never runs a tick, so the fixture never stops and the
+  wait times out. `rs2shot.ps1` says so when the log shows the window went
+  inactive before the fixture's first line. It is a pause, not a renderer
+  fault: retry with nothing else taking the focus.
+
 A short settle after the marker is still wanted: the camera converges on its
 target over frames, and capturing immediately left a few dozen pixels
 different between runs. Eight seconds is enough here.
