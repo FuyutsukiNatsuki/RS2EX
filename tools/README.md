@@ -25,6 +25,32 @@ So: two tools here, and a fixture mode in the program itself.
 | `scenecheck.py` | measure whether a screenshot still has a scene in it |
 | `rs2state.ps1` | pin the world a fixture capture starts from |
 | `lighting_probe_check.py` | read a `-lightingprobe` capture against the fixed-function formula, or against another backend's capture |
+| `dds_smoke_check.py` | compare a `-dx12ddssmoke` capture with the pixels the smoke logged as expected |
+
+## DDS smoke
+
+`-dx12 -dx12ddssmoke` writes DDS files from single-colour BC1 and BC3 blocks,
+creates them with `RS2CreateTextureFromFile`, binds them at Stage 0 and draws
+23 checked pixels: every block colour, punch-through and interpolated alpha
+with alpha test and blending, three stored mips selected by quad size and the
+last one clamped, a one-level request on the same file, point and linear
+across a block seam, and one draw that combines a DDS, a material and the
+directional light. The expected colours are exact arithmetic (a 565 channel
+expands by bit replication) and the smoke logs them, so the checker only
+compares:
+
+```
+RailSim2_Release_vc2010.exe -win -dx12 -dx12ddssmoke -dbf
+python tools/dds_smoke_check.py dds.png dds.log
+```
+
+The log also judges six refused files (bad magic, short header, short
+payload, DXT3, cubemap, a colour key), creation and destruction past the
+descriptor heap's capacity, a DDS destroyed while in flight, no new pipeline
+state after the first frame, and InfoQueue errors and warnings.
+
+Run under `-dx12`, the lighting probe also judges that 120 frames of changing
+materials and lights build no pipeline state after the first frame.
 
 ## Material / lighting probe
 

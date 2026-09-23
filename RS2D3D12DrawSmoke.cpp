@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	The first visible Direct3D 12 draw, through the public boundary.
 //
@@ -15,6 +16,7 @@
 #include "stdafx.h"
 #include "RS2D3D12DrawSmoke.h"
 #include "RS2D3D12TextureSmoke.h"
+#include "RS2D3D12DDSSmoke.h"
 #include "RS2D3D12Draw.h"
 #include "RS2Renderer.h"
 #include "RS2Draw.h"
@@ -67,7 +69,8 @@ struct RS2DrawSmokeVertexSUV
 bool RS2D3D12DrawSmokeRequested(){
 	return CheckArguments("-dx12drawsmoke")!=FALSE
 		|| CheckArguments("-dx12alphasmoke")!=FALSE
-		|| RS2D3D12TextureSmokeRequested();
+		|| RS2D3D12TextureSmokeRequested()
+		|| RS2D3D12DDSSmokeRequested();
 }
 
 static bool RS2D3D12AlphaSmokeRun();
@@ -112,6 +115,7 @@ static bool RS2DrawSmokeIsIdentity(const MTX4 &matrix){
 
 bool RS2D3D12DrawSmokeRun(){
 	if(RS2D3D12TextureSmokeRequested()) return RS2D3D12TextureSmokeRun();
+	if(RS2D3D12DDSSmokeRequested()) return RS2D3D12DDSSmokeRun();
 	if(GetRS2Renderer().GetBackendType()!=RS2_RENDERER_D3D12){
 		Debug("RS2D3D12DRAW|this test needs -dx12; the active backend is %s\n",
 			GetRS2Renderer().GetBackendName());

@@ -27,6 +27,7 @@
 #include "RS2TextureResource.h"
 #include "RS2DecodedImage.h"
 #include "RS2D3D12Draw.h"
+#include "RS2D3D12Backend.h"
 
 #include <stdio.h>
 
@@ -354,6 +355,9 @@ bool RS2LightingProbeRun(){
 
 	const unsigned int drawBaseline = d3d12 ? RS2D3D12_GetDrawCount() : 0;
 	const unsigned int refusedBaseline = d3d12 ? RS2D3D12_GetRefusedDrawCount() : 0;
+	const RS2D3D12LightingStats lightingBaseline = RS2D3D12_GetLightingStats();
+	CRS2D3D12Backend *backend = d3d12 ? RS2D3D12GetActiveBackend() : 0;
+	unsigned int pipelinesAfterFirst = 0;
 	bool framesOk = true;
 	unsigned char vertices[4*64];
 
@@ -438,6 +442,11 @@ bool RS2LightingProbeRun(){
 		RS2BindTexture(0, RS2TextureRef());
 		GetRS2Renderer().EndRenderPass();
 		GetRS2Renderer().Present();
+
+		//	Every material, light and colour-source combination has been
+		//	drawn once by now.  Frames after this change all of them again
+		//	and must not build a single pipeline state.
+		if(frame==0 && backend) pipelinesAfterFirst = backend->GetPipelineStateCount();
 	}
 
 	//	What the engine's start-up leaves behind, so nothing downstream of a
@@ -459,9 +468,33 @@ bool RS2LightingProbeRun(){
 	if(d3d12){
 		const unsigned int submitted = RS2D3D12_GetDrawCount()-drawBaseline;
 		const unsigned int refused = RS2D3D12_GetRefusedDrawCount()-refusedBaseline;
+		const RS2D3D12LightingStats &stats = RS2D3D12_GetLightingStats();
+		const unsigned int materials = stats.materialCalls-lightingBaseline.materialCalls;
+		const unsigned int lit = stats.litDraws-lightingBaseline.litDraws;
+		const unsigned int unlit = stats.unlitDraws-lightingBaseline.unlitDraws;
+		const unsigned int noNormal = stats.litNoNormalDraws-lightingBaseline.litNoNormalDraws;
+		const unsigned int pipelines = backend ? backend->GetPipelineStateCount() : 0;
+		const unsigned int errors = backend && backend->HasDebugLayer()
+			? backend->CountDebugMessages(D3D12_MESSAGE_SEVERITY_ERROR) : 0;
+		const unsigned int warnings = backend && backend->HasDebugLayer()
+			? backend->CountDebugMessages(D3D12_MESSAGE_SEVERITY_WARNING) : 0;
+
+		//	Per frame: 30 materials; 27 lit patches and 3 unlit ones; two of
+		//	the lit ones have no normal.
+		const bool statsOk = materials==(unsigned int)(RS2_PROBE_FRAMES*30)
+			&& lit==(unsigned int)(RS2_PROBE_FRAMES*27)
+			&& unlit==(unsigned int)(RS2_PROBE_FRAMES*3)
+			&& noNormal==(unsigned int)(RS2_PROBE_FRAMES*2);
 
 		Debug("RS2LIGHTPROBE|submitted=%u|refused=%u\n", submitted, refused);
-		ok = ok && refused==0 && submitted==(unsigned int)(RS2_PROBE_FRAMES*30);
+		Debug("RS2LIGHTPROBE|materials=%u|lit=%u|unlit=%u|litNoNormal=%u|%s\n",
+			materials, lit, unlit, noNormal, statsOk ? "pass" : "FAIL");
+		Debug("RS2LIGHTPROBE|pipelines=%u->%u|%s\n", pipelinesAfterFirst, pipelines,
+			pipelines==pipelinesAfterFirst ? "pass" : "FAIL");
+		Debug("RS2LIGHTPROBE|debug=%u|errors=%u|warnings=%u\n",
+			backend && backend->HasDebugLayer() ? 1u : 0u, errors, warnings);
+		ok = ok && refused==0 && submitted==(unsigned int)(RS2_PROBE_FRAMES*30)
+			&& statsOk && pipelines==pipelinesAfterFirst && errors==0 && warnings==0;
 	}
 
 	Debug("RS2LIGHTPROBE|%s\n", ok ? "pass" : "FAIL");
