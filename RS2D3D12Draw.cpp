@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	See RS2D3D12Draw.h.
 
@@ -31,6 +32,13 @@ static RS2CompareFunc s_AlphaFunc = RS2_COMPARE_ALWAYS;
 
 static unsigned int s_DrawCount = 0;
 static unsigned int s_TexturedDrawCount = 0;
+static unsigned int s_DDSTexturedDrawCount = 0;
+
+static void RS2D3D12_CountTextured(bool textured){
+	if(!textured) return;
+	s_TexturedDrawCount++;
+	if(RS2D3D12_BoundTextureIsDDS()) s_DDSTexturedDrawCount++;
+}
 static unsigned int s_RefusedCount = 0;
 
 static void RS2D3D12_Identity(float *m){
@@ -109,6 +117,7 @@ void RS2D3D12_ApplyInitialRenderState(){
 
 unsigned int RS2D3D12_GetDrawCount(){ return s_DrawCount; }
 unsigned int RS2D3D12_GetTexturedDrawCount(){ return s_TexturedDrawCount; }
+unsigned int RS2D3D12_GetDDSTexturedDrawCount(){ return s_DDSTexturedDrawCount; }
 unsigned int RS2D3D12_GetRefusedDrawCount(){ return s_RefusedCount; }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -371,7 +380,7 @@ void RS2D3D12_DrawImmediate(
 	backend->GetCommandList()->DrawInstanced(drawCount, 1, 0, 0);
 
 	s_DrawCount++;
-	if(key.textured) s_TexturedDrawCount++;
+	RS2D3D12_CountTextured(key.textured != 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -634,7 +643,7 @@ void RS2D3D12_DrawBuffered(
 	backend->GetCommandList()->DrawInstanced(vertexCount, 1, firstVertex, 0);
 
 	s_DrawCount++;
-	if(key.textured) s_TexturedDrawCount++;
+	RS2D3D12_CountTextured(key.textured != 0);
 }
 
 void RS2D3D12_DrawIndexed(
@@ -681,5 +690,5 @@ void RS2D3D12_DrawIndexed(
 	backend->GetCommandList()->DrawIndexedInstanced(indexCount, 1, firstIndex, 0, 0);
 
 	s_DrawCount++;
-	if(key.textured) s_TexturedDrawCount++;
+	RS2D3D12_CountTextured(key.textured != 0);
 }

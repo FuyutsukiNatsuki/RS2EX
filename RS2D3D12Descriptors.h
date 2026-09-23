@@ -8,8 +8,14 @@
 #include "RS2D3D12.h"
 #include "RS2RenderState.h"
 
-// WP0 measured 94 simultaneous immutable textures; 34 slots are headroom.
-#define RS2D3D12_SRV_CAPACITY 128
+// v0.1.2 WP0 measured 94 simultaneous immutable textures and chose 128.
+// v0.1.3 WP0B measured 178 in a layout with DDS trains, past that limit.
+// The installed content holds 907 image files in all (PNG 132, BMP 643,
+// DDS 132), so 1024 slots hold every installed image at once with room to
+// spare.  A slot is one descriptor, a few tens of bytes; the heap is about
+// 32 KB, far below the shader-visible limit.  Exhaustion still fails
+// explicitly - the capacity is a measured bound, not a promise.
+#define RS2D3D12_SRV_CAPACITY 1024
 
 struct RS2D3D12SrvSlot
 {

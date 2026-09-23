@@ -76,6 +76,11 @@ public:
 const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps();
 unsigned int RS2D3D12_GetLiveTextureCount();
 unsigned int RS2D3D12_GetPeakTextureCount();
+unsigned int RS2D3D12_GetLiveDDSTextureCount();
+unsigned int RS2D3D12_GetPeakDDSTextureCount();
+
+//	Whether the texture bound to Stage 0 came from a DDS.  Diagnostics only.
+bool RS2D3D12_BoundTextureIsDDS();
 
 // Per-backend observations for WP9's real-scene re-inventory. These counters
 // do not change texture policy and are reset when a new backend starts.
@@ -85,6 +90,12 @@ struct RS2D3D12TextureRuntimeStats
 	unsigned int resourceAttempts, resourceSuccesses;
 	unsigned int stage0Binds, stage0Unbinds, rejectedBinds, otherStageBinds;
 	unsigned int pointFilters, linearFilters, rejectedFilters;
+
+	//	DDS, a subset of the file counts above.
+	unsigned int ddsAttempts, ddsSuccesses, ddsFailures;
+	unsigned int ddsBC1, ddsBC3;
+	unsigned int ddsMipShortfalls;	//	fewer mips stored than asked for
+	unsigned long long ddsUploadBytes;
 };
 void RS2D3D12_ResetTextureRuntimeStats();
 const RS2D3D12TextureRuntimeStats &RS2D3D12_GetTextureRuntimeStats();

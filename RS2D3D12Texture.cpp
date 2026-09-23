@@ -9,6 +9,7 @@
 #include "RS2D3D12Backend.h"
 #include "RS2D3D12Unsupported.h"
 #include "RS2TextureResource.h"
+#include "RS2DDS.h"
 
 struct RS2D3D12TexturePayload
 {
@@ -17,6 +18,7 @@ struct RS2D3D12TexturePayload
 	D3D12_RESOURCE_STATES finalState;
 	CRS2D3D12Backend *owner;
 	RS2D3D12SrvSlot slot;
+	bool dds;
 };
 
 struct RS2D3D12PendingTextureUpload
@@ -30,6 +32,8 @@ struct RS2D3D12PendingTextureUpload
 
 static unsigned int s_LiveTextures = 0;
 static unsigned int s_PeakTextures = 0;
+static unsigned int s_LiveDDSTextures = 0;
+static unsigned int s_PeakDDSTextures = 0;
 static RS2D3D12TexturePayload *s_BoundTexture = 0;
 static RS2TextureFilter s_Stage0Filter = RS2_FILTER_POINT;
 static RS2D3D12TextureRuntimeStats s_RuntimeStats;
@@ -53,6 +57,7 @@ static void RS2D3D12DestroyTexturePayload(void *opaque){
 		payload->owner->RetireTexture(payload->texture, payload->slot);
 		payload->texture = 0;
 	}else RELEASE(payload->texture);
+	if(payload->dds && s_LiveDDSTextures) s_LiveDDSTextures--;
 	delete payload;
 	if(s_LiveTextures) s_LiveTextures--;
 }
@@ -66,6 +71,9 @@ static const RS2TexturePayloadOps s_TextureOps = {
 const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps(){ return &s_TextureOps; }
 unsigned int RS2D3D12_GetLiveTextureCount(){ return s_LiveTextures; }
 unsigned int RS2D3D12_GetPeakTextureCount(){ return s_PeakTextures; }
+unsigned int RS2D3D12_GetLiveDDSTextureCount(){ return s_LiveDDSTextures; }
+unsigned int RS2D3D12_GetPeakDDSTextureCount(){ return s_PeakDDSTextures; }
+bool RS2D3D12_BoundTextureIsDDS(){ return s_BoundTexture && s_BoundTexture->dds; }
 void RS2D3D12_ResetTextureRuntimeStats(){
 	ZeroMemory(&s_RuntimeStats, sizeof(s_RuntimeStats));
 }
@@ -131,30 +139,14 @@ bool RS2D3D12_GetBoundTexture(
 	return true;
 }
 
-static bool RS2D3D12_CreatePublicTexture(
-	void **outPayload, int *width, int *height,
-	const char *source, unsigned long colourKey, int mipArgument, bool fromResource
+/*
+ *	Give an uploaded texture its shader view and hand it to the caller.
+ *
+ *	returns	: false having destroyed the payload
+ */
+static bool RS2D3D12_PublishTexture(
+	CRS2D3D12Backend *backend, void *opaque, void **outPayload
 ){
-	if(outPayload) *outPayload = 0;
-	if(width) *width = 0;
-	if(height) *height = 0;
-	if(!outPayload || !width || !height) return false;
-	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
-	if(!backend) return false;
-	if(fromResource) s_RuntimeStats.resourceAttempts++;
-	else s_RuntimeStats.fileAttempts++;
-	CRS2DecodedImage image;
-	std::string error;
-	const bool decoded = fromResource
-		? RS2DecodeImageResource(source, colourKey, mipArgument, &image, &error)
-		: RS2DecodeImageFile(source, colourKey, mipArgument, &image, &error);
-	if(!decoded){
-		Debug("[RS2EX D3D12 Texture] decode failed: %s\n", error.c_str());
-		return false;
-	}
-	backend->CollectRetiredTextures();
-	void *opaque = 0;
-	if(!backend->GetTextureUpload()->CreateTexture(image, &opaque, &error)) return false;
 	RS2D3D12TexturePayload *payload = (RS2D3D12TexturePayload *)opaque;
 	RS2D3D12SrvSlot slot;
 	if(!backend->GetDescriptors()->Allocate(&slot)){
@@ -169,9 +161,113 @@ static bool RS2D3D12_CreatePublicTexture(
 	}
 	payload->owner = backend;
 	payload->slot = slot;
+	*outPayload = payload;
+	return true;
+}
+
+/*
+ *	A DDS file as an ordinary Stage 0 texture.
+ *
+ *	The blocks go to the GPU as stored.  When RailSim asks for more mips than
+ *	the file holds, the file's levels are used and nothing is generated - the
+ *	v0.1.3 decision, because making BC mips means decompressing and
+ *	recompressing.  Direct3D 8 generated them, so this is a real difference
+ *	and it is said once, with the counter in the scene audit carrying the
+ *	rest.
+ */
+static bool RS2D3D12_CreateDDSTexture(
+	CRS2D3D12Backend *backend, void **outPayload, int *width, int *height,
+	const char *path, unsigned long colourKey, int mipArgument
+){
+	static bool s_ShortfallReported = false;
+
+	s_RuntimeStats.ddsAttempts++;
+
+	CRS2TextureSource source;
+	RS2DDSInfo info;
+	std::string error;
+
+	if(!RS2LoadDDSFile(path, colourKey, mipArgument, &source, &info, &error)){
+		s_RuntimeStats.ddsFailures++;
+		Debug("[RS2EX D3D12 Texture] DDS refused: %s: %s\n", error.c_str(), path);
+		return false;
+	}
+
+	if(info.usedMips<info.requestedMips){
+		s_RuntimeStats.ddsMipShortfalls++;
+		if(!s_ShortfallReported){
+			s_ShortfallReported = true;
+			Debug("[RS2EX D3D12 Texture] compatibility difference: a DDS asks for "
+				"%u mip levels and stores %u; only stored levels are used "
+				"(Direct3D 8 generated the rest).  Reported once.  First: %s\n",
+				info.requestedMips, info.storedMips, path);
+		}
+	}
+
+	backend->CollectRetiredTextures();
+
+	const unsigned long long before = backend->GetTextureUpload()->GetSubmittedBytes();
+	void *opaque = 0;
+
+	if(!backend->GetTextureUpload()->CreateTexture(source, &opaque, &error)){
+		s_RuntimeStats.ddsFailures++;
+		Debug("[RS2EX D3D12 Texture] DDS upload failed: %s: %s\n", error.c_str(), path);
+		return false;
+	}
+	((RS2D3D12TexturePayload *)opaque)->dds = true;
+	s_LiveDDSTextures++;
+	if(s_LiveDDSTextures>s_PeakDDSTextures) s_PeakDDSTextures = s_LiveDDSTextures;
+
+	if(!RS2D3D12_PublishTexture(backend, opaque, outPayload)){
+		s_RuntimeStats.ddsFailures++;
+		return false;
+	}
+
+	s_RuntimeStats.ddsSuccesses++;
+	if(info.format==RS2_TEXTURE_SOURCE_BC1) s_RuntimeStats.ddsBC1++;
+	else s_RuntimeStats.ddsBC3++;
+	s_RuntimeStats.ddsUploadBytes +=
+		backend->GetTextureUpload()->GetSubmittedBytes()-before;
+	*width = (int)info.width;
+	*height = (int)info.height;
+	return true;
+}
+
+static bool RS2D3D12_CreatePublicTexture(
+	void **outPayload, int *width, int *height,
+	const char *source, unsigned long colourKey, int mipArgument, bool fromResource
+){
+	if(outPayload) *outPayload = 0;
+	if(width) *width = 0;
+	if(height) *height = 0;
+	if(!outPayload || !width || !height) return false;
+	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
+	if(!backend) return false;
+	if(fromResource) s_RuntimeStats.resourceAttempts++;
+	else s_RuntimeStats.fileAttempts++;
+
+	if(!fromResource && RS2IsDDSFile(source)){
+		if(!RS2D3D12_CreateDDSTexture(backend, outPayload, width, height,
+				source, colourKey, mipArgument)) return false;
+		s_RuntimeStats.fileSuccesses++;
+		return true;
+	}
+
+	CRS2DecodedImage image;
+	std::string error;
+	const bool decoded = fromResource
+		? RS2DecodeImageResource(source, colourKey, mipArgument, &image, &error)
+		: RS2DecodeImageFile(source, colourKey, mipArgument, &image, &error);
+	if(!decoded){
+		Debug("[RS2EX D3D12 Texture] decode failed: %s\n", error.c_str());
+		return false;
+	}
+	backend->CollectRetiredTextures();
+	void *opaque = 0;
+	if(!backend->GetTextureUpload()->CreateTexture(image, &opaque, &error)) return false;
+	if(!RS2D3D12_PublishTexture(backend, opaque, outPayload)) return false;
 	*width = (int)image.GetWidth();
 	*height = (int)image.GetHeight();
-	*outPayload = payload;
 	if(fromResource) s_RuntimeStats.resourceSuccesses++;
 	else s_RuntimeStats.fileSuccesses++;
 	return true;
@@ -288,9 +384,9 @@ void CRS2D3D12TextureUpload::Destroy(){
 
 	if(m_SubmittedBytes)
 		Debug("[RS2EX D3D12 Texture] uploaded %I64u bytes, pending peak %u, "
-			"payload live %u peak %u\n",
+			"payload live %u peak %u, DDS live %u peak %u\n",
 			m_SubmittedBytes, m_PendingPeak,
-			s_LiveTextures, s_PeakTextures);
+			s_LiveTextures, s_PeakTextures, s_LiveDDSTextures, s_PeakDDSTextures);
 
 	if(m_FenceEvent){
 		CloseHandle(m_FenceEvent);
@@ -534,6 +630,7 @@ bool CRS2D3D12TextureUpload::CreateTexture(
 	payload->mipCount = mipCount;
 	payload->finalState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	payload->owner = 0;
+	payload->dds = false;
 	s_LiveTextures++;
 	if(s_LiveTextures>s_PeakTextures) s_PeakTextures = s_LiveTextures;
 

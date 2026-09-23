@@ -118,7 +118,7 @@ bool RS2D3D12TextureSmokeRun(){
 	RS2DestroyTexture(invalidFile);
 	RS2DestroyTexture(invalidResource);
 
-	// More than the 128-slot heap capacity, entirely through the public API.
+	// More than the heap capacity, entirely through the public API.
 	unsigned int cycles=0;
 	for(;cycles<backend->GetDescriptors()->GetCapacity()+2;cycles++){
 		CRS2TextureResource *temporary=RS2CreateTextureFromFile(alphaPath,0,1);

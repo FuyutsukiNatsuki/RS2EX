@@ -9,6 +9,7 @@
 #include "RS2D3D12Backend.h"
 #include "RS2DecodedImage.h"
 #include "RS2TextureSource.h"
+#include "RS2DDS.h"
 #include "RS2Renderer.h"
 #include "RS2TextureResource.h"
 
@@ -307,6 +308,7 @@ bool RS2D3D12SmokeRun(
 	RS2D3D12_SmokeStep("neutral texture ownership", RS2TextureOwnershipSmoke());
 	RS2D3D12_SmokeStep("neutral image decode", RS2DecodedImageSmoke());
 	RS2D3D12_SmokeStep("neutral texture source", RS2TextureSourceSmoke());
+	RS2D3D12_SmokeStep("DDS parse and refusal", RS2DDSSmoke());
 
 	RS2D3D12_SmokeLifecycle();
 	RS2D3D12_SmokeLifecycleFrames(window);

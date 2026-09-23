@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	The Direct3D 12 side of the draw boundary.
 //
@@ -92,6 +93,7 @@ void RS2D3D12_DrawIndexed(
  */
 unsigned int RS2D3D12_GetDrawCount();
 unsigned int RS2D3D12_GetTexturedDrawCount();
+unsigned int RS2D3D12_GetDDSTexturedDrawCount();
 
 /*
  *	How many draws were refused, for any reason.

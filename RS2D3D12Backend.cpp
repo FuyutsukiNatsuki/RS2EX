@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
-//	Modified for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-22, 2026-09-23.
 //
 //	See RS2D3D12Backend.h.
 
@@ -808,6 +808,11 @@ void CRS2D3D12Backend::Shutdown(){
 			attempts,successes,attempts-successes,
 			stats.fileSuccesses,stats.fileAttempts,
 			stats.resourceSuccesses,stats.resourceAttempts);
+		Debug("RS2D3D12SCENE|dds attempts=%u success=%u failed=%u bc1=%u bc3=%u mipShortfall=%u uploadBytes=%llu live=%u peak=%u texturedDraws=%u\n",
+			stats.ddsAttempts,stats.ddsSuccesses,stats.ddsFailures,
+			stats.ddsBC1,stats.ddsBC3,stats.ddsMipShortfalls,
+			stats.ddsUploadBytes,RS2D3D12_GetLiveDDSTextureCount(),
+			RS2D3D12_GetPeakDDSTextureCount(),RS2D3D12_GetDDSTexturedDrawCount());
 		Debug("RS2D3D12SCENE|stage0 bind=%u unbind=%u rejected=%u otherStage=%u point=%u linear=%u rejectedFilter=%u\n",
 			stats.stage0Binds,stats.stage0Unbinds,stats.rejectedBinds,
 			stats.otherStageBinds,stats.pointFilters,stats.linearFilters,
