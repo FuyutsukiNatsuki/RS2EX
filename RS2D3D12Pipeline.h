@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	The Direct3D 12 pipeline: root signature, shaders, and pipeline states.
 //
@@ -42,6 +43,29 @@ struct RS2D3D12Constants
 	// x: enabled, y: 8-bit reference, z: RS2CompareFunc, w: reserved.
 	// Kept per draw so alpha-state changes never create another PSO.
 	float alphaTest[4];
+
+	//	Material and lighting, v0.1.3.  All of it is per-draw data: nothing
+	//	here is in the pipeline key, so a material or light change never
+	//	creates a pipeline state.  Lighting is computed in view space, as the
+	//	fixed-function pipeline did, so this carries world * view as well.
+	float worldView[16];
+
+	//	xyz: the direction toward the light, view space, normalised.
+	//	w: 1 while a light has been submitted, as Direct3D 8's slot 0 was
+	//	disabled until the first SetLight.
+	float lightToward[4];
+	float lightColour[4];		//	used for diffuse and specular alike
+	float ambient[4];		//	global ambient, from the packed colour
+
+	float materialDiffuse[4];
+	float materialAmbient[4];
+	float materialSpecular[4];
+	float materialEmissive[4];
+
+	//	x: lighting on, y: specular on, z: diffuse from the vertex colour,
+	//	w: ambient from the vertex colour.
+	float lighting[4];
+	float power[4];			//	x: material Power
 };
 
 /*
@@ -86,11 +110,14 @@ private:
 	ID3D12Device *m_Device;
 	ID3D12RootSignature *m_RootSignature;
 
-	//	[position semantic][vertex has a colour][textured]. A vertex shader has to
-	//	declare exactly the inputs the layout supplies - an input the layout
-	//	does not provide is not ignored, it fails pipeline creation - so a
-	//	layout without a diffuse colour needs its own variant.
-	ID3DBlob *m_Vertex[2][2][2];
+	//	[position semantic][vertex has a colour][textured][vertex has a normal].
+	//	A vertex shader has to declare exactly the inputs the layout supplies -
+	//	an input the layout does not provide is not ignored, it fails pipeline
+	//	creation - so each of these needs its own variant.  The normal only
+	//	exists for pipeline-transformed vertices; screen-space vertices never
+	//	carry one, so those four slots stay empty.  Whether a layout has a
+	//	normal was already part of the key, so this adds no pipeline states.
+	ID3DBlob *m_Vertex[2][2][2][2];
 	ID3DBlob *m_Pixel[2];
 
 	//	Small and linear on purpose: a scene reaches a handful of states, and a

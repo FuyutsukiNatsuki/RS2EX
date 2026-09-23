@@ -30,6 +30,21 @@ static bool s_AlphaTest = false;
 static unsigned int s_AlphaRef = 0;
 static RS2CompareFunc s_AlphaFunc = RS2_COMPARE_ALWAYS;
 
+//	Material and lighting.  The starting values are what Direct3D 8 began
+//	with, read from the device by -lightingaudit rather than taken from
+//	documentation: RS2D3D8_ApplyInitialRenderState sets lighting, specular and
+//	ambient, and the rest - an all-zero material, diffuse from the vertex,
+//	ambient from the material, no light - is the device's own default.
+static RS2Material s_Material;
+static bool s_Lighting = true;
+static bool s_Specular = true;
+static RS2PackedColor s_Ambient = 0xff808080;
+static RS2ColorSource s_DiffuseSource = RS2_COLOR_FROM_VERTEX;
+static RS2ColorSource s_AmbientSource = RS2_COLOR_FROM_MATERIAL;
+static RS2DirectionalLight s_Light;
+static bool s_LightEnabled = false;
+static RS2D3D12LightingStats s_LightingStats;
+
 static unsigned int s_DrawCount = 0;
 static unsigned int s_TexturedDrawCount = 0;
 static unsigned int s_DDSTexturedDrawCount = 0;
@@ -110,9 +125,121 @@ void RS2D3D12_ApplyInitialRenderState(){
 	s_AlphaRef = 0;
 	s_AlphaFunc = RS2_COMPARE_ALWAYS;
 
+	ZeroMemory(&s_Material, sizeof(s_Material));
+	s_Lighting = true;
+	s_Specular = true;
+	s_Ambient = 0xff808080;
+	s_DiffuseSource = RS2_COLOR_FROM_VERTEX;
+	s_AmbientSource = RS2_COLOR_FROM_MATERIAL;
+	ZeroMemory(&s_Light, sizeof(s_Light));
+	s_LightEnabled = false;
+
 	RS2D3D12_Identity(s_World);
 	RS2D3D12_Identity(s_View);
 	RS2D3D12_Identity(s_Projection);
+}
+
+void RS2D3D12_SetMaterial(const RS2Material &material){
+	s_Material = material;
+	s_LightingStats.materialCalls++;
+}
+
+void RS2D3D12_SetLighting(bool enable){
+	s_Lighting = enable;
+	s_LightingStats.lightingCalls++;
+}
+
+void RS2D3D12_SetAmbientLight(RS2PackedColor color){
+	s_Ambient = color;
+	s_LightingStats.ambientCalls++;
+}
+
+void RS2D3D12_SetSpecular(bool enable){
+	s_Specular = enable;
+	s_LightingStats.specularCalls++;
+}
+
+void RS2D3D12_SetDiffuseColorSource(RS2ColorSource source){
+	s_DiffuseSource = source;
+	s_LightingStats.diffuseSourceCalls++;
+}
+
+void RS2D3D12_SetAmbientColorSource(RS2ColorSource source){
+	s_AmbientSource = source;
+	s_LightingStats.ambientSourceCalls++;
+}
+
+void RS2D3D12_SubmitDirectionalLight(const RS2DirectionalLight &light){
+	s_Light = light;
+	s_LightEnabled = true;
+	s_LightingStats.lightCalls++;
+}
+
+const RS2D3D12LightingStats &RS2D3D12_GetLightingStats(){ return s_LightingStats; }
+
+static void RS2D3D12_Colour(float *out, const RS2Color4 &c){
+	out[0] = c.r;
+	out[1] = c.g;
+	out[2] = c.b;
+	out[3] = c.a;
+}
+
+/*
+ *	The material and light constants for one draw.
+ *
+ *	The light is transformed into view space here, once per draw, because the
+ *	engine keeps it in world space and the shader lights in view space.  The
+ *	engine stores the direction the light travels; the shader wants the
+ *	direction toward it, so it is negated.
+ */
+static void RS2D3D12_LightingConstants(
+	RS2D3D12Constants *constants, const float *worldView, bool pipelineTransformed,
+	bool hasNormal){
+	int i;
+
+	for(i = 0; i<16; i++) constants->worldView[i] = worldView[i];
+
+	float toward[3] = { -s_Light.direction.x, -s_Light.direction.y, -s_Light.direction.z };
+	float view[3];
+
+	for(i = 0; i<3; i++)
+		view[i] = toward[0]*s_View[0*4+i] + toward[1]*s_View[1*4+i] + toward[2]*s_View[2*4+i];
+
+	const float length = (float)sqrt(view[0]*view[0] + view[1]*view[1] + view[2]*view[2]);
+
+	for(i = 0; i<3; i++) constants->lightToward[i] = length>0.0f ? view[i]/length : 0.0f;
+	constants->lightToward[3] = s_LightEnabled ? 1.0f : 0.0f;
+	RS2D3D12_Colour(constants->lightColour, s_Light.color);
+
+	constants->ambient[0] = (float)((s_Ambient>>16)&0xff)/255.0f;
+	constants->ambient[1] = (float)((s_Ambient>>8)&0xff)/255.0f;
+	constants->ambient[2] = (float)(s_Ambient&0xff)/255.0f;
+	constants->ambient[3] = (float)((s_Ambient>>24)&0xff)/255.0f;
+
+	RS2D3D12_Colour(constants->materialDiffuse, s_Material.Diffuse);
+	RS2D3D12_Colour(constants->materialAmbient, s_Material.Ambient);
+	RS2D3D12_Colour(constants->materialSpecular, s_Material.Specular);
+	RS2D3D12_Colour(constants->materialEmissive, s_Material.Emissive);
+
+	constants->lighting[0] = s_Lighting ? 1.0f : 0.0f;
+	constants->lighting[1] = s_Specular ? 1.0f : 0.0f;
+	constants->lighting[2] = s_DiffuseSource==RS2_COLOR_FROM_VERTEX ? 1.0f : 0.0f;
+	constants->lighting[3] = s_AmbientSource==RS2_COLOR_FROM_VERTEX ? 1.0f : 0.0f;
+	constants->power[0] = s_Material.Power;
+	constants->power[1] = constants->power[2] = constants->power[3] = 0.0f;
+
+	//	Screen-space vertices are never lit, as in Direct3D 8.
+	if(s_Lighting && pipelineTransformed){
+		s_LightingStats.litDraws++;
+		if(hasNormal){
+			s_LightingStats.litNormalDraws++;
+			if(s_Specular) s_LightingStats.specularDraws++;
+		}else{
+			s_LightingStats.litNoNormalDraws++;
+		}
+	}else{
+		s_LightingStats.unlitDraws++;
+	}
 }
 
 unsigned int RS2D3D12_GetDrawCount(){ return s_DrawCount; }
@@ -281,6 +408,8 @@ static bool RS2D3D12_BindPipeline(
 	constants.alphaTest[1] = (float)s_AlphaRef;
 	constants.alphaTest[2] = (float)s_AlphaFunc;
 	constants.alphaTest[3] = 0.0f;
+	RS2D3D12_LightingConstants(&constants, worldView,
+		key->positionSemantic!=RS2_POSITION_ALREADY_TRANSFORMED, key->hasNormal!=0);
 
 	D3D12_GPU_VIRTUAL_ADDRESS constantAddress = 0;
 

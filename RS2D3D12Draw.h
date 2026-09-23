@@ -18,6 +18,8 @@
 #include "RS2MeshData.h"
 #include "RS2RenderState.h"
 #include "RS2GeometryResource.h"
+#include "RS2Material.h"
+#include "RS2Lighting.h"
 
 class CRS2GeometryResource;
 
@@ -37,6 +39,29 @@ void RS2D3D12_SetBlend(RS2BlendMode mode);
 void RS2D3D12_SetAlphaTest(bool enable);
 void RS2D3D12_SetAlphaRef(unsigned int ref);
 void RS2D3D12_SetAlphaFunc(RS2CompareFunc func);
+
+//	Material and fixed-function lighting (v0.1.3).  Semantic state only: the
+//	values reach the shader as per-draw constants, never as pipeline keys.
+void RS2D3D12_SetMaterial(const RS2Material &material);
+void RS2D3D12_SetLighting(bool enable);
+void RS2D3D12_SetAmbientLight(RS2PackedColor color);
+void RS2D3D12_SetSpecular(bool enable);
+void RS2D3D12_SetDiffuseColorSource(RS2ColorSource source);
+void RS2D3D12_SetAmbientColorSource(RS2ColorSource source);
+
+//	The engine keeps the light (RS2Lighting.cpp); this only records what to
+//	submit, the counterpart of RS2D3D8_SubmitDirectionalLight.
+void RS2D3D12_SubmitDirectionalLight(const RS2DirectionalLight &light);
+
+//	What the lighting state did, for the smokes and the scene audit.
+struct RS2D3D12LightingStats
+{
+	unsigned int materialCalls, lightingCalls, ambientCalls, specularCalls;
+	unsigned int diffuseSourceCalls, ambientSourceCalls, lightCalls;
+	unsigned int litDraws, unlitDraws, litNormalDraws, litNoNormalDraws;
+	unsigned int specularDraws;	//	lit, specular on, normal present
+};
+const RS2D3D12LightingStats &RS2D3D12_GetLightingStats();
 
 /*
  *	Put the state back where the engine expects to find it at start-up.

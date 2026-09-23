@@ -19,12 +19,13 @@
 #include "RS2D3D12Unsupported.h"
 #include "RS2D3D12TextureBackend.h"
 #include "RS2LightingAudit.h"
+#include "RS2D3D12Draw.h"
 
 void RS2SetMaterial(const RS2Material &material){
 	RS2LightingAuditMaterial(material);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetMaterial(material);
-	else RS2D3D12Unsupported("RS2SetMaterial");
+	else RS2D3D12_SetMaterial(material);
 }
 
 void RS2BindTexture(unsigned int stage, const RS2TextureRef &texture){

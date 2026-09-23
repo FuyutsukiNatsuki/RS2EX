@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	See RS2D3D12Pipeline.h.
 
@@ -39,11 +40,20 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	row_major float4x4 g_WorldViewProj;\n"
 "	float4 g_Viewport;	// xy size, zw reciprocal\n"
 "	float4 g_AlphaTest; // enabled, 8-bit ref, compare function\n"
+"	row_major float4x4 g_WorldView;\n"
+"	float4 g_LightToward;	// xyz toward the light (view space), w enabled\n"
+"	float4 g_LightColour;\n"
+"	float4 g_Ambient;\n"
+"	float4 g_MatDiffuse;\n"
+"	float4 g_MatAmbient;\n"
+"	float4 g_MatSpecular;\n"
+"	float4 g_MatEmissive;\n"
+"	float4 g_Lighting;	// x lit, y specular, z diffuse from vertex, w ambient from vertex\n"
+"	float4 g_Power;\n"
 "};\n"
 "\n"
-"//	Geometry with no vertex colour draws white.  It is not a material - there\n"
-"//	are no materials yet - but it is visible and unmistakably unfinished,\n"
-"//	which is what a bootstrap should look like rather than black.\n"
+"//	With lighting off, a vertex without a colour draws white - Direct3D 8\n"
+"//	did the same, measured by the lighting probe.\n"
 "#if RS2_HAS_DIFFUSE\n"
 "#define RS2_VERTEX_COLOUR(v)	((v).col)\n"
 "#else\n"
@@ -53,6 +63,9 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "struct VSIn\n"
 "{\n"
 "	float4 pos : POSITION;\n"
+"#if RS2_HAS_NORMAL\n"
+"	float3 nrm : NORMAL;\n"
+"#endif\n"
 "#if RS2_HAS_DIFFUSE\n"
 "	float4 col : COLOR0;\n"
 "#endif\n"
@@ -64,18 +77,73 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "struct VSOut\n"
 "{\n"
 "	float4 pos : SV_POSITION;\n"
-"	float4 col : COLOR0;\n"
+"	float4 col : COLOR0;	// diffuse: lit or vertex colour\n"
+"	float4 spec : COLOR1;	// specular, added after the texture\n"
 "#if RS2_TEXTURED\n"
 "	float2 uv : TEXCOORD0;\n"
 "#endif\n"
 "};\n"
+"\n"
+"//	The fixed-function lighting equations, per vertex, in view space.\n"
+"//	Every rule here was measured on Direct3D 8 by the lighting probe:\n"
+"//	- the light direction is the direction the light travels, so the\n"
+"//	  vector toward it is its negation (computed on the CPU);\n"
+"//	- a vertex source with no vertex colour falls back to the material;\n"
+"//	- a missing normal lights as zero: ambient and emissive only;\n"
+"//	- the result is clamped, and its alpha is the diffuse source's;\n"
+"//	- specular uses a local viewer, is cut off where N.L <= 0, and\n"
+"//	  Power 0 means a term of one;\n"
+"//	- the light has no ambient part.\n"
+"void RS2Light(VSIn input, out float4 diffuse, out float4 specular)\n"
+"{\n"
+"	float3 P = mul(float4(input.pos.xyz, 1.0f), g_WorldView).xyz;\n"
+"#if RS2_HAS_NORMAL\n"
+"	float3 N = mul(input.nrm, (float3x3)g_WorldView);\n"
+"	float length2 = dot(N, N);\n"
+"	N = (length2 > 0.0f) ? N*rsqrt(length2) : float3(0.0f, 0.0f, 0.0f);\n"
+"#else\n"
+"	float3 N = float3(0.0f, 0.0f, 0.0f);\n"
+"#endif\n"
+"	float4 dsrc = g_MatDiffuse;\n"
+"	float3 asrc = g_MatAmbient.rgb;\n"
+"#if RS2_HAS_DIFFUSE\n"
+"	if(g_Lighting.z > 0.5f) dsrc = input.col;\n"
+"	if(g_Lighting.w > 0.5f) asrc = input.col.rgb;\n"
+"#endif\n"
+"	float3 colour = g_MatEmissive.rgb + asrc*g_Ambient.rgb;\n"
+"	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);\n"
+"	if(g_LightToward.w > 0.5f)\n"
+"	{\n"
+"		float3 L = g_LightToward.xyz;\n"
+"		float NdotL = dot(N, L);\n"
+"		colour += dsrc.rgb*g_LightColour.rgb*max(NdotL, 0.0f);\n"
+"		if(g_Lighting.y > 0.5f && NdotL > 0.0f)\n"
+"		{\n"
+"			float lengthP = length(P);\n"
+"			float3 V = (lengthP > 0.0f) ? -P/lengthP : float3(0.0f, 0.0f, -1.0f);\n"
+"			float3 H = normalize(V + L);\n"
+"			float NdotH = max(dot(N, H), 0.0f);\n"
+"			float term = (g_Power.x == 0.0f) ? 1.0f : pow(NdotH, g_Power.x);\n"
+"			specular.rgb = saturate(g_MatSpecular.rgb*g_LightColour.rgb*term);\n"
+"		}\n"
+"	}\n"
+"	diffuse = float4(saturate(colour), saturate(dsrc.a));\n"
+"}\n"
 "\n"
 "//	Ordinary geometry: the engine's matrices do the work.\n"
 "VSOut VSPipeline(VSIn input)\n"
 "{\n"
 "	VSOut output;\n"
 "	output.pos = mul(float4(input.pos.xyz, 1.0f), g_WorldViewProj);\n"
-"	output.col = RS2_VERTEX_COLOUR(input);\n"
+"	if(g_Lighting.x > 0.5f)\n"
+"	{\n"
+"		RS2Light(input, output.col, output.spec);\n"
+"	}\n"
+"	else\n"
+"	{\n"
+"		output.col = RS2_VERTEX_COLOUR(input);\n"
+"		output.spec = float4(0.0f, 0.0f, 0.0f, 0.0f);\n"
+"	}\n"
 "#if RS2_TEXTURED\n"
 "	output.uv = input.uv;\n"
 "#endif\n"
@@ -86,6 +154,7 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "//	pixels with a reciprocal w; Direct3D 12 has no such path, so the same\n"
 "//	mapping is written out: pixels to normalised device coordinates, y down to\n"
 "//	y up, and w restored from the reciprocal so the hardware divide undoes it.\n"
+"//	Direct3D 8 never lit these, whatever the lighting state said.\n"
 "VSOut VSScreen(VSIn input)\n"
 "{\n"
 "	VSOut output;\n"
@@ -95,6 +164,7 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	ndc.y = 1.0f - input.pos.y*g_Viewport.w*2.0f;\n"
 "	output.pos = float4(ndc.x*w, ndc.y*w, input.pos.z*w, w);\n"
 "	output.col = RS2_VERTEX_COLOUR(input);\n"
+"	output.spec = float4(0.0f, 0.0f, 0.0f, 0.0f);\n"
 "#if RS2_TEXTURED\n"
 "	output.uv = input.uv;\n"
 "#endif\n"
@@ -105,6 +175,9 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "Texture2D g_Texture : register(t0);\n"
 "SamplerState g_Sampler : register(s0);\n"
 "#endif\n"
+"//	Stage 0 is texture * diffuse, where diffuse is the lit colour; then the\n"
+"//	specular is added, not multiplied by the texture - the order the\n"
+"//	Direct3D 8 probe measured.\n"
 "float4 PSMain(VSOut input) : SV_TARGET\n"
 "{\n"
 "#if RS2_TEXTURED\n"
@@ -112,6 +185,7 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "#else\n"
 "	float4 colour = input.col;\n"
 "#endif\n"
+"	colour.rgb = saturate(colour.rgb + input.spec.rgb);\n"
 "	if(g_AlphaTest.x > 0.5f)\n"
 "	{\n"
 "		float alphaByte = floor(saturate(colour.a)*255.0f + 0.5f);\n"
@@ -131,14 +205,16 @@ static ID3DBlob *RS2D3D12_Compile(
 	const char *entry,	//	function to compile
 	const char *target,	//	shader model
 	bool hasDiffuse,		//	whether the layout supplies a vertex colour
-	bool textured		//	whether Stage 0 sampling is enabled
+	bool textured,		//	whether Stage 0 sampling is enabled
+	bool hasNormal		//	whether the layout supplies a normal
 ){
 	ID3DBlob *code = 0;
 	ID3DBlob *errors = 0;
 
-	const D3D_SHADER_MACRO macros[3] = {
+	const D3D_SHADER_MACRO macros[4] = {
 		{ "RS2_HAS_DIFFUSE", hasDiffuse ? "1" : "0" },
 		{ "RS2_TEXTURED", textured ? "1" : "0" },
+		{ "RS2_HAS_NORMAL", hasNormal ? "1" : "0" },
 		{ NULL, NULL }
 	};
 
@@ -188,20 +264,21 @@ CRS2D3D12Pipeline::~CRS2D3D12Pipeline(){
 }
 
 bool CRS2D3D12Pipeline::CompileShaders(){
-	unsigned int diffuse, textured;
+	unsigned int diffuse, textured, normal;
 
 	for(diffuse = 0; diffuse<2; diffuse++) for(textured = 0; textured<2; textured++){
-		m_Vertex[0][diffuse][textured] = RS2D3D12_Compile(
-			"VSPipeline", "vs_5_0", diffuse!=0, textured!=0);
-		m_Vertex[1][diffuse][textured] = RS2D3D12_Compile(
-			"VSScreen", "vs_5_0", diffuse!=0, textured!=0);
-
-		if(!m_Vertex[0][diffuse][textured] || !m_Vertex[1][diffuse][textured])
-			return false;
+		for(normal = 0; normal<2; normal++){
+			m_Vertex[0][diffuse][textured][normal] = RS2D3D12_Compile(
+				"VSPipeline", "vs_5_0", diffuse!=0, textured!=0, normal!=0);
+			if(!m_Vertex[0][diffuse][textured][normal]) return false;
+		}
+		m_Vertex[1][diffuse][textured][0] = RS2D3D12_Compile(
+			"VSScreen", "vs_5_0", diffuse!=0, textured!=0, false);
+		if(!m_Vertex[1][diffuse][textured][0]) return false;
 	}
 
 	for(textured = 0; textured<2; textured++){
-		m_Pixel[textured] = RS2D3D12_Compile("PSMain", "ps_5_0", true, textured!=0);
+		m_Pixel[textured] = RS2D3D12_Compile("PSMain", "ps_5_0", true, textured!=0, false);
 		if(!m_Pixel[textured]) return false;
 	}
 	return true;
@@ -285,12 +362,13 @@ void CRS2D3D12Pipeline::Destroy(){
 	for(i = 0; i<2; i++) RELEASE(m_Pixel[i]);
 
 	{
-		unsigned int semantic, diffuse, textured;
+		unsigned int semantic, diffuse, textured, normal;
 
 		for(semantic = 0; semantic<2; semantic++)
 			for(diffuse = 0; diffuse<2; diffuse++)
 				for(textured = 0; textured<2; textured++)
-					RELEASE(m_Vertex[semantic][diffuse][textured]);
+					for(normal = 0; normal<2; normal++)
+						RELEASE(m_Vertex[semantic][diffuse][textured][normal]);
 	}
 	RELEASE(m_RootSignature);
 
@@ -486,9 +564,9 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 		count++;
 	}
 
-	ID3DBlob *vertex = m_Vertex
-		[(key.positionSemantic==RS2_POSITION_ALREADY_TRANSFORMED) ? 1 : 0]
-		[key.hasDiffuse ? 1 : 0][key.textured ? 1 : 0];
+	const bool screen = key.positionSemantic==RS2_POSITION_ALREADY_TRANSFORMED;
+	ID3DBlob *vertex = m_Vertex[screen ? 1 : 0][key.hasDiffuse ? 1 : 0]
+		[key.textured ? 1 : 0][(!screen && key.hasNormal) ? 1 : 0];
 
 	if(!vertex || !m_Pixel[key.textured ? 1 : 0]) return 0;
 

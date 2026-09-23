@@ -13,6 +13,7 @@
 #include "RS2Lighting.h"
 #include "RS2D3D8Lighting.h"
 #include "RS2LightingAudit.h"
+#include "RS2D3D12Draw.h"
 
 #include <math.h>
 
@@ -41,7 +42,7 @@ void RS2SetDirectionalLight(const RS2Direction &direction, const RS2Color4 &colo
 	//	submission is a backend matter.
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SubmitDirectionalLight(s_Light);
-	else RS2D3D12Unsupported("RS2SetDirectionalLight");
+	else RS2D3D12_SubmitDirectionalLight(s_Light);
 }
 
 const RS2DirectionalLight &RS2GetDirectionalLight(){

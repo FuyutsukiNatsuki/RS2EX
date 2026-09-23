@@ -140,35 +140,35 @@ void RS2SetLighting(bool enable){
 	RS2LightingAuditLighting(enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetLighting(enable);
-	else RS2D3D12Unsupported("RS2SetLighting");
+	else RS2D3D12_SetLighting(enable);
 }
 
 void RS2SetAmbientLight(RS2PackedColor color){
 	RS2LightingAuditAmbient(color);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetAmbientLight(color);
-	else RS2D3D12Unsupported("RS2SetAmbientLight");
+	else RS2D3D12_SetAmbientLight(color);
 }
 
 void RS2SetSpecular(bool enable){
 	RS2LightingAuditSpecular(enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetSpecular(enable);
-	else RS2D3D12Unsupported("RS2SetSpecular");
+	else RS2D3D12_SetSpecular(enable);
 }
 
 void RS2SetDiffuseColorSource(RS2ColorSource source){
 	RS2LightingAuditDiffuseSource(source);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetDiffuseColorSource(source);
-	else RS2D3D12Unsupported("RS2SetDiffuseColorSource");
+	else RS2D3D12_SetDiffuseColorSource(source);
 }
 
 void RS2SetAmbientColorSource(RS2ColorSource source){
 	RS2LightingAuditAmbientSource(source);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetAmbientColorSource(source);
-	else RS2D3D12Unsupported("RS2SetAmbientColorSource");
+	else RS2D3D12_SetAmbientColorSource(source);
 }
 
 void RS2DisableFog(){
