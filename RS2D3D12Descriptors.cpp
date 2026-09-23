@@ -145,12 +145,20 @@ bool CRS2D3D12Descriptors::WriteTexture(
 	D3D12_CPU_DESCRIPTOR_HANDLE cpu;
 	if(!GetSrvHandles(slot, &cpu, 0)) return false;
 	const D3D12_RESOURCE_DESC resource = texture->GetDesc();
+
+	//	The view reads the resource as what it is.  Only the formats the
+	//	uploader creates are accepted, so a resource made some other way
+	//	cannot be given a view that reinterprets it.
+	const bool format = resource.Format==DXGI_FORMAT_R8G8B8A8_UNORM
+		|| resource.Format==DXGI_FORMAT_BC1_UNORM
+		|| resource.Format==DXGI_FORMAT_BC3_UNORM;
+
 	if(resource.Dimension!=D3D12_RESOURCE_DIMENSION_TEXTURE2D
-			|| resource.Format!=DXGI_FORMAT_R8G8B8A8_UNORM
+			|| !format || resource.DepthOrArraySize!=1
 			|| mipCount>resource.MipLevels) return false;
 	D3D12_SHADER_RESOURCE_VIEW_DESC view;
 	ZeroMemory(&view, sizeof(view));
-	view.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	view.Format = resource.Format;
 	view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	view.Texture2D.MipLevels = mipCount;

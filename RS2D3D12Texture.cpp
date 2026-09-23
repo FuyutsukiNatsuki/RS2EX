@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	See RS2D3D12Texture.h.
 
@@ -305,8 +306,43 @@ void CRS2D3D12TextureUpload::Destroy(){
 	m_SubmittedBytes = 0;
 }
 
+/*
+ *	The DXGI format that holds a source's bytes unchanged.
+ *
+ *	One-to-one on purpose: a format is only listed here when the GPU can read
+ *	the stored bytes as they are.  UNORM, not SRGB - Direct3D 8 never applied
+ *	gamma to these, and a renderer-wide change of colour space is not this
+ *	release.
+ */
+static DXGI_FORMAT RS2D3D12_SourceFormat(RS2TextureSourceFormat format){
+	switch(format){
+	case RS2_TEXTURE_SOURCE_RGBA8: return DXGI_FORMAT_R8G8B8A8_UNORM;
+	case RS2_TEXTURE_SOURCE_BC1: return DXGI_FORMAT_BC1_UNORM;
+	case RS2_TEXTURE_SOURCE_BC3: return DXGI_FORMAT_BC3_UNORM;
+	default: return DXGI_FORMAT_UNKNOWN;
+	}
+}
+
 bool CRS2D3D12TextureUpload::CreateTexture(
 	const CRS2DecodedImage &image,
+	void **outPayload,
+	std::string *error
+){
+	CRS2TextureSource source;
+
+	if(!image.IsValid() || !image.GetWidth() || !image.GetHeight()){
+		if(outPayload) *outPayload = 0;
+		return RS2D3D12TextureError(error, "decoded image is empty", S_OK);
+	}
+	if(!source.ViewDecoded(image)){
+		if(outPayload) *outPayload = 0;
+		return RS2D3D12TextureError(error, "decoded image cannot be described", S_OK);
+	}
+	return CreateTexture(source, outPayload, error);
+}
+
+bool CRS2D3D12TextureUpload::CreateTexture(
+	const CRS2TextureSource &image,
 	void **outPayload,
 	std::string *error
 ){
@@ -316,9 +352,21 @@ bool CRS2D3D12TextureUpload::CreateTexture(
 	if(!m_Device || !m_Queue || !m_Fence)
 		return RS2D3D12TextureError(error, "texture uploader is not initialized", S_OK);
 	if(!image.IsValid() || !image.GetWidth() || !image.GetHeight())
-		return RS2D3D12TextureError(error, "decoded image is empty", S_OK);
+		return RS2D3D12TextureError(error, "texture source is empty", S_OK);
 	if(image.GetMipCount()>0xffff)
-		return RS2D3D12TextureError(error, "decoded image has too many mips", S_OK);
+		return RS2D3D12TextureError(error, "texture source has too many mips", S_OK);
+
+	const DXGI_FORMAT format = RS2D3D12_SourceFormat(image.GetFormat());
+	const bool blocks = RS2TextureSourceIsBlockCompressed(image.GetFormat());
+
+	if(format==DXGI_FORMAT_UNKNOWN)
+		return RS2D3D12TextureError(error, "texture source format has no DXGI equivalent", S_OK);
+
+	//	Block-compressed resources must start at a whole number of blocks.
+	//	The parser refuses anything else; this keeps the rule next to the
+	//	resource that needs it.
+	if(blocks && (image.GetWidth()%4 || image.GetHeight()%4))
+		return RS2D3D12TextureError(error, "block-compressed size is not a multiple of 4", S_OK);
 
 	CollectCompleted();
 
@@ -329,7 +377,7 @@ bool CRS2D3D12TextureUpload::CreateTexture(
 	textureDesc.Height = image.GetHeight();
 	textureDesc.DepthOrArraySize = 1;
 	textureDesc.MipLevels = (UINT16)image.GetMipCount();
-	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Format = format;
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
@@ -396,13 +444,24 @@ bool CRS2D3D12TextureUpload::CreateTexture(
 	}
 	ZeroMemory(mapped, (SIZE_T)uploadBytes);
 
+	//	Every level must agree with the footprint in the units it is stored
+	//	in - texel rows for RGBA8, block rows for BC - or nothing is copied.
+	//	A footprint of a small BC level is padded to a whole block, which is
+	//	what the stored block row already is.
 	bool copyValid = true;
 	UINT mip;
 	for(mip = 0; mip<mipCount; mip++){
-		const RS2DecodedMip *source = image.GetMip(mip);
-		if(!source || rows[mip]!=source->height || rowBytes[mip]>source->rowPitch
-				|| layouts[mip].Footprint.Width!=source->width
-				|| layouts[mip].Footprint.Height!=source->height){
+		const RS2TextureSourceMip *source = image.GetMip(mip);
+		const UINT expectWidth = source
+			? (blocks ? (source->width+3)&~3u : source->width) : 0;
+		const UINT expectHeight = source
+			? (blocks ? (source->height+3)&~3u : source->height) : 0;
+
+		if(!source || !source->data || rows[mip]!=source->rows
+				|| rowBytes[mip]!=source->rowBytes
+				|| source->rowPitch<source->rowBytes
+				|| layouts[mip].Footprint.Width!=expectWidth
+				|| layouts[mip].Footprint.Height!=expectHeight){
 			copyValid = false;
 			break;
 		}
@@ -411,7 +470,7 @@ bool CRS2D3D12TextureUpload::CreateTexture(
 		for(row = 0; row<rows[mip]; row++){
 			memcpy(mapped+layouts[mip].Offset
 					+row*layouts[mip].Footprint.RowPitch,
-				source->Data()+row*source->rowPitch,
+				source->data+row*source->rowPitch,
 				(SIZE_T)rowBytes[mip]);
 		}
 	}
@@ -421,7 +480,7 @@ bool CRS2D3D12TextureUpload::CreateTexture(
 	if(!copyValid){
 		upload->Release();
 		texture->Release();
-		return RS2D3D12TextureError(error, "decoded mip does not match its copy footprint", S_OK);
+		return RS2D3D12TextureError(error, "texture source level does not match its copy footprint", S_OK);
 	}
 
 	ID3D12CommandAllocator *allocator = 0;

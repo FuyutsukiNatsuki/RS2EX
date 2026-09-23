@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
-//	Modified for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-22, 2026-09-23.
 //
 //	See RS2D3D12Smoke.h.
 
@@ -8,6 +8,7 @@
 #include "RS2D3D12Smoke.h"
 #include "RS2D3D12Backend.h"
 #include "RS2DecodedImage.h"
+#include "RS2TextureSource.h"
 #include "RS2Renderer.h"
 #include "RS2TextureResource.h"
 
@@ -305,6 +306,7 @@ bool RS2D3D12SmokeRun(
 	//	dimensions and operations without neutral code interpreting it as D3D8.
 	RS2D3D12_SmokeStep("neutral texture ownership", RS2TextureOwnershipSmoke());
 	RS2D3D12_SmokeStep("neutral image decode", RS2DecodedImageSmoke());
+	RS2D3D12_SmokeStep("neutral texture source", RS2TextureSourceSmoke());
 
 	RS2D3D12_SmokeLifecycle();
 	RS2D3D12_SmokeLifecycleFrames(window);

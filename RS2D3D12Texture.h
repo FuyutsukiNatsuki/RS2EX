@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	Direct3D 12 sampled-texture allocation and upload lifetime.
 //
@@ -13,6 +14,7 @@
 #include "RS2D3D12Descriptors.h"
 #include "RS2D3D12TextureBackend.h"
 #include "RS2DecodedImage.h"
+#include "RS2TextureSource.h"
 
 #include <list>
 #include <string>
@@ -48,6 +50,14 @@ public:
 	bool Create(ID3D12Device *device, ID3D12CommandQueue *queue);
 	void Destroy();
 
+	//	The general path: RGBA8 rows or native BC blocks, described by the
+	//	source in the units it stores them in.
+	bool CreateTexture(
+		const CRS2TextureSource &source,
+		void **payload,
+		std::string *error);
+
+	//	The accepted v0.1.2 path, now a view onto the general one.
 	bool CreateTexture(
 		const CRS2DecodedImage &image,
 		void **payload,
