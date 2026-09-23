@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
-//	Modified for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-22, 2026-09-23.
 //
 //	The Direct3D 8 side of render state and scene lighting.
 //
@@ -17,6 +17,7 @@
 #include "RS2Lighting.h"
 #include "RS2D3D8Lighting.h"
 #include "RS2TextureAudit.h"
+#include "RS2LightingAudit.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //	Enum translation
@@ -330,6 +331,63 @@ void RS2D3D8_ApplyInitialRenderState(){
 
 	RS2D3D8_SetBaseTextureCombine();
 	RS2D3D8_SetTextureFilter(0, RS2_FILTER_POINT);
+
+	if(RS2LightingAuditEnabled()) RS2D3D8_AuditInitialLighting();
+}
+
+/*
+ *	Write down the lighting state the engine never sets.
+ *
+ *	The start-up sequence above sets lighting, specular, ambient and
+ *	normalisation.  Everything else - the material the device starts with,
+ *	where each material colour comes from, whether the viewer is local - is
+ *	whatever Direct3D 8 defaults to, and a Direct3D 12 shader has to
+ *	reproduce defaults it cannot see.  Read them from the device rather than
+ *	from documentation: this is the device RailSim actually ran on.
+ */
+void RS2D3D8_AuditInitialLighting(){
+	static const D3DRENDERSTATETYPE states[] = {
+		D3DRS_LIGHTING, D3DRS_SPECULARENABLE, D3DRS_AMBIENT, D3DRS_NORMALIZENORMALS,
+		D3DRS_COLORVERTEX, D3DRS_LOCALVIEWER,
+		D3DRS_DIFFUSEMATERIALSOURCE, D3DRS_AMBIENTMATERIALSOURCE,
+		D3DRS_SPECULARMATERIALSOURCE, D3DRS_EMISSIVEMATERIALSOURCE,
+		D3DRS_SHADEMODE, D3DRS_FOGENABLE
+	};
+	static const char *const names[] = {
+		"LIGHTING", "SPECULARENABLE", "AMBIENT", "NORMALIZENORMALS",
+		"COLORVERTEX", "LOCALVIEWER",
+		"DIFFUSEMATERIALSOURCE", "AMBIENTMATERIALSOURCE",
+		"SPECULARMATERIALSOURCE", "EMISSIVEMATERIALSOURCE",
+		"SHADEMODE", "FOGENABLE"
+	};
+	unsigned int i;
+
+	for(i = 0; i<sizeof(states)/sizeof(states[0]); i++){
+		DWORD value = 0;
+		const HRESULT hr = sv3.pDev->GetRenderState(states[i], &value);
+
+		Debug("RS2LIGHTAUDIT|d3d8initial|%s|%s|0x%08lx\n", names[i],
+			SUCCEEDED(hr) ? "ok" : "failed", (unsigned long)value);
+	}
+
+	D3DMATERIAL8 m;
+
+	ZeroMemory(&m, sizeof(m));
+	if(SUCCEEDED(sv3.pDev->GetMaterial(&m))){
+		Debug("RS2LIGHTAUDIT|d3d8initial|material|D=%g,%g,%g,%g A=%g,%g,%g,%g"
+			" S=%g,%g,%g,%g E=%g,%g,%g,%g P=%g\n",
+			m.Diffuse.r, m.Diffuse.g, m.Diffuse.b, m.Diffuse.a,
+			m.Ambient.r, m.Ambient.g, m.Ambient.b, m.Ambient.a,
+			m.Specular.r, m.Specular.g, m.Specular.b, m.Specular.a,
+			m.Emissive.r, m.Emissive.g, m.Emissive.b, m.Emissive.a, m.Power);
+	}else{
+		Debug("RS2LIGHTAUDIT|d3d8initial|material|failed\n");
+	}
+
+	BOOL enabled = FALSE;
+
+	sv3.pDev->GetLightEnable(0, &enabled);
+	Debug("RS2LIGHTAUDIT|d3d8initial|light0|%s\n", enabled ? "enabled" : "disabled");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	MaterialBinding: the public boundary, routed to the active backend.
 //
@@ -17,14 +18,17 @@
 #include "RS2MaterialBindingBackend.h"
 #include "RS2D3D12Unsupported.h"
 #include "RS2D3D12TextureBackend.h"
+#include "RS2LightingAudit.h"
 
 void RS2SetMaterial(const RS2Material &material){
+	RS2LightingAuditMaterial(material);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetMaterial(material);
 	else RS2D3D12Unsupported("RS2SetMaterial");
 }
 
 void RS2BindTexture(unsigned int stage, const RS2TextureRef &texture){
+	RS2LightingAuditTexture(stage, !texture.IsEmpty());
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_BindTexture(stage, texture);
 	else RS2D3D12_BindTexture(stage, texture);

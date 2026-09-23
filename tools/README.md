@@ -24,6 +24,33 @@ So: two tools here, and a fixture mode in the program itself.
 | `rs2shot.ps1` | launch a build, put the window somewhere reproducible, screenshot it |
 | `scenecheck.py` | measure whether a screenshot still has a scene in it |
 | `rs2state.ps1` | pin the world a fixture capture starts from |
+| `lighting_probe_check.py` | read a `-lightingprobe` capture against the fixed-function formula, or against another backend's capture |
+
+## Material / lighting probe
+
+`-lightingprobe` draws 30 patches through the public boundary on whichever
+backend is running, each isolating one part of the fixed-function lighting
+contract: facing / half / back / emissive, the colour sources and what happens
+when the vertex has no colour, specular off / on / Power 10, 50, 0, specular
+past the terminator, texture modulation, clamping, missing normals, a scaled
+world, and diffuse / texture alpha.
+
+```
+RailSim2_Release_vc2010.exe -win -lightingprobe -dbf
+python tools/lighting_probe_check.py probe.png probe.log
+python tools/lighting_probe_check.py d3d12.png d3d12.log --reference d3d8.png
+```
+
+The patch positions come from the run's log, not from the script.
+
+Run on Direct3D 8 it was turned into the contract: all 30 centre pixels agree
+with the fixed-function equations to within 1 of 255. That is how the
+questions the documentation leaves open were answered by measurement - the
+light direction is the direction the light travels, a vertex source with no
+vertex colour falls back to the material, a missing normal lights as zero,
+specular is added after the texture and is cut off where N.L <= 0, and Power 0
+means a full highlight. Run on Direct3D 12, `--reference` compares every
+patch with the Direct3D 8 capture.
 
 ## WP8 Stage 0 texture probe
 
@@ -147,7 +174,13 @@ from 20:01 on one day to 07:13 on another, because runs in between had
 advanced the world and saved it.
 
 So `rs2state.ps1` snapshots what the program rewrites - `Config.txt` and
-`Undo` - and restores it before a capture:
+`Undo` - and restores it before a capture. The snapshot also carries the
+layout: at start-up the program loads `Layout\<LastFile>` named in
+`Config.txt`, not the Undo copy, and that file was once saved over during
+manual testing. The same snapshot then started in a different scene, and the
+accepted reference image could not be reproduced any more. Give fixture
+layouts their own `RS2EX_Fixture_*` names so a restore never writes over a
+layout somebody is working on:
 
 ```
 powershell -File tools/rs2state.ps1 -Action save    -Snapshot path\to\snapshot

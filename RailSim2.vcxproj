@@ -226,6 +226,8 @@
     <ClCompile Include="RS2Text.cpp" />
     <ClCompile Include="RS2TextureResource.cpp" />
     <ClCompile Include="RS2TextureAudit.cpp" />
+    <ClCompile Include="RS2LightingAudit.cpp" />
+    <ClCompile Include="RS2LightingProbe.cpp" />
     <ClCompile Include="RS2DecodedImage.cpp" />
     <ClCompile Include="RS2DecodedImageSmoke.cpp" />
     <ClCompile Include="RS2D3D8MaterialBinding.cpp" />
@@ -484,6 +486,8 @@
     <ClInclude Include="RS2Material.h" />
     <ClInclude Include="RS2TextureResource.h" />
     <ClInclude Include="RS2TextureAudit.h" />
+    <ClInclude Include="RS2LightingAudit.h" />
+    <ClInclude Include="RS2LightingProbe.h" />
     <ClInclude Include="RS2DecodedImage.h" />
     <ClInclude Include="RS2MaterialBinding.h" />
     <ClInclude Include="RS2RenderState.h" />

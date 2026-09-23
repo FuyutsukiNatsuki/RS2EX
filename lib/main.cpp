@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-23.
 //	Copyright (c) 2002 Midikyou
 
 #include "udx.h"
@@ -6,6 +6,7 @@
 #include "sysvalue.h"
 #include "..\RS2D3D12Smoke.h"
 #include "..\RS2D3D12DrawSmoke.h"
+#include "..\RS2LightingProbe.h"
 
 /*
  *	コンパイル・オプション
@@ -28,6 +29,7 @@
  *	-dx12	:RS2EX: select the Direct3D 12 backend.  No fallback.
  *	-dx12smoke:RS2EX: run the Direct3D 12 bootstrap test and exit.
  *	-dx12drawsmoke:RS2EX: draw through the RS2 boundary and exit.
+ *	-lightingprobe:RS2EX: draw the material / lighting probe and exit.
  *	/3ds	:3Dサウンドを使用しない。
  *	/fx		:サウンドにエフェクトを使用しない。
  */
@@ -113,6 +115,14 @@ BOOL CApp::Init(HINSTANCE hInst){
 	//	that dispatches on whichever backend the renderer is running.
 	if(RS2D3D12DrawSmokeRequested()){
 		RS2D3D12DrawSmokeRun();
+		return FALSE;
+	}
+
+	//	[RS2EX] -lightingprobe draws the same fixed grid on whichever backend
+	//	is running, so the Direct3D 8 image is the reference the Direct3D 12
+	//	one is checked against.  Same place and reason as the draw smoke.
+	if(RS2LightingProbeRequested()){
+		RS2LightingProbeRun();
 		return FALSE;
 	}
 	if(!InitDirectInput()) return FALSE;

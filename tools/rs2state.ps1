@@ -12,6 +12,15 @@
 #
 #   The snapshot lives outside the repository. It is someone's layout, it is
 #   several megabytes, and it is not source.
+#
+#   The layout itself is part of the world too. At start-up the program loads
+#   Layout\<LastFile> named in Config.txt, not the Undo copy, so a snapshot of
+#   Config.txt and Undo alone is only pinned for as long as nobody saves over
+#   that layout. That happened: the layout behind the v0.1.1 fixture was saved
+#   over during later manual testing, and the same snapshot then started in a
+#   different scene. A snapshot therefore carries its layout in Layout\, and
+#   restore puts it back. Give fixture layouts their own names (RS2EX_Fixture_*)
+#   so a restore never writes over a layout somebody is working on.
 
 param(
     [Parameter(Mandatory = $true)][ValidateSet("save", "restore")][string]$Action,
@@ -53,9 +62,28 @@ function Wait-ForExit {
 
 Wait-ForExit
 
+#   The layout Config.txt tells the program to load at start-up.
+function Get-LastFile([string]$config) {
+    if (-not (Test-Path $config)) { return $null }
+    $text = [System.IO.File]::ReadAllText($config, [System.Text.Encoding]::GetEncoding(932))
+    $m = [regex]::Match($text, 'LastFile\s*=\s*"([^"]+)"')
+    if ($m.Success) { return $m.Groups[1].Value }
+    return $null
+}
+
 if ($Action -eq "save") {
     if (Test-Path $Snapshot) { Remove-Item $Snapshot -Recurse -Force }
     $null = New-Item -ItemType Directory -Path $Snapshot
+
+    $last = Get-LastFile (Join-Path $RunDir "Config.txt")
+    if ($last) {
+        $src = Join-Path (Join-Path $RunDir "Layout") $last
+        if (Test-Path $src) {
+            $null = New-Item -ItemType Directory -Path (Join-Path $Snapshot "Layout")
+            Copy-Item $src (Join-Path (Join-Path $Snapshot "Layout") $last) -Force
+            Write-Host "saved Layout\$last"
+        }
+    }
 
     foreach ($item in $items) {
         $src = Join-Path $RunDir $item
@@ -77,5 +105,20 @@ if ($Action -eq "save") {
         if (Test-Path $dst) { Remove-Item $dst -Recurse -Force }
         Copy-Item $src $dst -Recurse -Force
         Write-Host "restored $item"
+    }
+
+    #   Layouts are copied in, never mirrored: the folder also holds layouts
+    #   that belong to whoever uses this tree.
+    $layouts = Join-Path $Snapshot "Layout"
+    if (Test-Path $layouts) {
+        foreach ($file in Get-ChildItem $layouts -File) {
+            Copy-Item $file.FullName (Join-Path (Join-Path $RunDir "Layout") $file.Name) -Force
+            Write-Host "restored Layout\$($file.Name)"
+        }
+    }
+
+    $last = Get-LastFile (Join-Path $RunDir "Config.txt")
+    if ($last -and -not (Test-Path (Join-Path (Join-Path $RunDir "Layout") $last))) {
+        throw "Config.txt starts from Layout\$last, which is not there"
     }
 }

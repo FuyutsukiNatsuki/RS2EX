@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	RenderState: the public boundary, routed to the active backend.
 //
@@ -18,6 +19,7 @@
 #include "RS2D3D12Unsupported.h"
 #include "RS2D3D12Draw.h"
 #include "RS2D3D12TextureBackend.h"
+#include "RS2LightingAudit.h"
 
 void RS2SetDepthTest(bool enable){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
@@ -80,6 +82,7 @@ void RS2SetShadeMode(RS2ShadeMode mode){
 }
 
 void RS2SetNormalizeNormals(bool enable){
+	RS2LightingAuditNormalize(enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetNormalizeNormals(enable);
 	else RS2D3D12Unsupported("RS2SetNormalizeNormals");
@@ -134,30 +137,35 @@ void RS2SetStencilPassOp(RS2StencilOp op){
 }
 
 void RS2SetLighting(bool enable){
+	RS2LightingAuditLighting(enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetLighting(enable);
 	else RS2D3D12Unsupported("RS2SetLighting");
 }
 
 void RS2SetAmbientLight(RS2PackedColor color){
+	RS2LightingAuditAmbient(color);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetAmbientLight(color);
 	else RS2D3D12Unsupported("RS2SetAmbientLight");
 }
 
 void RS2SetSpecular(bool enable){
+	RS2LightingAuditSpecular(enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetSpecular(enable);
 	else RS2D3D12Unsupported("RS2SetSpecular");
 }
 
 void RS2SetDiffuseColorSource(RS2ColorSource source){
+	RS2LightingAuditDiffuseSource(source);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetDiffuseColorSource(source);
 	else RS2D3D12Unsupported("RS2SetDiffuseColorSource");
 }
 
 void RS2SetAmbientColorSource(RS2ColorSource source){
+	RS2LightingAuditAmbientSource(source);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetAmbientColorSource(source);
 	else RS2D3D12Unsupported("RS2SetAmbientColorSource");

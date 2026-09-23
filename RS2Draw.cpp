@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-23.
 //
 //	Draw: the public boundary, routed to the active backend.
 //
@@ -17,6 +18,7 @@
 #include "RS2DrawBackend.h"
 #include "RS2D3D12Unsupported.h"
 #include "RS2D3D12Draw.h"
+#include "RS2LightingAudit.h"
 
 /*
  *	How many primitives a count forms, or 0 if it cannot form whole ones.
@@ -77,6 +79,7 @@ CRS2GeometryResource *RS2CreateGeometry(
 	}
 
 	RS2GeometryCount(geometry);
+	RS2LightingAuditGeometryCreated(geometry, layout);
 	return geometry;
 }
 
@@ -107,6 +110,7 @@ CRS2GeometryResource *RS2CreateIndexedGeometry(
 	}
 
 	RS2GeometryCount(geometry);
+	RS2LightingAuditGeometryCreated(geometry, layout);
 	return geometry;
 }
 
@@ -137,6 +141,7 @@ void RS2DestroyGeometry(
 ){
 	if(!geometry) return;
 
+	RS2LightingAuditGeometryDestroyed(geometry);
 	if(geometry->backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
 	else RS2D3D12_DestroyGeometry(geometry);
 
@@ -154,6 +159,7 @@ unsigned int RS2GetGeometryIndexBytes(){ return RS2GeometryTotalIndexBytes(); }
 
 void RS2DrawImmediate(const RS2MeshVertexLayout &layout, RS2PrimitiveType primitive,
 	const void *vertices, unsigned int vertexCount){
+	RS2LightingAuditDrawImmediate(layout, primitive, vertexCount);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawImmediate(layout, primitive, vertices, vertexCount);
 	else RS2D3D12_DrawImmediate(layout, primitive, vertices, vertexCount);
@@ -162,6 +168,7 @@ void RS2DrawImmediate(const RS2MeshVertexLayout &layout, RS2PrimitiveType primit
 void RS2DrawBuffered(const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
 	unsigned int firstVertex, unsigned int vertexCount){
 	if(!RS2GeometryUsable(geometry, "RS2DrawBuffered")) return;
+	RS2LightingAuditDrawGeometry(geometry, primitive, vertexCount, false);
 
 	if(geometry->backend==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawBuffered(geometry, primitive, firstVertex, vertexCount);
@@ -171,6 +178,7 @@ void RS2DrawBuffered(const CRS2GeometryResource *geometry, RS2PrimitiveType prim
 void RS2DrawIndexed(const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
 	unsigned int firstIndex, unsigned int indexCount){
 	if(!RS2GeometryUsable(geometry, "RS2DrawIndexed")) return;
+	RS2LightingAuditDrawGeometry(geometry, primitive, indexCount, true);
 
 	if(geometry->backend==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawIndexed(geometry, primitive, firstIndex, indexCount);
@@ -178,6 +186,7 @@ void RS2DrawIndexed(const CRS2GeometryResource *geometry, RS2PrimitiveType primi
 }
 
 void RS2SetWorldTransform(const float *matrix){
+	RS2LightingAuditWorld(matrix);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetWorldTransform(matrix);
 	else RS2D3D12_SetWorldTransform(matrix);
