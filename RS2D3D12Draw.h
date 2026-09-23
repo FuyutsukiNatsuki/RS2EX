@@ -33,6 +33,9 @@ void RS2D3D12_SetDepthWrite(bool enable);
 void RS2D3D12_SetDepthFunc(RS2CompareFunc func);
 void RS2D3D12_SetCullMode(RS2CullMode mode);
 void RS2D3D12_SetBlend(RS2BlendMode mode);
+void RS2D3D12_SetAlphaTest(bool enable);
+void RS2D3D12_SetAlphaRef(unsigned int ref);
+void RS2D3D12_SetAlphaFunc(RS2CompareFunc func);
 
 /*
  *	Put the state back where the engine expects to find it at start-up.

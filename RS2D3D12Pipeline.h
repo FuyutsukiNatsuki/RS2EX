@@ -39,6 +39,9 @@ struct RS2D3D12Constants
 	//	already-transformed path uses these, to turn screen coordinates into
 	//	clip space the way the fixed-function pipeline used to.
 	float viewport[4];
+	// x: enabled, y: 8-bit reference, z: RS2CompareFunc, w: reserved.
+	// Kept per draw so alpha-state changes never create another PSO.
+	float alphaTest[4];
 };
 
 /*

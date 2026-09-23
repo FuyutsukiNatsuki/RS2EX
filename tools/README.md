@@ -25,6 +25,20 @@ So: two tools here, and a fixture mode in the program itself.
 | `scenecheck.py` | measure whether a screenshot still has a scene in it |
 | `rs2state.ps1` | pin the world a fixture capture starts from |
 
+## WP7 alpha probe
+
+`-dx12 -dx12alphasmoke` draws a 6-column by 3-row grid from a known-alpha
+PNG through the public texture and draw APIs. Columns are alpha test off,
+ALWAYS, LESS_EQUAL/128, GREATER/128, LESS_EQUAL/0 and GREATER/0; rows sample
+alpha bytes 0, 128 and 255. The run submits 300 frames and holds its final
+frame briefly for capture. Check a screenshot with:
+
+```
+python tools/alpha_probe_check.py path\to\alpha-probe.png
+```
+
+The checker compares five interior pixels in each of the 18 regions exactly.
+
 ## scenecheck.py
 
 Measures structure rather than colour, so it survives a scene that keeps

@@ -52,19 +52,19 @@ void RS2SetBlend(RS2BlendMode mode){
 void RS2SetAlphaTest(bool enable){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetAlphaTest(enable);
-	else RS2D3D12Unsupported("RS2SetAlphaTest");
+	else RS2D3D12_SetAlphaTest(enable);
 }
 
 void RS2SetAlphaRef(unsigned int ref){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetAlphaRef(ref);
-	else RS2D3D12Unsupported("RS2SetAlphaRef");
+	else RS2D3D12_SetAlphaRef(ref);
 }
 
 void RS2SetAlphaFunc(RS2CompareFunc func){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetAlphaFunc(func);
-	else RS2D3D12Unsupported("RS2SetAlphaFunc");
+	else RS2D3D12_SetAlphaFunc(func);
 }
 
 void RS2SetCullMode(RS2CullMode mode){

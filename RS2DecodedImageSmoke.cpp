@@ -57,6 +57,11 @@ static bool RS2WriteDecodedFixture(
 	return ok;
 }
 
+bool RS2WriteKnownAlphaPngFixture(const char *path){
+	return path && RS2WriteDecodedFixture(
+		path, s_IndexedPngFixture, sizeof(s_IndexedPngFixture));
+}
+
 static bool RS2DecodedPixelEquals(
 	const CRS2DecodedImage &image,
 	unsigned int mipIndex,
@@ -103,8 +108,7 @@ bool RS2DecodedImageSmoke(){
 		pngPath, s_PngFixture, sizeof(s_PngFixture));
 	passed = RS2WriteDecodedFixture(
 		bmpPath, s_BmpFixture, sizeof(s_BmpFixture)) && passed;
-	passed = RS2WriteDecodedFixture(
-		indexedPath, s_IndexedPngFixture, sizeof(s_IndexedPngFixture)) && passed;
+	passed = RS2WriteKnownAlphaPngFixture(indexedPath) && passed;
 	RS2DecodedSmokeStep("write tiny fixtures", passed, &allPassed);
 
 	CRS2DecodedImage image;

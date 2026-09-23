@@ -23,6 +23,7 @@
 #include "RS2RenderState.h"
 #include "RS2D3D12Texture.h"
 #include "RS2D3D12Backend.h"
+#include "RS2DecodedImage.h"
 
 //	Enough draws to prove repeated submission. Present is not guaranteed to
 //	pace an occluded or background window on every machine, so a separate hold
@@ -63,8 +64,11 @@ struct RS2DrawSmokeVertexSUV
 };
 
 bool RS2D3D12DrawSmokeRequested(){
-	return CheckArguments("-dx12drawsmoke")!=FALSE;
+	return CheckArguments("-dx12drawsmoke")!=FALSE
+		|| CheckArguments("-dx12alphasmoke")!=FALSE;
 }
+
+static bool RS2D3D12AlphaSmokeRun();
 
 /*
  *	The layout for pipeline-transformed vertices: position and a packed colour.
@@ -101,6 +105,7 @@ bool RS2D3D12DrawSmokeRun(){
 			GetRS2Renderer().GetBackendName());
 		return false;
 	}
+	if(CheckArguments("-dx12alphasmoke")) return RS2D3D12AlphaSmokeRun();
 
 	//	Identity everywhere, so the vertices below are already in clip space.
 	//	The matrix path is still exercised - the shader multiplies by it - but
@@ -364,6 +369,128 @@ bool RS2D3D12DrawSmokeRun(){
 		&& refused==4;
 
 	Debug("RS2D3D12DRAW|%s\n", ok ? "pass" : "FAIL");
+	if(ok) Sleep(RS2D3D12_DRAW_CAPTURE_HOLD_MS);
+	return ok;
+}
+
+// A separate view of the existing public draw smoke, with no scene-dependent
+// pixels. Rows sample the fixture's alpha 0/128/255 texels; columns exercise
+// off, ALWAYS, LEQUAL/128, GREATER/128, LEQUAL/0, GREATER/0 respectively.
+// The matching screenshot checker verifies all eighteen interiors exactly.
+static bool RS2D3D12AlphaSmokeRun(){
+	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
+	if(!backend) return false;
+	unsigned int width = 0, height = 0;
+	GetRS2Renderer().GetViewportSize(&width, &height);
+	if(width!=640 || height!=480){
+		Debug("RS2D3D12ALPHA|expected a 640 x 480 viewport\n");
+		return false;
+	}
+	if(sv3.fWindowed)
+		SetWindowPos(svw.hWnd, HWND_TOPMOST, 0, 0, 0, 0,
+			SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
+
+	char directory[MAX_PATH], path[MAX_PATH];
+	if(!GetTempPathA(MAX_PATH, directory)) return false;
+	_snprintf(path, MAX_PATH-1, "%sRS2EX-alpha-%lu.png",
+		directory, (unsigned long)GetCurrentProcessId());
+	path[MAX_PATH-1] = 0;
+	if(!RS2WriteKnownAlphaPngFixture(path)) return false;
+
+	const unsigned int textureBaseline = RS2D3D12_GetLiveTextureCount();
+	const unsigned int descriptorBaseline = backend->GetDescriptors()->GetLive();
+	if(textureBaseline || descriptorBaseline){
+		Debug("RS2D3D12ALPHA|nonempty start: textures=%u descriptors=%u\n",
+			textureBaseline, descriptorBaseline);
+		DeleteFileA(path);
+		return false;
+	}
+	CRS2TextureResource *texture = RS2CreateTextureFromFile(path, 0, 1);
+	DeleteFileA(path);
+	if(!texture || !texture->IsValid()){
+		RS2DestroyTexture(texture);
+		Debug("RS2D3D12ALPHA|fixture texture creation failed\n");
+		return false;
+	}
+
+	RS2MeshVertexLayout layout;
+	RS2DrawSmokeLayoutS(&layout);
+	layout.stride = sizeof(RS2DrawSmokeVertexSUV);
+	layout.texCoordCount = 1;
+	layout.texCoord[0].offset = sizeof(RS2DrawSmokeVertexS);
+	layout.texCoord[0].components = 2;
+	float identity[16];
+	RS2DrawSmokeIdentity(identity);
+	const unsigned int refs[6] = { 128, 128, 128, 128, 0, 0 };
+	const RS2CompareFunc funcs[6] = {
+		RS2_COMPARE_GREATER, RS2_COMPARE_ALWAYS,
+		RS2_COMPARE_LESS_EQUAL, RS2_COMPARE_GREATER,
+		RS2_COMPARE_LESS_EQUAL, RS2_COMPARE_GREATER
+	};
+	const float u[3] = { 0.25f, 0.75f, 0.25f };
+	const float v[3] = { 0.75f, 0.25f, 0.25f };
+	const unsigned int pipelineBaseline = backend->GetPipelineStateCount();
+	const unsigned int drawBaseline = RS2D3D12_GetDrawCount();
+	const unsigned int refusedBaseline = RS2D3D12_GetRefusedDrawCount();
+	bool framesOk = true;
+
+	for(int frame = 0; frame<RS2D3D12_DRAW_FRAMES; frame++){
+		if(!GetRS2Renderer().BeginRenderPass(0x00102030, true)){
+			framesOk = false;
+			break;
+		}
+		RS2SetWorldTransform(identity);
+		RS2SetViewTransform(identity);
+		RS2SetProjectionTransform(identity);
+		RS2SetDepthTest(false);
+		RS2SetDepthWrite(false);
+		RS2SetCullMode(RS2_CULL_NONE);
+		RS2SetBlend(RS2_BLEND_DISABLED);
+		RS2SetTextureFilter(0, RS2_FILTER_POINT);
+		RS2BindTexture(0, texture->GetRef());
+
+		for(unsigned int column = 0; column<6; column++){
+			RS2SetAlphaTest(column!=0);
+			RS2SetAlphaRef(refs[column]);
+			RS2SetAlphaFunc(funcs[column]);
+			for(unsigned int row = 0; row<3; row++){
+				const float x = (float)(60+column*100);
+				const float y = (float)(100+row*110);
+				const RS2DrawSmokeVertexSUV quad[4] = {
+					{ x-32, y-32, 0.5f, 1.0f, 0xffffffff, u[row], v[row] },
+					{ x+32, y-32, 0.5f, 1.0f, 0xffffffff, u[row], v[row] },
+					{ x+32, y+32, 0.5f, 1.0f, 0xffffffff, u[row], v[row] },
+					{ x-32, y+32, 0.5f, 1.0f, 0xffffffff, u[row], v[row] }
+				};
+				RS2DrawImmediate(layout, RS2_PRIMITIVE_TRIANGLE_FAN, quad, 4);
+			}
+		}
+		RS2BindTexture(0, RS2TextureRef());
+		RS2SetAlphaTest(false);
+		GetRS2Renderer().EndRenderPass();
+		GetRS2Renderer().Present();
+	}
+
+	RS2SetDepthTest(true);
+	RS2SetDepthWrite(true);
+	RS2SetCullMode(RS2_CULL_COUNTER_CLOCKWISE);
+	RS2SetBlend(RS2_BLEND_ALPHA);
+	RS2DestroyTexture(texture);
+	backend->WaitForGpu();
+	backend->CollectRetiredTextures();
+	const unsigned int submitted = RS2D3D12_GetDrawCount()-drawBaseline;
+	const unsigned int refused = RS2D3D12_GetRefusedDrawCount()-refusedBaseline;
+	const unsigned int pipelineDelta = backend->GetPipelineStateCount()-pipelineBaseline;
+	const unsigned int warnings = backend->HasDebugLayer()
+		? backend->CountDebugMessages(D3D12_MESSAGE_SEVERITY_WARNING) : 0;
+	const bool ok = framesOk && submitted==RS2D3D12_DRAW_FRAMES*18
+		&& refused==0 && warnings==0
+		&& pipelineDelta==1
+		&& RS2D3D12_GetLiveTextureCount()==textureBaseline
+		&& backend->GetDescriptors()->GetLive()==descriptorBaseline;
+	Debug("RS2D3D12ALPHA|submitted=%u refused=%u warnings=%u newPSO=%u\n",
+		submitted, refused, warnings, pipelineDelta);
+	Debug("RS2D3D12ALPHA|%s\n", ok ? "pass" : "FAIL");
 	if(ok) Sleep(RS2D3D12_DRAW_CAPTURE_HOLD_MS);
 	return ok;
 }

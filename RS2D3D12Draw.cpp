@@ -25,6 +25,9 @@ static bool s_DepthWrite = true;
 static RS2CompareFunc s_DepthFunc = RS2_COMPARE_LESS_EQUAL;
 static RS2CullMode s_CullMode = RS2_CULL_COUNTER_CLOCKWISE;
 static RS2BlendMode s_BlendMode = RS2_BLEND_ALPHA;
+static bool s_AlphaTest = false;
+static unsigned int s_AlphaRef = 0;
+static RS2CompareFunc s_AlphaFunc = RS2_COMPARE_ALWAYS;
 
 static unsigned int s_DrawCount = 0;
 static unsigned int s_RefusedCount = 0;
@@ -78,6 +81,13 @@ void RS2D3D12_SetDepthWrite(bool enable){ s_DepthWrite = enable; }
 void RS2D3D12_SetDepthFunc(RS2CompareFunc func){ s_DepthFunc = func; }
 void RS2D3D12_SetCullMode(RS2CullMode mode){ s_CullMode = mode; }
 void RS2D3D12_SetBlend(RS2BlendMode mode){ s_BlendMode = mode; }
+void RS2D3D12_SetAlphaTest(bool enable){ s_AlphaTest = enable; }
+void RS2D3D12_SetAlphaRef(unsigned int ref){ s_AlphaRef = ref & 0xffu; }
+void RS2D3D12_SetAlphaFunc(RS2CompareFunc func){
+	if(func==RS2_COMPARE_ALWAYS || func==RS2_COMPARE_LESS_EQUAL
+			|| func==RS2_COMPARE_GREATER) s_AlphaFunc = func;
+	else Debug("[RS2EX D3D12] unsupported alpha comparison %d\n", (int)func);
+}
 
 void RS2D3D12_ApplyInitialRenderState(){
 	//	The same values RS2D3D8_ApplyInitialRenderState leaves behind, so the
@@ -87,6 +97,9 @@ void RS2D3D12_ApplyInitialRenderState(){
 	s_DepthFunc = RS2_COMPARE_LESS_EQUAL;
 	s_CullMode = RS2_CULL_COUNTER_CLOCKWISE;
 	s_BlendMode = RS2_BLEND_ALPHA;
+	s_AlphaTest = false;
+	s_AlphaRef = 0;
+	s_AlphaFunc = RS2_COMPARE_ALWAYS;
 
 	RS2D3D12_Identity(s_World);
 	RS2D3D12_Identity(s_View);
@@ -253,6 +266,10 @@ static bool RS2D3D12_BindPipeline(
 	constants.viewport[1] = (float)height;
 	constants.viewport[2] = width ? 1.0f/(float)width : 0.0f;
 	constants.viewport[3] = height ? 1.0f/(float)height : 0.0f;
+	constants.alphaTest[0] = s_AlphaTest ? 1.0f : 0.0f;
+	constants.alphaTest[1] = (float)s_AlphaRef;
+	constants.alphaTest[2] = (float)s_AlphaFunc;
+	constants.alphaTest[3] = 0.0f;
 
 	D3D12_GPU_VIRTUAL_ADDRESS constantAddress = 0;
 
