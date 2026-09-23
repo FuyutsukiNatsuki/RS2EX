@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24.
 //
 //	The Direct3D 12 pipeline: root signature, shaders, and pipeline states.
 //
@@ -66,6 +66,14 @@ struct RS2D3D12Constants
 	//	w: ambient from the vertex colour.
 	float lighting[4];
 	float power[4];			//	x: material Power
+
+	//	Texture coordinates, v0.1.4.  Stage 0 is (u, v, 1) times uvMatrix0
+	//	while uvFlags.x is set; stage 1 comes from the source in uvFlags.z -
+	//	0 set 0, 1 set 1, 2 the camera-space normal as (nx, ny, nz, 1) - and
+	//	is multiplied by uvMatrix1 while uvFlags.y is set.  Row vectors.
+	float uvMatrix0[16];
+	float uvMatrix1[16];
+	float uvFlags[4];
 };
 
 /*
@@ -101,7 +109,7 @@ struct RS2D3D12PipelineKey
 	unsigned char blendMode;		//	RS2BlendMode
 
 	unsigned char textured;		// Stage 0 shader variant, never texture identity
-	unsigned char pad[1];
+	unsigned char stage1;		// Stage 1 multiply variant, v0.1.4; never texture identity
 };
 
 class CRS2D3D12Pipeline
@@ -118,7 +126,7 @@ private:
 	//	carry one, so those four slots stay empty.  Whether a layout has a
 	//	normal was already part of the key, so this adds no pipeline states.
 	ID3DBlob *m_Vertex[2][2][2][2];
-	ID3DBlob *m_Pixel[2];
+	ID3DBlob *m_Pixel[2][2];	//	[textured][stage 1]; stage 1 only with a texture
 
 	//	Small and linear on purpose: a scene reaches a handful of states, and a
 	//	linear scan over a handful is faster than anything with a hash in it.

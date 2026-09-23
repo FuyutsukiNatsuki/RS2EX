@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
-//	Modified for RS2EX on 2026-09-22, 2026-09-23.
+//	Modified for RS2EX on 2026-09-22, 2026-09-23, 2026-09-24.
 //
 //	See RS2D3D12Backend.h.
 
@@ -822,6 +822,16 @@ void CRS2D3D12Backend::Shutdown(){
 			Debug("RS2D3D12SCENE|lit draws=%u unlit=%u litNormal=%u litNoNormal=%u specularDraws=%u\n",
 				light.litDraws,light.unlitDraws,light.litNormalDraws,light.litNoNormalDraws,
 				light.specularDraws);
+		}
+		{
+			const RS2D3D12StageStats &st = RS2D3D12_GetStageStats();
+
+			Debug("RS2D3D12SCENE|stage1 bind=%u unbind=%u point=%u linear=%u combine=%u environment=%u uvTransform=%u uvMatrix=%u\n",
+				stats.stage1Binds,stats.stage1Unbinds,stats.stage1PointFilters,
+				stats.stage1LinearFilters,st.combineCalls,st.environmentCalls,
+				st.uvTransformCalls,st.uvMatrixCalls);
+			Debug("RS2D3D12SCENE|stage1 draws=%u environmentDraws=%u uvTransformedDraws=%u skippedNoTexture=%u\n",
+				st.stage1Draws,st.environmentDraws,st.uvTransformedDraws,st.stage1Skipped);
 		}
 		Debug("RS2D3D12SCENE|stage0 bind=%u unbind=%u rejected=%u otherStage=%u point=%u linear=%u rejectedFilter=%u\n",
 			stats.stage0Binds,stats.stage0Unbinds,stats.rejectedBinds,

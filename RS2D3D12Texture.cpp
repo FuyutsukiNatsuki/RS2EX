@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24.
 //
 //	See RS2D3D12Texture.h.
 
@@ -34,8 +34,10 @@ static unsigned int s_LiveTextures = 0;
 static unsigned int s_PeakTextures = 0;
 static unsigned int s_LiveDDSTextures = 0;
 static unsigned int s_PeakDDSTextures = 0;
-static RS2D3D12TexturePayload *s_BoundTexture = 0;
-static RS2TextureFilter s_Stage0Filter = RS2_FILTER_POINT;
+//	Stages 0 and 1, the only ones RailSim uses (v0.1.4 audit).  Kept apart
+//	so each stage has its own texture and its own filter at the same time.
+static RS2D3D12TexturePayload *s_Bound[2] = { 0, 0 };
+static RS2TextureFilter s_Filter[2] = { RS2_FILTER_POINT, RS2_FILTER_POINT };
 static RS2D3D12TextureRuntimeStats s_RuntimeStats;
 
 static bool RS2D3D12TextureError(std::string *error, const char *what, HRESULT hr){
@@ -52,7 +54,8 @@ static void RS2D3D12DestroyTexturePayload(void *opaque){
 	RS2D3D12TexturePayload *payload = (RS2D3D12TexturePayload *)opaque;
 	if(!payload) return;
 
-	if(s_BoundTexture==payload) s_BoundTexture = 0;
+	if(s_Bound[0]==payload) s_Bound[0] = 0;
+	if(s_Bound[1]==payload) s_Bound[1] = 0;
 	if(payload->owner && RS2D3D12GetActiveBackend()==payload->owner){
 		payload->owner->RetireTexture(payload->texture, payload->slot);
 		payload->texture = 0;
@@ -73,7 +76,7 @@ unsigned int RS2D3D12_GetLiveTextureCount(){ return s_LiveTextures; }
 unsigned int RS2D3D12_GetPeakTextureCount(){ return s_PeakTextures; }
 unsigned int RS2D3D12_GetLiveDDSTextureCount(){ return s_LiveDDSTextures; }
 unsigned int RS2D3D12_GetPeakDDSTextureCount(){ return s_PeakDDSTextures; }
-bool RS2D3D12_BoundTextureIsDDS(){ return s_BoundTexture && s_BoundTexture->dds; }
+bool RS2D3D12_BoundTextureIsDDS(){ return s_Bound[0] && s_Bound[0]->dds; }
 void RS2D3D12_ResetTextureRuntimeStats(){
 	ZeroMemory(&s_RuntimeStats, sizeof(s_RuntimeStats));
 }
@@ -82,41 +85,52 @@ const RS2D3D12TextureRuntimeStats &RS2D3D12_GetTextureRuntimeStats(){
 }
 
 void RS2D3D12_ResetTextureBinding(){
-	s_BoundTexture = 0;
-	s_Stage0Filter = RS2_FILTER_POINT;
+	s_Bound[0] = s_Bound[1] = 0;
+	s_Filter[0] = s_Filter[1] = RS2_FILTER_POINT;
 }
 
+/*
+ *	Bind a texture to stage 0 or 1.
+ *
+ *	The same resource and the same shader view serve either stage: a texture
+ *	used on stage 1 gets no second descriptor.  A texture that is not a live
+ *	Direct3D 12 texture of this backend leaves the stage empty rather than
+ *	holding on to something it cannot sample.  Stages past 1 are refused and
+ *	say so - RailSim never reaches them (v0.1.4 audit).
+ */
 void RS2D3D12_BindTexture(unsigned int stage, const RS2TextureRef &texture){
-	if(stage!=0){
+	if(stage>1){
 		s_RuntimeStats.otherStageBinds++;
-		RS2D3D12Unsupported("RS2BindTexture(stage>0)");
+		RS2D3D12Unsupported("RS2BindTexture(stage>1)");
 		return;
 	}
 	const CRS2TextureResource *resource = texture.GetResource();
 	if(!resource){
-		s_RuntimeStats.stage0Unbinds++;
-		s_BoundTexture = 0;
+		if(stage==0) s_RuntimeStats.stage0Unbinds++;
+		else s_RuntimeStats.stage1Unbinds++;
+		s_Bound[stage] = 0;
 		return;
 	}
 	if(!resource->IsOwnedByBackend(RS2_RENDERER_D3D12)){
 		s_RuntimeStats.rejectedBinds++;
-		Debug("[RS2EX D3D12 Texture] bind rejected a foreign texture\n");
-		s_BoundTexture = 0;
+		Debug("[RS2EX D3D12 Texture] stage %u bind rejected a foreign texture\n", stage);
+		s_Bound[stage] = 0;
 		return;
 	}
 	RS2D3D12TexturePayload *payload =
 		(RS2D3D12TexturePayload *)resource->GetPayloadForBackend();
-	s_BoundTexture = payload && payload->owner==RS2D3D12GetActiveBackend()
+	s_Bound[stage] = payload && payload->owner==RS2D3D12GetActiveBackend()
 		&& payload->owner && payload->owner->GetDescriptors()->IsLive(payload->slot)
 		? payload : 0;
-	if(s_BoundTexture) s_RuntimeStats.stage0Binds++;
-	else s_RuntimeStats.rejectedBinds++;
+	if(!s_Bound[stage]) s_RuntimeStats.rejectedBinds++;
+	else if(stage==0) s_RuntimeStats.stage0Binds++;
+	else s_RuntimeStats.stage1Binds++;
 }
 
 void RS2D3D12_SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
-	if(stage!=0){
+	if(stage>1){
 		s_RuntimeStats.rejectedFilters++;
-		RS2D3D12Unsupported("RS2SetTextureFilter(stage>0)");
+		RS2D3D12Unsupported("RS2SetTextureFilter(stage>1)");
 		return;
 	}
 	if(filter!=RS2_FILTER_POINT && filter!=RS2_FILTER_LINEAR){
@@ -124,18 +138,34 @@ void RS2D3D12_SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
 		RS2D3D12Unsupported("RS2SetTextureFilter(invalid filter)");
 		return;
 	}
-	if(filter==RS2_FILTER_LINEAR) s_RuntimeStats.linearFilters++;
+	if(stage==1){
+		if(filter==RS2_FILTER_LINEAR) s_RuntimeStats.stage1LinearFilters++;
+		else s_RuntimeStats.stage1PointFilters++;
+	}else if(filter==RS2_FILTER_LINEAR) s_RuntimeStats.linearFilters++;
 	else s_RuntimeStats.pointFilters++;
-	s_Stage0Filter = filter;
+	s_Filter[stage] = filter;
 }
 
 bool RS2D3D12_GetBoundTexture(
 	CRS2D3D12Backend *backend, RS2D3D12SrvSlot *slot, RS2TextureFilter *filter
 ){
-	if(!backend || !s_BoundTexture || s_BoundTexture->owner!=backend
-			|| !backend->GetDescriptors()->IsLive(s_BoundTexture->slot)) return false;
-	if(slot) *slot = s_BoundTexture->slot;
-	if(filter) *filter = s_Stage0Filter;
+	return RS2D3D12_GetBoundStageTexture(backend, 0, slot, filter);
+}
+
+bool RS2D3D12_GetBoundStageTexture(
+	CRS2D3D12Backend *backend, unsigned int stage,
+	RS2D3D12SrvSlot *slot, RS2TextureFilter *filter
+){
+	if(stage>1) return false;
+
+	const RS2D3D12TexturePayload *bound = s_Bound[stage];
+
+	//	Checked at every draw, not only at bind: a texture destroyed since
+	//	its bind has had its slot retired, and a retired slot is never read.
+	if(!backend || !bound || bound->owner!=backend
+			|| !backend->GetDescriptors()->IsLive(bound->slot)) return false;
+	if(slot) *slot = bound->slot;
+	if(filter) *filter = s_Filter[stage];
 	return true;
 }
 

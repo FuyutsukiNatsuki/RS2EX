@@ -1,12 +1,13 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24.
 //
 //	See RS2D3D12Draw.h.
 
 #include "stdafx.h"
 #include "RS2D3D12Draw.h"
 #include "RS2D3D12Backend.h"
+#include "RS2D3D12Unsupported.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //	State the engine has set
@@ -44,6 +45,33 @@ static RS2ColorSource s_AmbientSource = RS2_COLOR_FROM_MATERIAL;
 static RS2DirectionalLight s_Light;
 static bool s_LightEnabled = false;
 static RS2D3D12LightingStats s_LightingStats;
+
+//	Texture coordinate state for stages 0 and 1 - what Direct3D 8 kept as
+//	D3DTSS_TEXTURETRANSFORMFLAGS, D3DTS_TEXTUREn and D3DTSS_TEXCOORDINDEX.
+//	The matrix and the enable flag are separate, as they were: disabling a
+//	transform keeps the matrix, and enabling it again uses the stored one.
+enum RS2D3D12UVSource
+{
+	RS2D3D12_UV_TEXCOORD0,		//	PASSTHRU | 0
+	RS2D3D12_UV_TEXCOORD1,		//	Direct3D 8's stage 1 default index
+	RS2D3D12_UV_CAMERA_NORMAL	//	D3DTSS_TCI_CAMERASPACENORMAL
+};
+
+static bool s_UVTransform[2] = { false, false };
+static float s_UVMatrix[2][16];
+static RS2D3D12UVSource s_UVSource[2] = { RS2D3D12_UV_TEXCOORD0, RS2D3D12_UV_TEXCOORD1 };
+static bool s_Combine1 = false;
+static RS2D3D12StageStats s_StageStats;
+
+//	The matrix RS2D3D8_SetEnvironmentMapping installs, value for value.  With
+//	the camera-space normal as a three-component input its third row
+//	multiplies nz - measured: u = 0.5 nx + 0.5 nz, v = -0.5 ny + 0.5 nz.
+static const float RS2D3D12_ENV_MATRIX[16] = {
+	0.5f,  0.0f, 0.0f, 0.0f,
+	0.0f, -0.5f, 0.0f, 0.0f,
+	0.5f,  0.5f, 1.0f, 0.0f,
+	0.0f,  0.0f, 0.0f, 1.0f
+};
 
 static unsigned int s_DrawCount = 0;
 static unsigned int s_TexturedDrawCount = 0;
@@ -134,6 +162,17 @@ void RS2D3D12_ApplyInitialRenderState(){
 	ZeroMemory(&s_Light, sizeof(s_Light));
 	s_LightEnabled = false;
 
+	//	Direct3D 8's own start: no transform, identity matrices, stage 1
+	//	reading coordinate set 1, no secondary combine.  The engine sets all
+	//	of these before stage 1 is used; nothing here invents a reset the
+	//	legacy renderer did not do.
+	s_UVTransform[0] = s_UVTransform[1] = false;
+	RS2D3D12_Identity(s_UVMatrix[0]);
+	RS2D3D12_Identity(s_UVMatrix[1]);
+	s_UVSource[0] = RS2D3D12_UV_TEXCOORD0;
+	s_UVSource[1] = RS2D3D12_UV_TEXCOORD1;
+	s_Combine1 = false;
+
 	RS2D3D12_Identity(s_World);
 	RS2D3D12_Identity(s_View);
 	RS2D3D12_Identity(s_Projection);
@@ -176,6 +215,54 @@ void RS2D3D12_SubmitDirectionalLight(const RS2DirectionalLight &light){
 }
 
 const RS2D3D12LightingStats &RS2D3D12_GetLightingStats(){ return s_LightingStats; }
+
+void RS2D3D12_SetSecondaryTextureCombine(unsigned int stage, bool enable){
+	s_StageStats.combineCalls++;
+	if(stage!=1){
+		RS2D3D12Unsupported("RS2SetSecondaryTextureCombine(stage!=1)");
+		return;
+	}
+	s_Combine1 = enable;
+}
+
+void RS2D3D12_SetUVTransform(unsigned int stage, bool enable){
+	s_StageStats.uvTransformCalls++;
+	if(stage>1){
+		RS2D3D12Unsupported("RS2SetUVTransform(stage>1)");
+		return;
+	}
+	s_UVTransform[stage] = enable;
+}
+
+void RS2D3D12_SetUVMatrix(unsigned int stage, const float *matrix){
+	s_StageStats.uvMatrixCalls++;
+	if(stage>1){
+		RS2D3D12Unsupported("RS2SetUVMatrix(stage>1)");
+		return;
+	}
+	if(!matrix) return;		//	Direct3D 8 ignored a null matrix too
+	for(int i = 0; i<16; i++) s_UVMatrix[stage][i] = matrix[i];
+}
+
+/*
+ *	The three things RS2D3D8_SetEnvironmentMapping does: the transform flag,
+ *	the matrix (the environment matrix, or identity on the way out), and the
+ *	coordinate source (camera-space normal, or passthrough of set 0 - not set
+ *	1, which is what Direct3D 8 is left with after the first use too).
+ */
+void RS2D3D12_SetEnvironmentMapping(unsigned int stage, bool enable){
+	s_StageStats.environmentCalls++;
+	if(stage>1){
+		RS2D3D12Unsupported("RS2SetEnvironmentMapping(stage>1)");
+		return;
+	}
+	s_UVTransform[stage] = enable;
+	if(enable) for(int i = 0; i<16; i++) s_UVMatrix[stage][i] = RS2D3D12_ENV_MATRIX[i];
+	else RS2D3D12_Identity(s_UVMatrix[stage]);
+	s_UVSource[stage] = enable ? RS2D3D12_UV_CAMERA_NORMAL : RS2D3D12_UV_TEXCOORD0;
+}
+
+const RS2D3D12StageStats &RS2D3D12_GetStageStats(){ return s_StageStats; }
 
 static void RS2D3D12_Colour(float *out, const RS2Color4 &c){
 	out[0] = c.r;
@@ -382,6 +469,18 @@ static bool RS2D3D12_BindPipeline(
 	key->textured = key->texCoordCount && RS2D3D12_GetBoundTexture(
 		backend, &textureSlot, &filter) ? 1 : 0;
 
+	//	Stage 1 only takes part when Direct3D 8 would have let it: combine on,
+	//	a live stage 1 texture, and a textured stage 0 - with no base texture
+	//	Direct3D 8 applied no stage 1 at all (measured).  Its presence is the
+	//	one structural fact the key needs; which texture it is never is.
+	RS2D3D12SrvSlot stage1Slot;
+	RS2TextureFilter stage1Filter = RS2_FILTER_POINT;
+	const bool stage1Texture = RS2D3D12_GetBoundStageTexture(
+		backend, 1, &stage1Slot, &stage1Filter);
+
+	key->stage1 = (s_Combine1 && stage1Texture && key->textured) ? 1 : 0;
+	if(s_Combine1 && !key->stage1) s_StageStats.stage1Skipped++;
+
 	ID3D12PipelineState *state = backend->GetPipeline()->Get(*key);
 
 	if(!state){
@@ -411,6 +510,29 @@ static bool RS2D3D12_BindPipeline(
 	RS2D3D12_LightingConstants(&constants, worldView,
 		key->positionSemantic!=RS2_POSITION_ALREADY_TRANSFORMED, key->hasNormal!=0);
 
+	{
+		int i;
+
+		for(i = 0; i<16; i++){
+			constants.uvMatrix0[i] = s_UVMatrix[0][i];
+			constants.uvMatrix1[i] = s_UVMatrix[1][i];
+		}
+		constants.uvFlags[0] = s_UVTransform[0] ? 1.0f : 0.0f;
+		constants.uvFlags[1] = s_UVTransform[1] ? 1.0f : 0.0f;
+		constants.uvFlags[2] = (float)s_UVSource[1];
+		constants.uvFlags[3] = 0.0f;
+
+		const bool pipelineTransformed =
+			key->positionSemantic!=RS2_POSITION_ALREADY_TRANSFORMED;
+
+		if(key->stage1){
+			s_StageStats.stage1Draws++;
+			if(s_UVSource[1]==RS2D3D12_UV_CAMERA_NORMAL) s_StageStats.environmentDraws++;
+		}
+		if(key->textured && s_UVTransform[0] && pipelineTransformed)
+			s_StageStats.uvTransformedDraws++;
+	}
+
 	D3D12_GPU_VIRTUAL_ADDRESS constantAddress = 0;
 
 	//	Constant buffers must start on a 256-byte boundary.
@@ -434,6 +556,21 @@ static bool RS2D3D12_BindPipeline(
 		backend->GetDescriptors()->BindHeaps(list);
 		list->SetGraphicsRootDescriptorTable(1, srv);
 		list->SetGraphicsRootDescriptorTable(2, sampler);
+
+		//	Stage 1 reuses the texture's own view and the shared samplers.
+		//	Tables 3 and 4 are only set - and only read by the shader - when
+		//	stage 1 takes part, so no draw can reach a stale descriptor.
+		if(key->stage1){
+			D3D12_GPU_DESCRIPTOR_HANDLE srv1, sampler1;
+
+			if(!backend->GetDescriptors()->GetSrvHandles(stage1Slot, 0, &srv1)
+					|| !backend->GetDescriptors()->GetSamplerHandle(stage1Filter, &sampler1)){
+				RS2D3D12_Refuse("Stage 1 descriptors are unavailable");
+				return false;
+			}
+			list->SetGraphicsRootDescriptorTable(3, srv1);
+			list->SetGraphicsRootDescriptorTable(4, sampler1);
+		}
 	}
 	list->IASetPrimitiveTopology(topology);
 	return true;

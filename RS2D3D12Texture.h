@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24.
 //
 //	Direct3D 12 sampled-texture allocation and upload lifetime.
 //
@@ -91,6 +91,10 @@ struct RS2D3D12TextureRuntimeStats
 	unsigned int stage0Binds, stage0Unbinds, rejectedBinds, otherStageBinds;
 	unsigned int pointFilters, linearFilters, rejectedFilters;
 
+	//	Stage 1 (v0.1.4).  otherStageBinds above now counts stages past 1.
+	unsigned int stage1Binds, stage1Unbinds;
+	unsigned int stage1PointFilters, stage1LinearFilters;
+
 	//	DDS, a subset of the file counts above.
 	unsigned int ddsAttempts, ddsSuccesses, ddsFailures;
 	unsigned int ddsBC1, ddsBC3;
@@ -102,6 +106,11 @@ const RS2D3D12TextureRuntimeStats &RS2D3D12_GetTextureRuntimeStats();
 
 bool RS2D3D12_GetBoundTexture(
 	CRS2D3D12Backend *backend, RS2D3D12SrvSlot *slot, RS2TextureFilter *filter);
+
+//	Stage 0 or 1.  False when the stage has no live texture of this backend.
+bool RS2D3D12_GetBoundStageTexture(
+	CRS2D3D12Backend *backend, unsigned int stage,
+	RS2D3D12SrvSlot *slot, RS2TextureFilter *filter);
 
 //	WP3 validation.  Repeatedly decodes, submits and destroys textures without
 //	a descriptor or draw, then performs one batch wait and verifies baselines.

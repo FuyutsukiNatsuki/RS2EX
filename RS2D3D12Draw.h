@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24.
 //
 //	The Direct3D 12 side of the draw boundary.
 //
@@ -62,6 +62,23 @@ struct RS2D3D12LightingStats
 	unsigned int specularDraws;	//	lit, specular on, normal present
 };
 const RS2D3D12LightingStats &RS2D3D12_GetLightingStats();
+
+//	Stage 1, environment mapping and texture transforms (v0.1.4).  Stages 0
+//	and 1 only; anything past 1 is refused and reported.
+void RS2D3D12_SetSecondaryTextureCombine(unsigned int stage, bool enable);
+void RS2D3D12_SetEnvironmentMapping(unsigned int stage, bool enable);
+void RS2D3D12_SetUVTransform(unsigned int stage, bool enable);
+void RS2D3D12_SetUVMatrix(unsigned int stage, const float *matrix);
+
+struct RS2D3D12StageStats
+{
+	unsigned int combineCalls, environmentCalls, uvTransformCalls, uvMatrixCalls;
+	unsigned int stage1Draws;		//	stage 1 actually sampled
+	unsigned int environmentDraws;	//	stage 1 coordinates from the normal
+	unsigned int uvTransformedDraws;	//	stage 0 coordinates transformed
+	unsigned int stage1Skipped;		//	combine on, but no stage 0 or 1 texture
+};
+const RS2D3D12StageStats &RS2D3D12_GetStageStats();
 
 /*
  *	Put the state back where the engine expects to find it at start-up.

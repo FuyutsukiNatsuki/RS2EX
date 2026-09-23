@@ -15,6 +15,14 @@ environment / UV case each; patch positions come from the run's own log.
              another capture - Direct3D 8 as the reference, Direct3D 12 as the
              candidate.  This is the gate.
 
+             The four filter patches are held to a looser, stated standard:
+             linear filtering differs by up to a few levels between the two
+             samplers' internal precision, and a point-sampled texel edge
+             that falls exactly on a pixel centre can round to the other
+             texel.  Those patches pass when at most FILTER_OUTLIERS of the
+             samples differ by more than FILTER_TOLERANCE.  Every other
+             patch must be within --tolerance everywhere.
+
 Usage:
     python tools/stage_probe_check.py probe.png probe.log
     python tools/stage_probe_check.py d3d12.png d3d12.log --reference d3d8.png
@@ -28,6 +36,10 @@ import sys
 from PIL import Image
 
 BACKGROUND = (16, 32, 48)
+
+FILTER_PATCHES = ('s1-point', 's1-linear', 's0-point-s1-linear', 's0-linear-s1-point')
+FILTER_TOLERANCE = 5
+FILTER_OUTLIERS = 0.05
 
 # Normals of the gradient patches, restated from RS2StageProbe.cpp.
 ENV = {
@@ -129,16 +141,24 @@ def main():
     failures = 0
     print('\nagainst reference %s (tolerance %d)' % (args.reference, args.tolerance))
     for p in patches:
-        worst = 0
+        worst, samples, outliers = 0, 0, 0
         ix, iy = int(p['hw'] * 0.8), int(p['hh'] * 0.8)
         for dy in range(-iy, iy + 1, 2):
             for dx in range(-ix, ix + 1, 2):
                 a = image.getpixel((ox + p['x'] + dx, oy + p['y'] + dy))
                 b = ref.getpixel((rx + p['x'] + dx, ry + p['y'] + dy))
-                worst = max(worst, max(abs(x - y) for x, y in zip(a, b)))
-        ok = worst <= args.tolerance
+                d = max(abs(x - y) for x, y in zip(a, b))
+                worst = max(worst, d)
+                samples += 1
+                outliers += 1 if d > FILTER_TOLERANCE else 0
+        if p['name'] in FILTER_PATCHES:
+            ok = outliers <= samples * FILTER_OUTLIERS
+            rule = 'filter: %d/%d samples beyond %d' % (outliers, samples, FILTER_TOLERANCE)
+        else:
+            ok = worst <= args.tolerance
+            rule = ''
         failures += 0 if ok else 1
-        print('%-22s max delta %3d %s' % (p['name'], worst, 'ok' if ok else 'FAIL'))
+        print('%-22s max delta %3d %s %s' % (p['name'], worst, 'ok' if ok else 'FAIL', rule))
     print('reference: %d/%d patches within tolerance' % (len(patches) - failures, len(patches)))
     sys.exit(1 if failures or formula_failures else 0)
 

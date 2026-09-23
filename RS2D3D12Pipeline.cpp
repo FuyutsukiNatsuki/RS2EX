@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24.
 //
 //	See RS2D3D12Pipeline.h.
 
@@ -50,6 +50,9 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	float4 g_MatEmissive;\n"
 "	float4 g_Lighting;	// x lit, y specular, z diffuse from vertex, w ambient from vertex\n"
 "	float4 g_Power;\n"
+"	row_major float4x4 g_UV0Matrix;\n"
+"	row_major float4x4 g_UV1Matrix;\n"
+"	float4 g_UVFlags;	// x stage 0 transform, y stage 1 transform, z stage 1 source\n"
 "};\n"
 "\n"
 "//	With lighting off, a vertex without a colour draws white - Direct3D 8\n"
@@ -81,6 +84,7 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	float4 spec : COLOR1;	// specular, added after the texture\n"
 "#if RS2_TEXTURED\n"
 "	float2 uv : TEXCOORD0;\n"
+"	float2 uv1 : TEXCOORD1;	// stage 1, generated or transformed\n"
 "#endif\n"
 "};\n"
 "\n"
@@ -94,16 +98,22 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "//	- specular uses a local viewer, is cut off where N.L <= 0, and\n"
 "//	  Power 0 means a term of one;\n"
 "//	- the light has no ambient part.\n"
-"void RS2Light(VSIn input, out float4 diffuse, out float4 specular)\n"
+"//	The camera-space normal, normalised; zero without a normal.  Lighting and\n"
+"//	environment mapping both use this one, so they cannot disagree.\n"
+"float3 RS2CameraNormal(VSIn input)\n"
 "{\n"
-"	float3 P = mul(float4(input.pos.xyz, 1.0f), g_WorldView).xyz;\n"
 "#if RS2_HAS_NORMAL\n"
 "	float3 N = mul(input.nrm, (float3x3)g_WorldView);\n"
 "	float length2 = dot(N, N);\n"
-"	N = (length2 > 0.0f) ? N*rsqrt(length2) : float3(0.0f, 0.0f, 0.0f);\n"
+"	return (length2 > 0.0f) ? N*rsqrt(length2) : float3(0.0f, 0.0f, 0.0f);\n"
 "#else\n"
-"	float3 N = float3(0.0f, 0.0f, 0.0f);\n"
+"	return float3(0.0f, 0.0f, 0.0f);\n"
 "#endif\n"
+"}\n"
+"\n"
+"void RS2Light(VSIn input, float3 N, out float4 diffuse, out float4 specular)\n"
+"{\n"
+"	float3 P = mul(float4(input.pos.xyz, 1.0f), g_WorldView).xyz;\n"
 "	float4 dsrc = g_MatDiffuse;\n"
 "	float3 asrc = g_MatAmbient.rgb;\n"
 "#if RS2_HAS_DIFFUSE\n"
@@ -135,9 +145,10 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "{\n"
 "	VSOut output;\n"
 "	output.pos = mul(float4(input.pos.xyz, 1.0f), g_WorldViewProj);\n"
+"	float3 N = RS2CameraNormal(input);\n"
 "	if(g_Lighting.x > 0.5f)\n"
 "	{\n"
-"		RS2Light(input, output.col, output.spec);\n"
+"		RS2Light(input, N, output.col, output.spec);\n"
 "	}\n"
 "	else\n"
 "	{\n"
@@ -145,7 +156,14 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "		output.spec = float4(0.0f, 0.0f, 0.0f, 0.0f);\n"
 "	}\n"
 "#if RS2_TEXTURED\n"
-"	output.uv = input.uv;\n"
+"	//	Texture transforms as Direct3D 8 applied them (measured): a 2D\n"
+"	//	coordinate is (u, v, 1) - the third row translates, the fourth is\n"
+"	//	ignored - and the camera-space normal is (nx, ny, nz, 1).\n"
+"	output.uv = (g_UVFlags.x > 0.5f)\n"
+"		? mul(float4(input.uv, 1.0f, 0.0f), g_UV0Matrix).xy : input.uv;\n"
+"	float4 source1 = (g_UVFlags.z > 1.5f) ? float4(N, 1.0f)\n"
+"		: ((g_UVFlags.z < 0.5f) ? float4(input.uv, 1.0f, 0.0f) : float4(0.0f, 0.0f, 1.0f, 0.0f));\n"
+"	output.uv1 = (g_UVFlags.y > 0.5f) ? mul(source1, g_UV1Matrix).xy : source1.xy;\n"
 "#endif\n"
 "	return output;\n"
 "}\n"
@@ -167,6 +185,7 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	output.spec = float4(0.0f, 0.0f, 0.0f, 0.0f);\n"
 "#if RS2_TEXTURED\n"
 "	output.uv = input.uv;\n"
+"	output.uv1 = input.uv;\n"
 "#endif\n"
 "	return output;\n"
 "}\n"
@@ -174,6 +193,10 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "#if RS2_TEXTURED\n"
 "Texture2D g_Texture : register(t0);\n"
 "SamplerState g_Sampler : register(s0);\n"
+"#endif\n"
+"#if RS2_STAGE1\n"
+"Texture2D g_Texture1 : register(t1);\n"
+"SamplerState g_Sampler1 : register(s1);\n"
 "#endif\n"
 "//	Stage 0 is texture * diffuse, where diffuse is the lit colour; then the\n"
 "//	specular is added, not multiplied by the texture - the order the\n"
@@ -184,6 +207,11 @@ static const char *RS2D3D12_SHADER_SOURCE =
 "	float4 colour = g_Texture.Sample(g_Sampler, input.uv)*input.col;\n"
 "#else\n"
 "	float4 colour = input.col;\n"
+"#endif\n"
+"#if RS2_STAGE1\n"
+"	//	Stage 1: MODULATE(TEXTURE, CURRENT) on colour only.  Its alpha stage\n"
+"	//	was never enabled, and Direct3D 8 left alpha as it was (measured).\n"
+"	colour.rgb *= g_Texture1.Sample(g_Sampler1, input.uv1).rgb;\n"
 "#endif\n"
 "	colour.rgb = saturate(colour.rgb + input.spec.rgb);\n"
 "	if(g_AlphaTest.x > 0.5f)\n"
@@ -206,15 +234,17 @@ static ID3DBlob *RS2D3D12_Compile(
 	const char *target,	//	shader model
 	bool hasDiffuse,		//	whether the layout supplies a vertex colour
 	bool textured,		//	whether Stage 0 sampling is enabled
-	bool hasNormal		//	whether the layout supplies a normal
+	bool hasNormal,		//	whether the layout supplies a normal
+	bool stage1 = false	//	whether stage 1 is sampled
 ){
 	ID3DBlob *code = 0;
 	ID3DBlob *errors = 0;
 
-	const D3D_SHADER_MACRO macros[4] = {
+	const D3D_SHADER_MACRO macros[5] = {
 		{ "RS2_HAS_DIFFUSE", hasDiffuse ? "1" : "0" },
 		{ "RS2_TEXTURED", textured ? "1" : "0" },
 		{ "RS2_HAS_NORMAL", hasNormal ? "1" : "0" },
+		{ "RS2_STAGE1", stage1 ? "1" : "0" },
 		{ NULL, NULL }
 	};
 
@@ -278,9 +308,11 @@ bool CRS2D3D12Pipeline::CompileShaders(){
 	}
 
 	for(textured = 0; textured<2; textured++){
-		m_Pixel[textured] = RS2D3D12_Compile("PSMain", "ps_5_0", true, textured!=0, false);
-		if(!m_Pixel[textured]) return false;
+		m_Pixel[textured][0] = RS2D3D12_Compile("PSMain", "ps_5_0", true, textured!=0, false);
+		if(!m_Pixel[textured][0]) return false;
 	}
+	m_Pixel[1][1] = RS2D3D12_Compile("PSMain", "ps_5_0", true, true, false, true);
+	if(!m_Pixel[1][1]) return false;
 	return true;
 }
 
@@ -291,8 +323,10 @@ bool CRS2D3D12Pipeline::Create(
 	m_Device = device;
 
 	// b0 is a root CBV; t0 and s0 are one-descriptor tables supplied by WP4.
-	D3D12_DESCRIPTOR_RANGE ranges[2];
-	D3D12_ROOT_PARAMETER parameters[3];
+	//	b0 root CBV; t0 / s0 Stage 0; t1 / s1 Stage 1 (v0.1.4).  One-descriptor
+	//	tables each, so a texture's single view serves either stage.
+	D3D12_DESCRIPTOR_RANGE ranges[4];
+	D3D12_ROOT_PARAMETER parameters[5];
 	ZeroMemory(ranges, sizeof(ranges));
 	ZeroMemory(parameters, sizeof(parameters));
 	ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -301,10 +335,16 @@ bool CRS2D3D12Pipeline::Create(
 	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
 	ranges[1].NumDescriptors = 1;
 	ranges[1].BaseShaderRegister = 0;
+	ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	ranges[2].NumDescriptors = 1;
+	ranges[2].BaseShaderRegister = 1;
+	ranges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+	ranges[3].NumDescriptors = 1;
+	ranges[3].BaseShaderRegister = 1;
 	parameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	parameters[0].Descriptor.ShaderRegister = 0;
 	parameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-	for(unsigned int i = 0; i<2; i++){
+	for(unsigned int i = 0; i<4; i++){
 		parameters[i+1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		parameters[i+1].DescriptorTable.NumDescriptorRanges = 1;
 		parameters[i+1].DescriptorTable.pDescriptorRanges = &ranges[i];
@@ -314,7 +354,7 @@ bool CRS2D3D12Pipeline::Create(
 	D3D12_ROOT_SIGNATURE_DESC desc;
 
 	ZeroMemory(&desc, sizeof(desc));
-	desc.NumParameters = 3;
+	desc.NumParameters = 5;
 	desc.pParameters = parameters;
 	desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
@@ -359,7 +399,10 @@ void CRS2D3D12Pipeline::Destroy(){
 	m_Count = 0;
 	m_Full = false;
 
-	for(i = 0; i<2; i++) RELEASE(m_Pixel[i]);
+	for(i = 0; i<2; i++){
+		RELEASE(m_Pixel[i][0]);
+		RELEASE(m_Pixel[i][1]);
+	}
 
 	{
 		unsigned int semantic, diffuse, textured, normal;
@@ -568,7 +611,11 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 	ID3DBlob *vertex = m_Vertex[screen ? 1 : 0][key.hasDiffuse ? 1 : 0]
 		[key.textured ? 1 : 0][(!screen && key.hasNormal) ? 1 : 0];
 
-	if(!vertex || !m_Pixel[key.textured ? 1 : 0]) return 0;
+	if(key.stage1 && !key.textured) return 0;
+
+	ID3DBlob *pixel = m_Pixel[key.textured ? 1 : 0][key.stage1 ? 1 : 0];
+
+	if(!vertex || !pixel) return 0;
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC desc;
 
@@ -576,8 +623,8 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 	desc.pRootSignature = m_RootSignature;
 	desc.VS.pShaderBytecode = vertex->GetBufferPointer();
 	desc.VS.BytecodeLength = vertex->GetBufferSize();
-	desc.PS.pShaderBytecode = m_Pixel[key.textured ? 1 : 0]->GetBufferPointer();
-	desc.PS.BytecodeLength = m_Pixel[key.textured ? 1 : 0]->GetBufferSize();
+	desc.PS.pShaderBytecode = pixel->GetBufferPointer();
+	desc.PS.BytecodeLength = pixel->GetBufferSize();
 	desc.InputLayout.pInputElementDescs = elements;
 	desc.InputLayout.NumElements = count;
 	desc.PrimitiveTopologyType = (D3D12_PRIMITIVE_TOPOLOGY_TYPE)key.topology;

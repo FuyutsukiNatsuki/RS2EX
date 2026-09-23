@@ -198,28 +198,28 @@ void RS2SetSecondaryTextureCombine(unsigned int stage, bool enable){
 	RS2StageAuditCombine(stage, enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetSecondaryTextureCombine(stage, enable);
-	else RS2D3D12Unsupported("RS2SetSecondaryTextureCombine");
+	else RS2D3D12_SetSecondaryTextureCombine(stage, enable);
 }
 
 void RS2SetEnvironmentMapping(unsigned int stage, bool enable){
 	RS2StageAuditEnvironment(stage, enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetEnvironmentMapping(stage, enable);
-	else RS2D3D12Unsupported("RS2SetEnvironmentMapping");
+	else RS2D3D12_SetEnvironmentMapping(stage, enable);
 }
 
 void RS2SetUVTransform(unsigned int stage, bool enable){
 	RS2StageAuditUVTransform(stage, enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetUVTransform(stage, enable);
-	else RS2D3D12Unsupported("RS2SetUVTransform");
+	else RS2D3D12_SetUVTransform(stage, enable);
 }
 
 void RS2SetUVMatrix(unsigned int stage, const float *matrix){
 	RS2StageAuditUVMatrix(stage, matrix);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetUVMatrix(stage, matrix);
-	else RS2D3D12Unsupported("RS2SetUVMatrix");
+	else RS2D3D12_SetUVMatrix(stage, matrix);
 }
 
 void RS2ApplyInitialRenderState(){
