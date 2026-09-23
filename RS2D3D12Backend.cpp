@@ -8,6 +8,7 @@
 #include "RS2D3D12Backend.h"
 #include "RS2D3D12Draw.h"
 #include "RS2D3D12Unsupported.h"
+#include "RS2Renderer.h"
 
 //	The same inputs the Direct3D 8 backend consults, so both backends
 //	answer "windowed or not" the same way.
@@ -712,6 +713,14 @@ bool CRS2D3D12Backend::Initialize(int width, int height){
 
 	PublishCompatibilityState();
 	s_Active = this;
+	//	Profile draws reset their world transform from sv3.mtxFront.  D3D8
+	//	initialises that matrix through InitMetrics(); D3D12 must do the same
+	//	once the renderer is installed.  The bootstrap smoke also constructs
+	//	this backend directly, without a renderer, so do not dispatch the
+	//	neutral transform setters through its default D3D8 selection there.
+	if(GetRS2Renderer().IsReady()
+			&& GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12)
+		InitMetrics();
 
 	Debug("[RS2EX D3D12] ready: %d frame contexts, %s\n",
 		RS2D3D12_FRAME_COUNT, GetName());

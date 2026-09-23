@@ -101,6 +101,15 @@ static void RS2DrawSmokeIdentity(float *m){
 	m[0] = m[5] = m[10] = m[15] = 1.0f;
 }
 
+static bool RS2DrawSmokeIsIdentity(const MTX4 &matrix){
+	const float *m = (const float *)&matrix;
+	for(int i = 0; i<16; i++){
+		const float expected = (i%5==0) ? 1.0f : 0.0f;
+		if(m[i]!=expected) return false;
+	}
+	return true;
+}
+
 bool RS2D3D12DrawSmokeRun(){
 	if(RS2D3D12TextureSmokeRequested()) return RS2D3D12TextureSmokeRun();
 	if(GetRS2Renderer().GetBackendType()!=RS2_RENDERER_D3D12){
@@ -109,6 +118,15 @@ bool RS2D3D12DrawSmokeRun(){
 		return false;
 	}
 	if(CheckArguments("-dx12alphasmoke")) return RS2D3D12AlphaSmokeRun();
+	//	Profile plugins use mtxFront as their reset world transform.  The
+	//	smoke sets its own transforms below, so inspect the start-up values
+	//	first; otherwise that override would hide the missing-init regression.
+	if(!RS2DrawSmokeIsIdentity(sv3.mtxFront)
+			|| !RS2DrawSmokeIsIdentity(sv3.mtxWorld)){
+		Debug("RS2D3D12DRAW|profile matrices not initialised|FAIL\n");
+		return false;
+	}
+	Debug("RS2D3D12DRAW|profile matrices initialised|pass\n");
 
 	//	Identity everywhere, so the vertices below are already in clip space.
 	//	The matrix path is still exercised - the shader multiplies by it - but
