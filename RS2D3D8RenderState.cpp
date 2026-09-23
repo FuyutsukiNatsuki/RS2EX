@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
-//	Modified for RS2EX on 2026-09-22, 2026-09-23.
+//	Modified for RS2EX on 2026-09-22, 2026-09-23, 2026-09-24.
 //
 //	The Direct3D 8 side of render state and scene lighting.
 //
@@ -18,6 +18,7 @@
 #include "RS2D3D8Lighting.h"
 #include "RS2TextureAudit.h"
 #include "RS2LightingAudit.h"
+#include "RS2StageAudit.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //	Enum translation
@@ -333,6 +334,55 @@ void RS2D3D8_ApplyInitialRenderState(){
 	RS2D3D8_SetTextureFilter(0, RS2_FILTER_POINT);
 
 	if(RS2LightingAuditEnabled()) RS2D3D8_AuditInitialLighting();
+	if(RS2StageAuditEnabled()) RS2D3D8_AuditStageState("initial");
+}
+
+/*
+ *	Write down the texture-stage state of stages 0 and 1 as the device holds
+ *	it.  At start-up most of stage 1 is Direct3D 8's own default - the engine
+ *	never initialises it - and a Direct3D 12 shader has to know what those
+ *	defaults were.  Read from the device rather than from documentation.
+ */
+void RS2D3D8_AuditStageState(const char *when){
+	static const D3DTEXTURESTAGESTATETYPE states[] = {
+		D3DTSS_COLOROP, D3DTSS_COLORARG1, D3DTSS_COLORARG2,
+		D3DTSS_ALPHAOP, D3DTSS_ALPHAARG1, D3DTSS_ALPHAARG2,
+		D3DTSS_TEXCOORDINDEX, D3DTSS_TEXTURETRANSFORMFLAGS,
+		D3DTSS_MINFILTER, D3DTSS_MAGFILTER, D3DTSS_MIPFILTER,
+		D3DTSS_ADDRESSU, D3DTSS_ADDRESSV
+	};
+	static const char *const names[] = {
+		"COLOROP", "COLORARG1", "COLORARG2",
+		"ALPHAOP", "ALPHAARG1", "ALPHAARG2",
+		"TEXCOORDINDEX", "TEXTURETRANSFORMFLAGS",
+		"MINFILTER", "MAGFILTER", "MIPFILTER",
+		"ADDRESSU", "ADDRESSV"
+	};
+	DWORD stage;
+	unsigned int i;
+
+	for(stage = 0; stage<2; stage++){
+		for(i = 0; i<sizeof(states)/sizeof(states[0]); i++){
+			DWORD value = 0;
+			const HRESULT hr = sv3.pDev->GetTextureStageState(stage, states[i], &value);
+
+			Debug("RS2STAGEAUDIT|d3d8|%s|stage%lu|%s|%s|0x%08lx\n", when, stage, names[i],
+				SUCCEEDED(hr) ? "ok" : "failed", (unsigned long)value);
+		}
+
+		D3DMATRIX m;
+
+		ZeroMemory(&m, sizeof(m));
+		if(SUCCEEDED(sv3.pDev->GetTransform(
+				(D3DTRANSFORMSTATETYPE)(D3DTS_TEXTURE0+stage), &m))){
+			const float *f = (const float *)&m;
+
+			Debug("RS2STAGEAUDIT|d3d8|%s|stage%lu|TEXTURE_TRANSFORM|%g,%g,%g,%g|%g,%g,%g,%g"
+				"|%g,%g,%g,%g|%g,%g,%g,%g\n", when, stage,
+				f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7],
+				f[8], f[9], f[10], f[11], f[12], f[13], f[14], f[15]);
+		}
+	}
 }
 
 /*

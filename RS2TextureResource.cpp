@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
-//	Modified for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-22, 2026-09-24.
 //
 //	This file owns neutral lifetime and identity.  It never interprets a payload:
 //	the backend that created one supplies the operations that destroy or lock it.
@@ -11,6 +11,14 @@
 #include "RS2TextureResource.h"
 #include "RS2D3D8Resources.h"
 #include "RS2D3D12TextureBackend.h"
+#include "RS2StageAudit.h"
+
+//	Remember where a texture came from, for -stageaudit only.
+static CRS2TextureResource *RS2AuditCreated(
+	CRS2TextureResource *resource, const char *source, bool fromResource){
+	RS2StageAuditTextureCreated(resource, source, fromResource);
+	return resource;
+}
 
 bool RS2TextureRef::GetSize(int *width, int *height) const{
 	if(!m_Resource) return false;
@@ -123,12 +131,12 @@ CRS2TextureResource *RS2CreateTextureFromFile(
 		CRS2TextureResource *resource = new CRS2TextureResource;
 		resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
 			payload, width, height, RS2D3D12_GetTexturePayloadOps());
-		return resource;
+		return RS2AuditCreated(resource, strFile, false);
 	}
 
 	if(!RS2D3D8_CreateTexturePayloadFromFile(
 		&payload, &width, &height, strFile, cTrans, nMipLv)) return 0;
-	return RS2AdoptD3D8Texture(payload, width, height);
+	return RS2AuditCreated(RS2AdoptD3D8Texture(payload, width, height), strFile, false);
 }
 
 CRS2TextureResource *RS2CreateTextureFromResource(
@@ -142,12 +150,12 @@ CRS2TextureResource *RS2CreateTextureFromResource(
 		CRS2TextureResource *resource = new CRS2TextureResource;
 		resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
 			payload, width, height, RS2D3D12_GetTexturePayloadOps());
-		return resource;
+		return RS2AuditCreated(resource, strRes, true);
 	}
 
 	if(!RS2D3D8_CreateTexturePayloadFromResource(
 		&payload, &width, &height, strRes, cTrans, nMipLv)) return 0;
-	return RS2AdoptD3D8Texture(payload, width, height);
+	return RS2AuditCreated(RS2AdoptD3D8Texture(payload, width, height), strRes, true);
 }
 
 CRS2TextureResource *RS2CreateMutableTexture(int w, int h){
@@ -171,6 +179,7 @@ CRS2TextureResource *RS2CreateMutableTexture(int w, int h){
 void RS2DestroyTexture(CRS2TextureResource *resource){
 	if(!resource) return;
 
+	RS2StageAuditTextureDestroyed(resource);
 	delete resource;
 }
 

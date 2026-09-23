@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-23.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-23, 2026-09-24.
 //	Copyright (c) 2002 Midikyou
 
 #include "udx.h"
@@ -7,6 +7,7 @@
 #include "..\RS2D3D12Smoke.h"
 #include "..\RS2D3D12DrawSmoke.h"
 #include "..\RS2LightingProbe.h"
+#include "..\RS2StageProbe.h"
 
 /*
  *	コンパイル・オプション
@@ -30,6 +31,7 @@
  *	-dx12smoke:RS2EX: run the Direct3D 12 bootstrap test and exit.
  *	-dx12drawsmoke:RS2EX: draw through the RS2 boundary and exit.
  *	-lightingprobe:RS2EX: draw the material / lighting probe and exit.
+ *	-stageprobe:RS2EX: draw the texture-stage / environment / UV probe and exit.
  *	/3ds	:3Dサウンドを使用しない。
  *	/fx		:サウンドにエフェクトを使用しない。
  */
@@ -123,6 +125,10 @@ BOOL CApp::Init(HINSTANCE hInst){
 	//	one is checked against.  Same place and reason as the draw smoke.
 	if(RS2LightingProbeRequested()){
 		RS2LightingProbeRun();
+		return FALSE;
+	}
+	if(RS2StageProbeRequested()){
+		RS2StageProbeRun();
 		return FALSE;
 	}
 	if(!InitDirectInput()) return FALSE;

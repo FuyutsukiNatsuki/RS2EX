@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
-//	Modified for RS2EX on 2026-09-21, 2026-09-22, 2026-09-23.
+//	Modified for RS2EX on 2026-09-21, 2026-09-22, 2026-09-23, 2026-09-24.
 
 #include "stdafx.h"
 #include "RS2Renderer.h"
@@ -9,6 +9,7 @@
 #include "RS2D3D12Backend.h"
 #include "RS2TextureAudit.h"
 #include "RS2LightingAudit.h"
+#include "RS2StageAudit.h"
 
 /*
  *	The renderer instance
@@ -127,6 +128,7 @@ void CRS2Renderer::Shutdown(){
 	Debug("[RS2EX Renderer] shutdown\n");
 	if(m_BackendType==RS2_RENDERER_D3D8) RS2TextureAuditDump();
 	RS2LightingAuditDump();
+	RS2StageAuditDump();
 
 	m_Backend->Shutdown();
 	delete m_Backend;

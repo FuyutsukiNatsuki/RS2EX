@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24.
 //
 //	RenderState: the public boundary, routed to the active backend.
 //
@@ -20,6 +20,7 @@
 #include "RS2D3D12Draw.h"
 #include "RS2D3D12TextureBackend.h"
 #include "RS2LightingAudit.h"
+#include "RS2StageAudit.h"
 
 void RS2SetDepthTest(bool enable){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
@@ -46,12 +47,14 @@ void RS2ClearDepth(){
 }
 
 void RS2SetBlend(RS2BlendMode mode){
+	RS2StageAuditBlend(mode);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetBlend(mode);
 	else RS2D3D12_SetBlend(mode);
 }
 
 void RS2SetAlphaTest(bool enable){
+	RS2StageAuditAlphaTest(enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetAlphaTest(enable);
 	else RS2D3D12_SetAlphaTest(enable);
@@ -138,6 +141,7 @@ void RS2SetStencilPassOp(RS2StencilOp op){
 
 void RS2SetLighting(bool enable){
 	RS2LightingAuditLighting(enable);
+	RS2StageAuditLighting(enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetLighting(enable);
 	else RS2D3D12_SetLighting(enable);
@@ -178,6 +182,7 @@ void RS2DisableFog(){
 }
 
 void RS2SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
+	RS2StageAuditFilter(stage, filter);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetTextureFilter(stage, filter);
 	else RS2D3D12_SetTextureFilter(stage, filter);
@@ -190,24 +195,28 @@ void RS2SetBaseTextureCombine(){
 }
 
 void RS2SetSecondaryTextureCombine(unsigned int stage, bool enable){
+	RS2StageAuditCombine(stage, enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetSecondaryTextureCombine(stage, enable);
 	else RS2D3D12Unsupported("RS2SetSecondaryTextureCombine");
 }
 
 void RS2SetEnvironmentMapping(unsigned int stage, bool enable){
+	RS2StageAuditEnvironment(stage, enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetEnvironmentMapping(stage, enable);
 	else RS2D3D12Unsupported("RS2SetEnvironmentMapping");
 }
 
 void RS2SetUVTransform(unsigned int stage, bool enable){
+	RS2StageAuditUVTransform(stage, enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetUVTransform(stage, enable);
 	else RS2D3D12Unsupported("RS2SetUVTransform");
 }
 
 void RS2SetUVMatrix(unsigned int stage, const float *matrix){
+	RS2StageAuditUVMatrix(stage, matrix);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetUVMatrix(stage, matrix);
 	else RS2D3D12Unsupported("RS2SetUVMatrix");

@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24.
 //
 //	The Direct3D 8 implementations behind the RenderState boundary.
 //
@@ -53,5 +53,8 @@ void RS2D3D8_ApplyInitialRenderState();
 
 //	-lightingaudit only: log the lighting defaults Direct3D 8 supplies itself.
 void RS2D3D8_AuditInitialLighting();
+
+//	-stageaudit only: log the stage 0 / 1 texture-stage state the device holds.
+void RS2D3D8_AuditStageState(const char *when);
 
 #endif	//	RS2RENDERSTATEBACKEND_H_INCLUDED
