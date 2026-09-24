@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	The Direct3D 12 side of the draw boundary.
 //
@@ -79,6 +79,32 @@ struct RS2D3D12StageStats
 	unsigned int stage1Skipped;		//	combine on, but no stage 0 or 1 texture
 };
 const RS2D3D12StageStats &RS2D3D12_GetStageStats();
+
+//	Stencil, shade mode and fog (v0.1.5).  Only what CShadowVolume uses: one
+//	stencil state for both faces, the reference as dynamic state, shade mode
+//	and fog disable accepted as compatibility no-ops (see the audit).
+void RS2D3D12_SetStencilTest(bool enable);
+void RS2D3D12_SetStencilFunc(RS2CompareFunc func);
+void RS2D3D12_SetStencilRef(unsigned int ref);
+void RS2D3D12_SetStencilReadMask(unsigned int mask);
+void RS2D3D12_SetStencilWriteMask(unsigned int mask);
+void RS2D3D12_SetStencilFailOp(RS2StencilOp op);
+void RS2D3D12_SetStencilDepthFailOp(RS2StencilOp op);
+void RS2D3D12_SetStencilPassOp(RS2StencilOp op);
+void RS2D3D12_SetShadeMode(RS2ShadeMode mode);
+void RS2D3D12_DisableFog();
+
+struct RS2D3D12StencilStats
+{
+	//	Setter calls: test, func, ref, read mask, write mask, fail, depth fail, pass.
+	unsigned int calls[8];
+	unsigned int shadeCalls, flatCalls, fogCalls;
+	unsigned int stencilDraws;	//	drawn with the stencil test on
+	unsigned int volumeDraws;	//	of those, colour-preserving (the shadow volume)
+	unsigned int overlayDraws;	//	of those, visible (the shadow overlay)
+	unsigned int refChanges;	//	reference different from the previous stencil draw's
+};
+const RS2D3D12StencilStats &RS2D3D12_GetStencilStats();
 
 /*
  *	Put the state back where the engine expects to find it at start-up.

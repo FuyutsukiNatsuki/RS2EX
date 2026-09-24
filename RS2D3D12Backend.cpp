@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
-//	Modified for RS2EX on 2026-09-22, 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-22, 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	See RS2D3D12Backend.h.
 
@@ -832,6 +832,16 @@ void CRS2D3D12Backend::Shutdown(){
 				st.uvTransformCalls,st.uvMatrixCalls);
 			Debug("RS2D3D12SCENE|stage1 draws=%u environmentDraws=%u uvTransformedDraws=%u skippedNoTexture=%u\n",
 				st.stage1Draws,st.environmentDraws,st.uvTransformedDraws,st.stage1Skipped);
+		}
+		{
+			const RS2D3D12StencilStats &sc = RS2D3D12_GetStencilStats();
+
+			Debug("RS2D3D12SCENE|stencil calls test=%u func=%u ref=%u readMask=%u writeMask=%u fail=%u depthFail=%u pass=%u shade=%u flat=%u fog=%u\n",
+				sc.calls[0],sc.calls[1],sc.calls[2],sc.calls[3],sc.calls[4],sc.calls[5],
+				sc.calls[6],sc.calls[7],sc.shadeCalls,sc.flatCalls,sc.fogCalls);
+			Debug("RS2D3D12SCENE|stencil draws=%u volume=%u overlay=%u refChanges=%u stencilPso=%u\n",
+				sc.stencilDraws,sc.volumeDraws,sc.overlayDraws,sc.refChanges,
+				m_Pipeline.GetStencilStateCount());
 		}
 		Debug("RS2D3D12SCENE|stage0 bind=%u unbind=%u rejected=%u otherStage=%u point=%u linear=%u rejectedFilter=%u\n",
 			stats.stage0Binds,stats.stage0Unbinds,stats.rejectedBinds,

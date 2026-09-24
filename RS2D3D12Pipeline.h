@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	The Direct3D 12 pipeline: root signature, shaders, and pipeline states.
 //
@@ -110,6 +110,18 @@ struct RS2D3D12PipelineKey
 
 	unsigned char textured;		// Stage 0 shader variant, never texture identity
 	unsigned char stage1;		// Stage 1 multiply variant, v0.1.4; never texture identity
+
+	//	Stencil, v0.1.5.  All zero while the test is off, so a shadow pass
+	//	leaving its ops behind cannot multiply the states of what follows.
+	//	The reference is dynamic state on the command list, never keyed.
+	unsigned char stencilTest;
+	unsigned char stencilFunc;		//	RS2CompareFunc
+	unsigned char stencilReadMask;	//	low 8 bits - the buffer has 8
+	unsigned char stencilWriteMask;
+	unsigned char stencilFail;		//	RS2StencilOp
+	unsigned char stencilDepthFail;
+	unsigned char stencilPass;
+	unsigned char stencilPad;		//	always 0: keeps the key free of padding
 };
 
 class CRS2D3D12Pipeline
@@ -135,6 +147,7 @@ private:
 	RS2D3D12PipelineKey m_Key[RS2D3D12_MAX_PIPELINES];
 	ID3D12PipelineState *m_State[RS2D3D12_MAX_PIPELINES];
 	unsigned int m_Count;
+	unsigned int m_StencilCount;	//	of m_Count, states with the stencil test on
 
 	bool m_Full;
 
@@ -159,6 +172,7 @@ public:
 	ID3D12PipelineState *Get(const RS2D3D12PipelineKey &key);
 
 	unsigned int GetStateCount() const{ return m_Count; }
+	unsigned int GetStencilStateCount() const{ return m_StencilCount; }
 };
 
 /*

@@ -89,7 +89,7 @@ void RS2SetShadeMode(RS2ShadeMode mode){
 	RS2ShadowAuditSet(RS2_SA_SHADE, (unsigned int)mode);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetShadeMode(mode);
-	else RS2D3D12Unsupported("RS2SetShadeMode");
+	else RS2D3D12_SetShadeMode(mode);
 }
 
 void RS2SetNormalizeNormals(bool enable){
@@ -106,56 +106,56 @@ void RS2SetStencilTest(bool enable){
 	RS2ShadowAuditSet(RS2_SA_STENCIL_TEST, enable ? 1 : 0);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilTest(enable);
-	else RS2D3D12Unsupported("RS2SetStencilTest");
+	else RS2D3D12_SetStencilTest(enable);
 }
 
 void RS2SetStencilFunc(RS2CompareFunc func){
 	RS2ShadowAuditSet(RS2_SA_STENCIL_FUNC, (unsigned int)func);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilFunc(func);
-	else RS2D3D12Unsupported("RS2SetStencilFunc");
+	else RS2D3D12_SetStencilFunc(func);
 }
 
 void RS2SetStencilRef(unsigned int ref){
 	RS2ShadowAuditSet(RS2_SA_STENCIL_REF, ref);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilRef(ref);
-	else RS2D3D12Unsupported("RS2SetStencilRef");
+	else RS2D3D12_SetStencilRef(ref);
 }
 
 void RS2SetStencilReadMask(unsigned int mask){
 	RS2ShadowAuditSet(RS2_SA_STENCIL_READ_MASK, mask);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilReadMask(mask);
-	else RS2D3D12Unsupported("RS2SetStencilReadMask");
+	else RS2D3D12_SetStencilReadMask(mask);
 }
 
 void RS2SetStencilWriteMask(unsigned int mask){
 	RS2ShadowAuditSet(RS2_SA_STENCIL_WRITE_MASK, mask);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilWriteMask(mask);
-	else RS2D3D12Unsupported("RS2SetStencilWriteMask");
+	else RS2D3D12_SetStencilWriteMask(mask);
 }
 
 void RS2SetStencilFailOp(RS2StencilOp op){
 	RS2ShadowAuditSet(RS2_SA_STENCIL_FAIL, (unsigned int)op);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilFailOp(op);
-	else RS2D3D12Unsupported("RS2SetStencilFailOp");
+	else RS2D3D12_SetStencilFailOp(op);
 }
 
 void RS2SetStencilDepthFailOp(RS2StencilOp op){
 	RS2ShadowAuditSet(RS2_SA_STENCIL_DEPTH_FAIL, (unsigned int)op);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilDepthFailOp(op);
-	else RS2D3D12Unsupported("RS2SetStencilDepthFailOp");
+	else RS2D3D12_SetStencilDepthFailOp(op);
 }
 
 void RS2SetStencilPassOp(RS2StencilOp op){
 	RS2ShadowAuditSet(RS2_SA_STENCIL_PASS, (unsigned int)op);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilPassOp(op);
-	else RS2D3D12Unsupported("RS2SetStencilPassOp");
+	else RS2D3D12_SetStencilPassOp(op);
 }
 
 void RS2SetLighting(bool enable){
@@ -198,7 +198,7 @@ void RS2DisableFog(){
 	RS2ShadowAuditSet(RS2_SA_FOG_DISABLE, 0);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_DisableFog();
-	else RS2D3D12Unsupported("RS2DisableFog");
+	else RS2D3D12_DisableFog();
 }
 
 void RS2SetTextureFilter(unsigned int stage, RS2TextureFilter filter){

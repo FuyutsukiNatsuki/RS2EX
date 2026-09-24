@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	See RS2D3D12Draw.h.
 
@@ -30,6 +30,23 @@ static RS2BlendMode s_BlendMode = RS2_BLEND_ALPHA;
 static bool s_AlphaTest = false;
 static unsigned int s_AlphaRef = 0;
 static RS2CompareFunc s_AlphaFunc = RS2_COMPARE_ALWAYS;
+
+//	Stencil, v0.1.5.  The engine sets none of this before the shadow pass, so
+//	it starts where Direct3D 8's device did - read from the device by
+//	-shadowaudit: off, ALWAYS, reference 0, both masks all ones, every op
+//	KEEP.  The shadow pass leaves its values behind for the next frame, as it
+//	did on Direct3D 8; nothing here resets them in between.
+static bool s_StencilTest = false;
+static RS2CompareFunc s_StencilFunc = RS2_COMPARE_ALWAYS;
+static unsigned int s_StencilRef = 0;
+static unsigned int s_StencilReadMask = 0xffffffffu;
+static unsigned int s_StencilWriteMask = 0xffffffffu;
+static RS2StencilOp s_StencilFail = RS2_STENCIL_KEEP;
+static RS2StencilOp s_StencilDepthFail = RS2_STENCIL_KEEP;
+static RS2StencilOp s_StencilPass = RS2_STENCIL_KEEP;
+static RS2ShadeMode s_ShadeMode = RS2_SHADE_GOURAUD;
+static RS2D3D12StencilStats s_StencilStats;
+static int s_LastStencilRef = -1;
 
 //	Material and lighting.  The starting values are what Direct3D 8 began
 //	with, read from the device by -lightingaudit rather than taken from
@@ -141,6 +158,71 @@ void RS2D3D12_SetAlphaFunc(RS2CompareFunc func){
 	else Debug("[RS2EX D3D12] unsupported alpha comparison %d\n", (int)func);
 }
 
+void RS2D3D12_SetStencilTest(bool enable){
+	s_StencilStats.calls[0]++;
+	s_StencilTest = enable;
+}
+
+void RS2D3D12_SetStencilFunc(RS2CompareFunc func){
+	s_StencilStats.calls[1]++;
+	s_StencilFunc = func;
+}
+
+void RS2D3D12_SetStencilRef(unsigned int ref){
+	s_StencilStats.calls[2]++;
+	s_StencilRef = ref;
+}
+
+void RS2D3D12_SetStencilReadMask(unsigned int mask){
+	s_StencilStats.calls[3]++;
+	s_StencilReadMask = mask;
+}
+
+void RS2D3D12_SetStencilWriteMask(unsigned int mask){
+	s_StencilStats.calls[4]++;
+	s_StencilWriteMask = mask;
+}
+
+void RS2D3D12_SetStencilFailOp(RS2StencilOp op){
+	s_StencilStats.calls[5]++;
+	s_StencilFail = op;
+}
+
+void RS2D3D12_SetStencilDepthFailOp(RS2StencilOp op){
+	s_StencilStats.calls[6]++;
+	s_StencilDepthFail = op;
+}
+
+void RS2D3D12_SetStencilPassOp(RS2StencilOp op){
+	s_StencilStats.calls[7]++;
+	s_StencilPass = op;
+}
+
+/*
+ *	Shade mode: recorded, not rendered.
+ *
+ *	The only FLAT in the program is CShadowVolume's, and every draw made under
+ *	it is colour-preserving (Zero / One) - it writes stencil and no colour, so
+ *	flat and Gouraud give the same picture (v0.1.5 audit: 3,006 of 3,006).  A
+ *	flat-shading shader variant would be a renderer feature nothing can see.
+ */
+void RS2D3D12_SetShadeMode(RS2ShadeMode mode){
+	s_StencilStats.shadeCalls++;
+	if(mode==RS2_SHADE_FLAT) s_StencilStats.flatCalls++;
+	s_ShadeMode = mode;
+}
+
+/*
+ *	Fog: already off.  Direct3D 12 has no fog, and on Direct3D 8 nothing ever
+ *	turned it on (FOGENABLE read as 0 at start-up and before every shadow
+ *	pass), so the call is satisfied as it stands.
+ */
+void RS2D3D12_DisableFog(){
+	s_StencilStats.fogCalls++;
+}
+
+const RS2D3D12StencilStats &RS2D3D12_GetStencilStats(){ return s_StencilStats; }
+
 void RS2D3D12_ApplyInitialRenderState(){
 	//	The same values RS2D3D8_ApplyInitialRenderState leaves behind, so the
 	//	engine starts from the same place whichever backend is running.
@@ -152,6 +234,15 @@ void RS2D3D12_ApplyInitialRenderState(){
 	s_AlphaTest = false;
 	s_AlphaRef = 0;
 	s_AlphaFunc = RS2_COMPARE_ALWAYS;
+
+	//	The device defaults, as a Direct3D 8 device starts - see above.
+	s_StencilTest = false;
+	s_StencilFunc = RS2_COMPARE_ALWAYS;
+	s_StencilRef = 0;
+	s_StencilReadMask = 0xffffffffu;
+	s_StencilWriteMask = 0xffffffffu;
+	s_StencilFail = s_StencilDepthFail = s_StencilPass = RS2_STENCIL_KEEP;
+	s_ShadeMode = RS2_SHADE_GOURAUD;
 
 	ZeroMemory(&s_Material, sizeof(s_Material));
 	s_Lighting = true;
@@ -462,6 +553,14 @@ static bool RS2D3D12_BindPipeline(
 	key->depthFunc = (unsigned char)s_DepthFunc;
 	key->cullMode = (unsigned char)s_CullMode;
 	key->blendMode = (unsigned char)s_BlendMode;
+	key->stencilTest = s_StencilTest ? 1 : 0;
+	key->stencilFunc = s_StencilTest ? (unsigned char)s_StencilFunc : 0;
+	key->stencilReadMask = s_StencilTest ? (unsigned char)(s_StencilReadMask&0xffu) : 0;
+	key->stencilWriteMask = s_StencilTest ? (unsigned char)(s_StencilWriteMask&0xffu) : 0;
+	key->stencilFail = s_StencilTest ? (unsigned char)s_StencilFail : 0;
+	key->stencilDepthFail = s_StencilTest ? (unsigned char)s_StencilDepthFail : 0;
+	key->stencilPass = s_StencilTest ? (unsigned char)s_StencilPass : 0;
+	key->stencilPad = 0;
 	RS2D3D12SrvSlot textureSlot;
 	RS2TextureFilter filter = RS2_FILTER_POINT;
 	// A bound texture without TEXCOORD0 remains an untextured draw. The PSO
@@ -545,6 +644,22 @@ static bool RS2D3D12_BindPipeline(
 
 	list->SetGraphicsRootSignature(backend->GetPipeline()->GetRootSignature());
 	list->SetPipelineState(state);
+
+	//	The reference is command-list state, not pipeline state: set with every
+	//	stencil draw, so a new command list or a changed reference never draws
+	//	against a stale one, and a reference change never builds a pipeline.
+	if(key->stencilTest){
+		const int ref = (int)(s_StencilRef&0xffu);
+
+		list->OMSetStencilRef((UINT)ref);
+		s_StencilStats.stencilDraws++;
+		if(s_BlendMode==RS2_BLEND_COLOR_PRESERVE) s_StencilStats.volumeDraws++;
+		else s_StencilStats.overlayDraws++;
+		if(ref!=s_LastStencilRef){
+			s_StencilStats.refChanges++;
+			s_LastStencilRef = ref;
+		}
+	}
 	list->SetGraphicsRootConstantBufferView(0, constantAddress);
 	if(key->textured){
 		D3D12_GPU_DESCRIPTOR_HANDLE srv, sampler;

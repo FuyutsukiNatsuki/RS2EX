@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	See RS2D3D12Pipeline.h.
 
@@ -279,6 +279,7 @@ CRS2D3D12Pipeline::CRS2D3D12Pipeline()
 	: m_Device(0),
 	  m_RootSignature(0),
 	  m_Count(0),
+	  m_StencilCount(0),
 	  m_Full(false)
 {
 	unsigned int i;
@@ -397,6 +398,7 @@ void CRS2D3D12Pipeline::Destroy(){
 
 	for(i = 0; i<RS2D3D12_MAX_PIPELINES; i++) RELEASE(m_State[i]);
 	m_Count = 0;
+	m_StencilCount = 0;
 	m_Full = false;
 
 	for(i = 0; i<2; i++){
@@ -533,6 +535,21 @@ static void RS2D3D12_Blend(unsigned char mode, D3D12_RENDER_TARGET_BLEND_DESC *o
 	}
 }
 
+/*
+ *	The engine's three stencil operations.
+ *
+ *	Wrapping, not saturating: the Direct3D 8 backend asks for D3DSTENCILOP_INCR
+ *	and _DECR, which wrap, and D3D12_STENCIL_OP_INCR / _DECR are the same.
+ */
+static D3D12_STENCIL_OP RS2D3D12_StencilOp(unsigned char op){
+	switch((RS2StencilOp)op){
+	case RS2_STENCIL_INCREMENT:	return D3D12_STENCIL_OP_INCR;
+	case RS2_STENCIL_DECREMENT:	return D3D12_STENCIL_OP_DECR;
+	case RS2_STENCIL_KEEP:
+	default:			return D3D12_STENCIL_OP_KEEP;
+	}
+}
+
 static DXGI_FORMAT RS2D3D12_TexCoordFormat(unsigned char components){
 	switch(components){
 	case 1:	return DXGI_FORMAT_R32_FLOAT;
@@ -646,7 +663,27 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 	desc.DepthStencilState.DepthWriteMask = key.depthWrite
 		? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
 	desc.DepthStencilState.DepthFunc = RS2D3D12_Compare(key.depthFunc);
-	desc.DepthStencilState.StencilEnable = FALSE;
+	//	One stencil state for both faces.  Direct3D 8's stencil is one-sided -
+	//	it applies to every triangle the rasteriser keeps - and CShadowVolume
+	//	gets front and back by drawing twice with the culling reversed
+	//	(v0.1.5 audit), so both faces here carry the same state and culling
+	//	still decides which of them is drawn.
+	desc.DepthStencilState.StencilEnable = key.stencilTest ? TRUE : FALSE;
+	desc.DepthStencilState.StencilReadMask = key.stencilTest
+		? key.stencilReadMask : D3D12_DEFAULT_STENCIL_READ_MASK;
+	desc.DepthStencilState.StencilWriteMask = key.stencilTest
+		? key.stencilWriteMask : D3D12_DEFAULT_STENCIL_WRITE_MASK;
+	{
+		D3D12_DEPTH_STENCILOP_DESC face;
+
+		face.StencilFunc = key.stencilTest
+			? RS2D3D12_Compare(key.stencilFunc) : D3D12_COMPARISON_FUNC_ALWAYS;
+		face.StencilFailOp = RS2D3D12_StencilOp(key.stencilFail);
+		face.StencilDepthFailOp = RS2D3D12_StencilOp(key.stencilDepthFail);
+		face.StencilPassOp = RS2D3D12_StencilOp(key.stencilPass);
+		desc.DepthStencilState.FrontFace = face;
+		desc.DepthStencilState.BackFace = face;
+	}
 
 	RS2D3D12_Blend(key.blendMode, &desc.BlendState.RenderTarget[0]);
 
@@ -685,6 +722,7 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Get(
 	m_Key[m_Count] = key;
 	m_State[m_Count] = state;
 	m_Count++;
+	if(key.stencilTest) m_StencilCount++;
 
 	Debug("[RS2EX D3D12] pipeline state %u built\n", m_Count);
 	return state;
