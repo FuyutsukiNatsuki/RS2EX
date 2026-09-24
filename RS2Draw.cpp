@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	Draw: the public boundary, routed to the active backend.
 //
@@ -20,6 +20,7 @@
 #include "RS2D3D12Draw.h"
 #include "RS2LightingAudit.h"
 #include "RS2StageAudit.h"
+#include "RS2ShadowAudit.h"
 
 /*
  *	How many primitives a count forms, or 0 if it cannot form whole ones.
@@ -165,6 +166,7 @@ void RS2DrawImmediate(const RS2MeshVertexLayout &layout, RS2PrimitiveType primit
 	const void *vertices, unsigned int vertexCount){
 	RS2LightingAuditDrawImmediate(layout, primitive, vertexCount);
 	RS2StageAuditDrawImmediate(layout);
+	RS2ShadowAuditDrawImmediate(layout, vertices, vertexCount);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawImmediate(layout, primitive, vertices, vertexCount);
 	else RS2D3D12_DrawImmediate(layout, primitive, vertices, vertexCount);
@@ -175,6 +177,7 @@ void RS2DrawBuffered(const CRS2GeometryResource *geometry, RS2PrimitiveType prim
 	if(!RS2GeometryUsable(geometry, "RS2DrawBuffered")) return;
 	RS2LightingAuditDrawGeometry(geometry, primitive, vertexCount, false);
 	RS2StageAuditDrawGeometry(geometry, false);
+	RS2ShadowAuditDrawGeometry(geometry, vertexCount, false);
 
 	if(geometry->backend==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawBuffered(geometry, primitive, firstVertex, vertexCount);
@@ -186,6 +189,7 @@ void RS2DrawIndexed(const CRS2GeometryResource *geometry, RS2PrimitiveType primi
 	if(!RS2GeometryUsable(geometry, "RS2DrawIndexed")) return;
 	RS2LightingAuditDrawGeometry(geometry, primitive, indexCount, true);
 	RS2StageAuditDrawGeometry(geometry, true);
+	RS2ShadowAuditDrawGeometry(geometry, indexCount, true);
 
 	if(geometry->backend==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawIndexed(geometry, primitive, firstIndex, indexCount);

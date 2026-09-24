@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
-//	Modified for RS2EX on 2026-09-22, 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-22, 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	The Direct3D 8 side of render state and scene lighting.
 //
@@ -19,6 +19,10 @@
 #include "RS2TextureAudit.h"
 #include "RS2LightingAudit.h"
 #include "RS2StageAudit.h"
+#include "RS2ShadowAudit.h"
+
+extern bool g_StencilEnabled;
+extern DWORD g_BufferClearMode;
 
 ////////////////////////////////////////////////////////////////////////////////
 //	Enum translation
@@ -335,6 +339,7 @@ void RS2D3D8_ApplyInitialRenderState(){
 
 	if(RS2LightingAuditEnabled()) RS2D3D8_AuditInitialLighting();
 	if(RS2StageAuditEnabled()) RS2D3D8_AuditStageState("initial");
+	if(RS2ShadowAuditEnabled()) RS2D3D8_AuditStencilState("initial");
 }
 
 /*
@@ -383,6 +388,39 @@ void RS2D3D8_AuditStageState(const char *when){
 				f[8], f[9], f[10], f[11], f[12], f[13], f[14], f[15]);
 		}
 	}
+}
+
+/*
+ *	Write down the stencil state as the device holds it.  The engine sets
+ *	none of it before the shadow pass - that pass leaves the reference,
+ *	masks and ops it sets for the next frame - so the first frame runs on
+ *	Direct3D 8's defaults, read here rather than taken from documentation.
+ */
+void RS2D3D8_AuditStencilState(const char *when){
+	static const D3DRENDERSTATETYPE states[] = {
+		D3DRS_STENCILENABLE, D3DRS_STENCILFUNC, D3DRS_STENCILREF, D3DRS_STENCILMASK,
+		D3DRS_STENCILWRITEMASK, D3DRS_STENCILFAIL, D3DRS_STENCILZFAIL, D3DRS_STENCILPASS,
+		D3DRS_ZENABLE, D3DRS_ZWRITEENABLE, D3DRS_ZFUNC, D3DRS_CULLMODE, D3DRS_SHADEMODE,
+		D3DRS_FOGENABLE, D3DRS_ALPHABLENDENABLE, D3DRS_SRCBLEND, D3DRS_DESTBLEND
+	};
+	static const char *const names[] = {
+		"STENCILENABLE", "STENCILFUNC", "STENCILREF", "STENCILMASK",
+		"STENCILWRITEMASK", "STENCILFAIL", "STENCILZFAIL", "STENCILPASS",
+		"ZENABLE", "ZWRITEENABLE", "ZFUNC", "CULLMODE", "SHADEMODE",
+		"FOGENABLE", "ALPHABLENDENABLE", "SRCBLEND", "DESTBLEND"
+	};
+	unsigned int i;
+
+	for(i = 0; i<sizeof(states)/sizeof(states[0]); i++){
+		DWORD value = 0;
+		const HRESULT hr = sv3.pDev->GetRenderState(states[i], &value);
+
+		Debug("RS2SHADOWAUDIT|d3d8|%s|%s|%s|0x%08lx\n", when, names[i],
+			SUCCEEDED(hr) ? "ok" : "failed", (unsigned long)value);
+	}
+	Debug("RS2SHADOWAUDIT|d3d8|%s|stencilEnabled=%d|clearMode=0x%08lx|clearsStencil=%d\n", when,
+		g_StencilEnabled ? 1 : 0, (unsigned long)g_BufferClearMode,
+		(g_BufferClearMode&D3DCLEAR_STENCIL) ? 1 : 0);
 }
 
 /*

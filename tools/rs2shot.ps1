@@ -63,6 +63,9 @@ $sig = @'
     IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
 [DllImport("user32.dll")] public static extern int PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
 [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+[DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+[DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
 [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
 '@
 
@@ -144,6 +147,17 @@ function Wait-RS2Marker {
                 # Debug() opens and closes the file for every line. If this
                 # poll overlaps a write, retry on the next interval.
             }
+        }
+        #   Loading can stall long enough for Windows to treat the window as
+        #   hung and hand activation elsewhere (v0.1.5: DirectInput's device
+        #   enumeration waited 40 s on an unresponsive wireless receiver).  An
+        #   inactive RailSim never ticks, so ask for the foreground again
+        #   whenever it has been lost.
+        $proc.Refresh()
+        if ($proc.MainWindowHandle -ne [IntPtr]::Zero) {
+            $fgPid = [uint32]0
+            $null = $api::GetWindowThreadProcessId($api::GetForegroundWindow(), [ref]$fgPid)
+            if ($fgPid -ne $proc.Id) { $null = $api::SetForegroundWindow($proc.MainWindowHandle) }
         }
         Start-Sleep -Milliseconds 200
     }

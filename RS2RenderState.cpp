@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	RenderState: the public boundary, routed to the active backend.
 //
@@ -21,32 +21,38 @@
 #include "RS2D3D12TextureBackend.h"
 #include "RS2LightingAudit.h"
 #include "RS2StageAudit.h"
+#include "RS2ShadowAudit.h"
 
 void RS2SetDepthTest(bool enable){
+	RS2ShadowAuditSet(RS2_SA_DEPTH_TEST, enable ? 1 : 0);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetDepthTest(enable);
 	else RS2D3D12_SetDepthTest(enable);
 }
 
 void RS2SetDepthWrite(bool enable){
+	RS2ShadowAuditSet(RS2_SA_DEPTH_WRITE, enable ? 1 : 0);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetDepthWrite(enable);
 	else RS2D3D12_SetDepthWrite(enable);
 }
 
 void RS2SetDepthFunc(RS2CompareFunc func){
+	RS2ShadowAuditSet(RS2_SA_DEPTH_FUNC, (unsigned int)func);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetDepthFunc(func);
 	else RS2D3D12_SetDepthFunc(func);
 }
 
 void RS2ClearDepth(){
+	RS2ShadowAuditSet(RS2_SA_CLEAR_DEPTH, 0);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_ClearDepth();
 	else RS2D3D12Unsupported("RS2ClearDepth");
 }
 
 void RS2SetBlend(RS2BlendMode mode){
+	RS2ShadowAuditSet(RS2_SA_BLEND, (unsigned int)mode);
 	RS2StageAuditBlend(mode);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetBlend(mode);
@@ -73,12 +79,14 @@ void RS2SetAlphaFunc(RS2CompareFunc func){
 }
 
 void RS2SetCullMode(RS2CullMode mode){
+	RS2ShadowAuditSet(RS2_SA_CULL, (unsigned int)mode);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetCullMode(mode);
 	else RS2D3D12_SetCullMode(mode);
 }
 
 void RS2SetShadeMode(RS2ShadeMode mode){
+	RS2ShadowAuditSet(RS2_SA_SHADE, (unsigned int)mode);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetShadeMode(mode);
 	else RS2D3D12Unsupported("RS2SetShadeMode");
@@ -92,48 +100,59 @@ void RS2SetNormalizeNormals(bool enable){
 }
 
 void RS2SetStencilTest(bool enable){
+	if(enable && RS2ShadowAuditTakeFirstEnable()
+			&& GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
+		RS2D3D8_AuditStencilState("first-enable");
+	RS2ShadowAuditSet(RS2_SA_STENCIL_TEST, enable ? 1 : 0);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilTest(enable);
 	else RS2D3D12Unsupported("RS2SetStencilTest");
 }
 
 void RS2SetStencilFunc(RS2CompareFunc func){
+	RS2ShadowAuditSet(RS2_SA_STENCIL_FUNC, (unsigned int)func);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilFunc(func);
 	else RS2D3D12Unsupported("RS2SetStencilFunc");
 }
 
 void RS2SetStencilRef(unsigned int ref){
+	RS2ShadowAuditSet(RS2_SA_STENCIL_REF, ref);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilRef(ref);
 	else RS2D3D12Unsupported("RS2SetStencilRef");
 }
 
 void RS2SetStencilReadMask(unsigned int mask){
+	RS2ShadowAuditSet(RS2_SA_STENCIL_READ_MASK, mask);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilReadMask(mask);
 	else RS2D3D12Unsupported("RS2SetStencilReadMask");
 }
 
 void RS2SetStencilWriteMask(unsigned int mask){
+	RS2ShadowAuditSet(RS2_SA_STENCIL_WRITE_MASK, mask);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilWriteMask(mask);
 	else RS2D3D12Unsupported("RS2SetStencilWriteMask");
 }
 
 void RS2SetStencilFailOp(RS2StencilOp op){
+	RS2ShadowAuditSet(RS2_SA_STENCIL_FAIL, (unsigned int)op);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilFailOp(op);
 	else RS2D3D12Unsupported("RS2SetStencilFailOp");
 }
 
 void RS2SetStencilDepthFailOp(RS2StencilOp op){
+	RS2ShadowAuditSet(RS2_SA_STENCIL_DEPTH_FAIL, (unsigned int)op);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilDepthFailOp(op);
 	else RS2D3D12Unsupported("RS2SetStencilDepthFailOp");
 }
 
 void RS2SetStencilPassOp(RS2StencilOp op){
+	RS2ShadowAuditSet(RS2_SA_STENCIL_PASS, (unsigned int)op);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetStencilPassOp(op);
 	else RS2D3D12Unsupported("RS2SetStencilPassOp");
@@ -176,6 +195,7 @@ void RS2SetAmbientColorSource(RS2ColorSource source){
 }
 
 void RS2DisableFog(){
+	RS2ShadowAuditSet(RS2_SA_FOG_DISABLE, 0);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_DisableFog();
 	else RS2D3D12Unsupported("RS2DisableFog");
@@ -189,6 +209,7 @@ void RS2SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
 }
 
 void RS2SetBaseTextureCombine(){
+	RS2ShadowAuditSet(RS2_SA_BASE_COMBINE, 0);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetBaseTextureCombine();
 	// D3D12's Stage 0 shader always multiplies texture by diffuse colour.
