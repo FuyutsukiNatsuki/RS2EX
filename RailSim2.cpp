@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-22.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-22, 2026-09-26.
 #include "stdafx.h"
 #include "RSPV.h"
 #include "CPluginTree.h"
@@ -93,10 +93,10 @@ void Opening(){
 			int y = (g_DispHeight-letsize)/2;
 			int yofs = cnt<end ? (end-cnt)*128/letl : 0;
 			int alpha = cnt<end ? (cnt-begin)*255/letl : 255;
-			D3DCOLOR col = i<7
+			RS2PackedColor col = i<7
 				? MAKE_AC(alpha, 0, i*255/6, 255)
 				: MAKE_AC(alpha, 0, 128+(i-7)*127/2, 0);
-			D3DCOLOR sdw = MAKE_AC(alpha/4, 255, 255, 255);
+			RS2PackedColor sdw = MAKE_AC(alpha/4, 255, 255, 255);
 			int x1 = x, y1 = y-yofs, x2 = x+letsize, y2 = y+letsize+yofs;
 			{
 				int rel = cnt<end ? end-cnt : 0;
@@ -125,8 +125,8 @@ void Opening(){
 			const int grphwid = TILE_UNIT*8;
 			int gx1 = (g_DispWidth-grphwid)/2, gy1 = g_DispHeight-TILE_UNIT*3;
 			int gx2 = (g_DispWidth+grphwid)/2, gy2 = g_DispHeight-TILE_UNIT*3+FONT_HEIGHT;
-			D3DCOLOR fcol[4] = {0xffc0c0c0, 0xffc0c0c0, 0xff808080, 0xff808080};
-			D3DCOLOR gcol[4] = {0xc080c0ff, 0xc080c0ff, 0xc0406080, 0xc0406080};
+			RS2PackedColor fcol[4] = {0xffc0c0c0, 0xffc0c0c0, 0xff808080, 0xff808080};
+			RS2PackedColor gcol[4] = {0xc080c0ff, 0xc080c0ff, 0xc0406080, 0xc0406080};
 			RS2BindTexture(0, RS2TextureRef());
 			Grad2DRect(gx1, gy1, gx2, gy2, fcol);
 			Fill2DRect(gx1+1, gy1+1, gx2-1, gy2-1, 0x80000000);

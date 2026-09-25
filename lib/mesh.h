@@ -1,12 +1,12 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 
 class CNamedObject;
 
 #include "..\RS2MeshData.h"
 #include "..\RS2Draw.h"
 
-//	[RS2EX] CXFile moved to RS2LegacyXMeshImporter.h.  Reading .x files is
+//	[RS2EX] CXFile (DirectXFile) was removed with the D3DX8 importer in v0.2.0.
 //	import work, and after v0.0.6 the importer is the only place that does it.
 
 
@@ -60,10 +60,9 @@ public:
 	//	CMesh(CMesh& src);
 	~CMesh();
 
-	BOOL Load(BOOL fRes, char *strFile, D3DCOLOR cTrans = 0, int nMipLv = 1);
-	BOOL CreateSphere(float r, UINT sl, UINT st, RS2Color4 cv);
-	BOOL CreateBox(float x, float y, float z, RS2Color4 cv);
-	BOOL CreateTeapot(RS2Color4 cv);
+	BOOL Load(BOOL fRes, char *strFile, RS2PackedColor cTrans = 0, int nMipLv = 1);
+	//	[RS2EX] v0.2.0: CreateSphere / CreateBox / CreateTeapot (D3DX8 shapes,
+	//	no caller) removed with D3DX8.
 	void Free();
 	void ComputeBoundary();
 
@@ -111,7 +110,7 @@ struct MESHINFO{
 	CMesh m_Mesh;
 	string strName;
 	int nRef;
-	D3DCOLOR cTrans;
+	RS2PackedColor cTrans;
 	int nMipLv;
 	MESHINFO *pNext;
 };
@@ -126,7 +125,7 @@ class CMeshList{
 public:
 	CMeshList();
 	~CMeshList();
-	CMesh *Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans = 0, int nMipLv = 1);
+	CMesh *Get(BOOL fRes, LPCSTR strName, RS2PackedColor cTrans = 0, int nMipLv = 1);
 	void Release(CMesh *);
 };
 

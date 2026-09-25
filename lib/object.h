@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 
 class CNamedObject;
 
@@ -110,7 +110,7 @@ inline void SetBoxMinMax(BOX8 *pB, VEC3 min, VEC3 max){
  *	c2, r2		: オブジェクトBの中心と半径
  */
 inline BOOL SphereTest(VEC3 c1, float r1, VEC3 c2, float r2){
-	if(D3DXVec3Length(&VEC3(c1-c2))<r1+r2) return TRUE;
+	if(RS2Vec3Length(&VEC3(c1-c2))<r1+r2) return TRUE;
 	else return FALSE;
 }
 

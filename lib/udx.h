@@ -1,7 +1,7 @@
 //	 UDX Library
 //	 Copyright (c) 2002 Midikyou
 //	 http://www.geocities.co.jp/SiliconValley-SanJose/8134/
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 
 #ifndef _UDX_H
 #define _UDX_H
@@ -44,6 +44,7 @@
 #include "wave_stream.h"
 //#include "movie.h"
 
-#include "comm.h"
+//	[RS2EX] v0.2.0: DirectPlay (comm.h) removed; see RS2NetworkDisabled.h.
+#include "..\RS2NetworkDisabled.h"
 
 #endif _UDX_H

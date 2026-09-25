@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-24.
 //
@@ -693,7 +694,7 @@ bool RS2D3D12Stage1SmokeRun(){
 	//	---------------------------------------------------------- frames
 	CRS2TextureResource foreign;
 
-	foreign.AdoptPayloadFromBackend(RS2_RENDERER_D3D8, (void *)&s_S1ForeignOps, 4, 4, &s_S1ForeignOps);
+	foreign.AdoptPayloadFromBackend(RS2_RENDERER_NONE, (void *)&s_S1ForeignOps, 4, 4, &s_S1ForeignOps);
 
 	const unsigned int drawBaseline = d3d12 ? RS2D3D12_GetDrawCount() : 0;
 	const unsigned int refusedBaseline = d3d12 ? RS2D3D12_GetRefusedDrawCount() : 0;

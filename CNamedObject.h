@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CNAMEDOBJECT_H_INCLUDED
 #define CNAMEDOBJECT_H_INCLUDED
 
@@ -139,17 +140,17 @@ public:
 	VEC3 GetPos(){
 		VEC3 ret;
 		CObject *obj = m_Link->GetObject();
-		return *D3DXVec3TransformCoord(
+		return *RS2Vec3TransformCoord(
 			&ret, &(m_AttachCoord/obj->GetScale()), &obj->GetMatrix());
 	}
 	VEC3 GetDir(){
 		VEC3 ret;
-		return *D3DXVec3TransformNormal(
+		return *RS2Vec3TransformNormal(
 			&ret, &m_AttachDir, &m_DirLink->GetObject()->GetMatrix());
 	}
 	VEC3 GetUp(){
 		VEC3 ret;
-		return *D3DXVec3TransformNormal(
+		return *RS2Vec3TransformNormal(
 			&ret, &m_AttachUp, &m_UpLink->GetObject()->GetMatrix());
 	}
 };

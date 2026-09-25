@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21, 2026-09-22.
+//	Modified for RS2EX on 2026-09-21, 2026-09-22, 2026-09-26.
 #ifndef CSHADOWVOLUME_H_INCLUDED
 #define CSHADOWVOLUME_H_INCLUDED
 
@@ -71,7 +71,7 @@ public:
     void BuildFromMesh(CObject *, VEC3);
 	void AddFaceEdge(VEC3 &, VEC3 &, VEC3 &);
     void Render();
-	void Draw(D3DCOLOR);
+	void Draw(RS2PackedColor);
 };
 
 #endif

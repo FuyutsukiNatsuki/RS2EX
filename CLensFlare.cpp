@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CLensFlare.h"
 #include "CModelPlugin.h"
@@ -63,7 +63,7 @@ char *CLensFlare::Read(
 	else m_Twinkle = 0.0f;
 	if(tmp = AsgnFloat(eee = str, "Inclination", &m_Inclination)) str = tmp;
 	else m_Inclination = 0.0f;
-	m_StartAngle = cosf(D3DXToRadian(m_StartAngle));
+	m_StartAngle = cosf(RS2ToRadian(m_StartAngle));
 	m_Flare.clear();
 	CFlareElement flare;
 	while(tmp = flare.Read(str)){
@@ -154,7 +154,7 @@ char *CWhiteout::Read(
 	if(!(str = AsgnFloat(eee = str, "StartAngle", &m_StartAngle))) throw CSynErr(eee);
 	if(!(str = AsgnColor(eee = str, "Color", &m_Color))) throw CSynErr(eee);
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
-	m_StartAngle = cosf(D3DXToRadian(m_StartAngle));
+	m_StartAngle = cosf(RS2ToRadian(m_StartAngle));
 	return str;
 }
 

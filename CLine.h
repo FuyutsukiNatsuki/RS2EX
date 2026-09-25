@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CLINE_H_INCLUDED
 #define CLINE_H_INCLUDED
 
@@ -27,7 +28,7 @@ public:
 	VEC3 GetUp();
 	VEC3 GetDir();
 	VEC3 GetOrigDir();
-	void Render(D3DCOLOR);
+	void Render(RS2PackedColor);
 	void RestoreAddress();
 	char *Read(char *, char *);
 	void Save(FILE *, char *);

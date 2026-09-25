@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CDiaDialog.h"
 #include "CRailConnector.h"
@@ -516,8 +516,8 @@ void CDiaDialog::RenderDiaDialogBase(){
 	CDiaElement *de = GetElement();
 	if(!de) return;
 	RS2BindTexture(0, RS2TextureRef());
-	D3DCOLOR col = g_Skin->m_InterfaceData.m_StaticFontColor;
-	D3DCOLOR col2 = col&0x00ffffff;
+	RS2PackedColor col = g_Skin->m_InterfaceData.m_StaticFontColor;
+	RS2PackedColor col2 = col&0x00ffffff;
 	if(!col2) col2 = 0x01000000;
 	int px, py, tw = m_DiaGroup.GetWidth()-TILE_UNIT*2;
 	m_DiaGroup.GetAbsPos(&px, &py);

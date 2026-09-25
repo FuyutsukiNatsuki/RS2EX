@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 
 #include "headers.h"
 #include "debug.h"
@@ -26,39 +26,11 @@ extern int g_DispHeight;
  *
  *	※負荷が高いため頻繁に使用しない事
  */
-D3DCOLOR GetPixelColor(int x, int y){
-	//	画面外
-	//	[RS2EX] Readback is a deferred capability (v0.0.9 WP9).  A backend
-	//	that cannot read rendered pixels answers false here, and this path
-	//	stops rather than reaching for a device it does not have.
-	if(!GetRS2Renderer().SupportsReadback()) return 0;
-
-	if(x<0 || x>=sv3.width || y<0 || y>=sv3.height)
-		return 0;
-
-	//	バックバッファをサーフェイスのコピー
-	LPSURF8		pSrc, pDst;
-	D3DFORMAT	fmt = sv3.d3dpp.BackBufferFormat;
-	RECT		rect = {x, y, x+3, y+3};
-	POINT		point = {0, 0};
-
-	sv3.pDev->GetRenderTarget(&pSrc);
-	sv3.pDev->CreateImageSurface(4, 4, fmt, &pDst);
-	sv3.pDev->CopyRects(pSrc, &rect, 1, pDst, &point);
-
-	//	サーフェイスをロック
-	D3DLOCKED_RECT	lrect;
-	DWORD			pixel;
-	D3DCOLOR		c;
-
-	pDst->LockRect(&lrect, NULL, D3DLOCK_READONLY);
-	pixel = *((DWORD *)lrect.pBits);	//	最初のピクセルを取得
-	c = GetXRGB32(pixel, fmt);	//	X8R8G8B8にフォーマット変換
-	pDst->UnlockRect();
-
-	RELEASE(pSrc);
-	RELEASE(pDst);
-	return c;
+RS2PackedColor GetPixelColor(int x, int y){
+	//	[RS2EX] Readback is a deferred capability (v0.0.9 WP9); the Direct3D 8
+	//	surface copy that was here went with the Direct3D 8 renderer (v0.2.0).
+	(void)x; (void)y;
+	return 0;
 }
 
 /*
@@ -82,10 +54,10 @@ void RenderLensFlare(VEC3 pos, float size, BOOL fWhite){
 	VEC3 vDist = vLight/5-vCamera*5;	//	フレアの間隔（適当です）
 
 	//	光の入射角を計算
-	D3DXVec3Normalize(&vCamera, &vCamera);
-	D3DXVec3Normalize(&vLight, &vLight);
+	RS2Vec3Normalize(&vCamera, &vCamera);
+	RS2Vec3Normalize(&vLight, &vLight);
 
-	float angle = D3DXVec3Dot(&vLight, &vCamera);
+	float angle = RS2Vec3Dot(&vLight, &vCamera);
 
 	if(angle>0.9f){
 		//	フレアの描画

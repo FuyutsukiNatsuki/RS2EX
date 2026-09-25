@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21, 2026-09-22.
+//	Modified for RS2EX on 2026-09-21, 2026-09-22, 2026-09-26.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CShadowVolume.h"
@@ -111,8 +111,8 @@ void InitGrid(){
 	int i, cnt = 0;
 	VTX_L grid[(GRID_SIZE-1)*16];	//	両端・両側・±・XZ・
 	for(i = -GRID_SIZE/2+1; i<GRID_SIZE/2; i++){
-		D3DCOLOR color = i%5 ? 0x00c0c0ff : 0x000000ff;
-		D3DCOLOR alpha = (255*(GRID_SIZE/2-1-abs(i))/(GRID_SIZE/2-1))<<24;
+		RS2PackedColor color = i%5 ? 0x00c0c0ff : 0x000000ff;
+		RS2PackedColor alpha = (255*(GRID_SIZE/2-1-abs(i))/(GRID_SIZE/2-1))<<24;
 		grid[cnt].x = i; grid[cnt].y = 0.0f; grid[cnt].z = -GRID_SIZE/2;
 		grid[cnt].d = color; cnt++;
 		grid[cnt].x = i; grid[cnt].y = 0.0f; grid[cnt].z = 0.0f;
@@ -167,7 +167,7 @@ void DrawGrid(
 	float fscale = 0.003f*cdist/gscale, gstep = 5.0f*gscale;
 	MTX4 move;
 	VEC3 tpos(Round(pos.x/gstep)*gstep, pos.y, Round(pos.z/gstep)*gstep);
-	D3DXMatrixTranslation(&move, tpos.x, tpos.y, tpos.z);
+	RS2MatrixTranslation(&move, tpos.x, tpos.y, tpos.z);
 	move._11 *= gscale; move._22 *= gscale; move._33 *= gscale;
 	pos = (pos-tpos)/gscale;
 	RS2BindTexture(0, RS2TextureRef());
@@ -191,7 +191,7 @@ void DrawGrid(
 	float uinv = vdir.y<0.0f ? 1.0f : -1.0f;
 	for(i = -lim; i<=lim; i += step){
 		char *fmt = (char *)(gscale<1.0f ? "%.1f" : "%.0f");
-		D3DCOLOR col = ((255*(3-abs(i))/3)<<24)|0x00ffffff;
+		RS2PackedColor col = ((255*(3-abs(i))/3)<<24)|0x00ffffff;
 		if(vdir.x<0.0f) g_StrTex->RenderRight3D(-zofs+5.0f*i*V3RIGHT, -V3DIR*xs, uinv*xs*V3RIGHT,
 			col, 0xff000000, FlashIn(fmt, tpos.x+i*gstep), fscale);
 		else g_StrTex->RenderLeft3D(-zofs+5.0f*i*V3RIGHT, -V3DIR*xs, uinv*xs*V3RIGHT,
@@ -214,11 +214,11 @@ void DrawGrid(
 void DrawTangent(
 	VEC3 pos,			//	中心座標
 	VEC3 norm,			//	法線
-	D3DCOLOR col,		//	色
+	RS2PackedColor col,		//	色
 	CLineDumpL *dump	//	ダンパ
 ){
 	VEC3 xn(norm.y, -norm.x, 0.0f), zn(0.0f, -norm.z, norm.y);
-	D3DCOLOR col2 = col&0x00ffffff;
+	RS2PackedColor col2 = col&0x00ffffff;
 	V3Norm(&xn, &xn);
 	V3Norm(&zn, &zn);
 	xn *= TANGENT_LEN; zn *= TANGENT_LEN;
@@ -258,7 +258,7 @@ void DrawFocus(
  */
 void Draw3DLineWithShadow(
 	VEC3 pos1, VEC3 pos2,		//	座標
-	D3DCOLOR c1, D3DCOLOR c2	//	色
+	RS2PackedColor c1, RS2PackedColor c2	//	色
 ){
 	VEC3 p1 = WorldToScreen(pos1), p2 = WorldToScreen(pos2);
 	if(p1.z<0.0f && p2.z<0.0f) return;
@@ -271,7 +271,7 @@ void Draw3DLineWithShadow(
 	}
 	int p1x = Round(p1.x), p1y = Round(p1.y);
 	int p2x = Round(p2.x), p2y = Round(p2.y);
-	D3DCOLOR s2 = (c2 ? c2 : c1)&0xff000000;
+	RS2PackedColor s2 = (c2 ? c2 : c1)&0xff000000;
 	Draw2DLine(p1x+1, p1y+1, p2x+1, p2y+1, c1&0xff000000, s2 ? s2 : 0x01000000);
 	Draw2DLine(p1x, p1y, p2x, p2y, c1, c2);
 }
@@ -281,7 +281,7 @@ void Draw3DLineWithShadow(
  */
 void Draw3DPointAs2DRect(
 	VEC3 pos,		//	座標
-	D3DCOLOR color,	//	色
+	RS2PackedColor color,	//	色
 	int r			//	半径
 ){
 	VEC3 p = WorldToScreen(pos);

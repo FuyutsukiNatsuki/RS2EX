@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 
 #ifndef SYSVALUE_H
 #define SYSVALUE_H
@@ -16,7 +16,7 @@ SYSVALUE_I svi;		//	Input
 SYSVALUE_S svs;		//	Sound
 //SYSVALUE_M svm;		//	Music
 //SYSVALUE_V svv;		//	Video
-SYSVALUE_C svc;     //	Comm
+//	[RS2EX] v0.2.0: SYSVALUE_C svc (DirectPlay) removed.
 
 CFrame g_frame;
 

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
 //
@@ -19,7 +20,7 @@ static unsigned int s_IndexBytes = 0;
 #define RS2_GEOMETRY_INDEX_BYTES	2
 
 CRS2GeometryResource::CRS2GeometryResource()
-	: backend(RS2_RENDERER_D3D8),
+	: backend(RS2_RENDERER_NONE),
 	  payload(0),
 	  stride(0),
 	  vertexCount(0),

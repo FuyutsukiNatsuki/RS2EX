@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-26.
 //
@@ -23,7 +24,6 @@
 
 #include "stdafx.h"
 #include "RS2XImportDump.h"
-#include "RS2LegacyXMeshImporter.h"
 #include "RS2MeshImport.h"
 
 #include <stdio.h>
@@ -62,51 +62,7 @@ static void RS2XDColor(FILE *f, const RS2Color4 &c){
 	RS2XDF32(f, c.r); RS2XDF32(f, c.g); RS2XDF32(f, c.b); RS2XDF32(f, c.a);
 }
 
-//	WP0 investigation only: the mesh D3DXLoadMeshFromX returns, before the
-//	importer optimises it (-ximportraw <file>).
-#include "RS2LegacyImportDevice.h"
-
-static void RS2XDRaw(const char *path){
-	IDirect3DDevice8 *device = RS2GetLegacyImportDevice();
-	LPD3DXMESH mesh = 0;
-	LPD3DXBUFFER adj = 0, mat = 0;
-	DWORD nmat = 0;
-
-	if(!device || FAILED(D3DXLoadMeshFromX((LPSTR)path, D3DXMESH_SYSTEMMEM, device, &adj, &mat, &nmat, &mesh))){
-		Debug("RS2XIMPORTRAW|load failed|%s\n", path);
-		return;
-	}
-
-	BYTE *pv = 0;
-	const DWORD n = mesh->GetNumVertices(), stride = D3DXGetFVFVertexSize(mesh->GetFVF());
-
-	Debug("RS2XIMPORTRAW|%s|vertices=%u|faces=%u|fvf=%x|stride=%u\n", path, n, mesh->GetNumFaces(), mesh->GetFVF(), stride);
-	if(SUCCEEDED(mesh->LockVertexBuffer(D3DLOCK_READONLY, &pv))){
-		D3DXVECTOR3 mn, mx;
-		DWORD i;
-
-		D3DXComputeBoundingBox(pv, n, mesh->GetFVF(), &mn, &mx);
-		Debug("RS2XIMPORTRAW|bounds|%.9g|%.9g|%.9g|%.9g|%.9g|%.9g\n", mn.x, mn.y, mn.z, mx.x, mx.y, mx.z);
-		for(i = 0; i<n; i++){
-			const float *p = (const float *)(pv+i*stride);
-
-			Debug("RS2XIMPORTRAW|v|%u|%.9g|%.9g|%.9g\n", i, p[0], p[1], p[2]);
-		}
-		mesh->UnlockVertexBuffer();
-	}
-	RELEASE(adj);
-	RELEASE(mat);
-	RELEASE(mesh);
-}
-
 bool RS2XImportDumpRun(){
-	{
-		if(CheckArguments("-ximportraw")){
-			RS2XDRaw("Env\\Default\\Landscape.x");
-			return true;
-		}
-	}
-
 	std::vector<std::string> files;
 
 	RS2XDFind("", &files);

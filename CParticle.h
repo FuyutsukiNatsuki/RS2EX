@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CPARTICLE_H_INCLUDED
 #define CPARTICLE_H_INCLUDED
 
@@ -21,7 +21,7 @@ private:
 	float m_FinRadius;		//	最終半径
 	float m_Alpha;			//	アルファ
 	float m_Angle;			//	角度
-	D3DCOLOR m_Color;		//	色
+	RS2PackedColor m_Color;		//	色
 	int m_Lifetime;			//	寿命
 	int m_Timer;			//	経過時間
 	CScene *m_Scene;		//	シーン
@@ -77,7 +77,7 @@ private:
 	VEC3 m_Direction[2];			//	方向
 	float m_InitialRadius[2];		//	初期半径
 	float m_FinalRadius[2];			//	最終半径
-	D3DCOLOR m_Color[2];			//	色
+	RS2PackedColor m_Color[2];			//	色
 	int m_BlendMode;				//	ブレンドモード
 	float m_AirResistance;			//	空気抵抗
 	float m_Gravity;				//	重力

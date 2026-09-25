@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CRailSplitCurve.h"
 #include "CRailDumpCurve.h"
@@ -28,7 +28,7 @@ const float POINT_DEC_MIN = 5.0f;	//	ポイント左右決定最小距離
 
 //	外部グローバル
 extern bool g_ShowWarpSelect;
-extern D3DCOLOR g_ColorSelect[];
+extern RS2PackedColor g_ColorSelect[];
 extern CDetectInfo g_StationPlatformParentDetectInfo;
 
 //	内部グローバル
@@ -1208,10 +1208,10 @@ void CRailWay::UpdateSplitList(){
 	if(m_SplitList.size()!=m_Parent->m_SplitList.size()) m_SplitList = m_Parent->m_SplitList;
 	list<CRailSplitter>::iterator itr1 = m_SplitList.begin(), itr2 = m_Parent->m_SplitList.begin();
 	for(; itr1!=m_SplitList.end(); ++itr1, ++itr2){
-		D3DXVec3TransformCoord(&itr1->m_Pos, &itr2->m_Pos, &mtx);
-		D3DXVec3TransformNormal(&itr1->m_Right, &itr2->m_Right, &mtx);
-		D3DXVec3TransformNormal(&itr1->m_Up, &itr2->m_Up, &mtx);
-		D3DXVec3TransformNormal(&itr1->m_Dir, &itr2->m_Dir, &mtx);
+		RS2Vec3TransformCoord(&itr1->m_Pos, &itr2->m_Pos, &mtx);
+		RS2Vec3TransformNormal(&itr1->m_Right, &itr2->m_Right, &mtx);
+		RS2Vec3TransformNormal(&itr1->m_Up, &itr2->m_Up, &mtx);
+		RS2Vec3TransformNormal(&itr1->m_Dir, &itr2->m_Dir, &mtx);
 	}
 	m_Link[0].m_Link->m_Splitter = m_SplitList.front();
 	m_Link[1].m_Link->m_Splitter = m_SplitList.back();
@@ -1245,7 +1245,7 @@ void CRailWay::Render(){
 		int side = (*ipge)->m_Side;
 		CRailConnectorLink &con = m_Link[side];
 		VEC3 tmp = con.GetPos()-con.GetDir()*end;
-		D3DCOLOR col = side ? 0x80ff0000 : 0x800000ff;
+		RS2PackedColor col = side ? 0x80ff0000 : 0x800000ff;
 		Draw3DLine(tmp, tmp+V3UP*10.0f, col, col);
 	}
 	RS2SetDepthFunc(RS2_COMPARE_LESS_EQUAL);
@@ -1272,9 +1272,9 @@ void CRailWay::Render(){
 void CRailWay::RenderWarp(){
 	int i;
 	bool draw[2];
-	D3DCOLOR lc = g_ShowWarpSelect && m_Selected
+	RS2PackedColor lc = g_ShowWarpSelect && m_Selected
 		? g_ColorSelect[m_Selected] : 0xff0080ff;
-	D3DCOLOR lca = ScaleColor(lc, g_BlinkAlpha);
+	RS2PackedColor lca = ScaleColor(lc, g_BlinkAlpha);
 	for(i = 0; i<2; i++)
 		if(draw[i] = m_Link[i].m_Link->GetScene()==g_Scene) m_Link[i].m_Link->Render(lc, false);
 	if(draw[0] && draw[1]){

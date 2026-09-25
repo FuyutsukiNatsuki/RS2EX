@@ -1,20 +1,21 @@
+//	Modified for RS2EX on 2026-09-26.
 //	Copyright (c) 2002 Midikyou
 
-void Draw2DLine(int x1, int y1, int x2, int y2, D3DCOLOR c1 = 0xffffffff, D3DCOLOR c2 = 0);
-void Draw3DLine(VEC3 p1, VEC3 p2, D3DCOLOR c1 = 0xffffffff, D3DCOLOR c2 = 0);
-void Draw2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c = 0xffffffff);
-void Fill2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c = 0xffffffff);
-void Grad2DRect(int x1, int y1, int x2, int y2, D3DCOLOR *c);
-void TexMap2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c = 0xffffffff);
-void TexMap2DRect90(int x1, int y1, int x2, int y2, D3DCOLOR c = 0xffffffff);
-void Draw3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c = 0xffffffff);
-void Fill3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c = 0xffffffff);
-void TexMap3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c = 0xffffffff);
-void Tex2Map3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c = 0xffffffff);
-void Fill3DHex(VEC3 pos, float r, D3DCOLOR cc, D3DCOLOR ca = 0xffffffff);
-void Draw3DCircle(VEC3 pos, float r, D3DCOLOR c = 0xffffffff);
-void Fill3DCircle(VEC3 pos, float r, D3DCOLOR cc = 0xffffffff, D3DCOLOR ca = 0xffffffff);
-void DrawBox(BOX8 *pB, D3DCOLOR c = 0xffffffff);
+void Draw2DLine(int x1, int y1, int x2, int y2, RS2PackedColor c1 = 0xffffffff, RS2PackedColor c2 = 0);
+void Draw3DLine(VEC3 p1, VEC3 p2, RS2PackedColor c1 = 0xffffffff, RS2PackedColor c2 = 0);
+void Draw2DRect(int x1, int y1, int x2, int y2, RS2PackedColor c = 0xffffffff);
+void Fill2DRect(int x1, int y1, int x2, int y2, RS2PackedColor c = 0xffffffff);
+void Grad2DRect(int x1, int y1, int x2, int y2, RS2PackedColor *c);
+void TexMap2DRect(int x1, int y1, int x2, int y2, RS2PackedColor c = 0xffffffff);
+void TexMap2DRect90(int x1, int y1, int x2, int y2, RS2PackedColor c = 0xffffffff);
+void Draw3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, RS2PackedColor c = 0xffffffff);
+void Fill3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, RS2PackedColor c = 0xffffffff);
+void TexMap3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, RS2PackedColor c = 0xffffffff);
+void Tex2Map3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, RS2PackedColor c = 0xffffffff);
+void Fill3DHex(VEC3 pos, float r, RS2PackedColor cc, RS2PackedColor ca = 0xffffffff);
+void Draw3DCircle(VEC3 pos, float r, RS2PackedColor c = 0xffffffff);
+void Fill3DCircle(VEC3 pos, float r, RS2PackedColor cc = 0xffffffff, RS2PackedColor ca = 0xffffffff);
+void DrawBox(BOX8 *pB, RS2PackedColor c = 0xffffffff);
 
 /*
  *	UVç¿ïWÇÃéwíË

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef SCRIPT_H_INCLUDED
 #define SCRIPT_H_INCLUDED
 
@@ -22,7 +23,7 @@ public:
 char *Space(char *);
 char *ConstInteger(char *, int *);
 char *ConstFloat(char *, float *);
-char *ColorValue(char *, D3DCOLOR *);
+char *ColorValue(char *, RS2PackedColor *);
 char *HexPointer(char *, void **);
 char *Vector2D(char *, VEC3 *);
 char *Vector3D(char *, VEC3 *);
@@ -33,7 +34,7 @@ char *Identifier2(char *, char *);
 char *Assignment(char *, char *);
 char *AsgnInteger(char *, char *, int *, int n = 1, bool fill = false);
 char *AsgnFloat(char *, char *, float *, int n = 1, bool fill = false);
-char *AsgnColor(char *, char *, D3DCOLOR *, int n = 1, bool fill = false);
+char *AsgnColor(char *, char *, RS2PackedColor *, int n = 1, bool fill = false);
 char *AsgnPointer(char *, char *, void **, int n = 1, bool fill = false);
 char *AsgnVector2D(char *, char *, VEC2 *, int n = 1, bool fill = false);
 char *AsgnVector3D(char *, char *, VEC3 *, int n = 1, bool fill = false);

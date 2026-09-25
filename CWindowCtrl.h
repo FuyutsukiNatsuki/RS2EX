@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CWINDOWCTRL_H_INCLUDED
 #define CWINDOWCTRL_H_INCLUDED
 
@@ -24,7 +25,7 @@ protected:
 	int m_DragX, m_DragY;			//	タイトルバードラッグ座標
 	int m_MinWidth, m_MinHeight;	//	最小サイズ
 	int m_MaxWidth, m_MaxHeight;	//	最大サイズ
-	D3DCOLOR m_Color;				//	ウィンドウ色
+	RS2PackedColor m_Color;				//	ウィンドウ色
 	CMiniButton *m_CloseButton;		//	クローズボタン
 	CWindowResizer *m_Resizer;		//	リサイザ
 public:
@@ -34,7 +35,7 @@ public:
 	virtual void SetSize(int, int);
 	void SetResize(int, int, int, int, CWindowResizer *);
 	bool CheckClose(){ return m_Visible && m_CloseButton->IsPushed(); }
-	void SetColor(D3DCOLOR c){ m_Color = c; }
+	void SetColor(RS2PackedColor c){ m_Color = c; }
 	void SetAutoTransparent();
 	bool IsInsideTitleBar(int, int);
 	bool IsInsideLeftGrab(int, int);

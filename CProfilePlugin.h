@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CPROFILEPLUGIN_H_INCLUDED
 #define CPROFILEPLUGIN_H_INCLUDED
 
@@ -36,7 +36,7 @@ private:
 	VEC2 m_Coord;			//	座標
 	VEC2 m_Normal;			//	法線
 	VEC3 m_TransCoord[2];	//	一時座標
-	D3DCOLOR m_Diffuse;		//	頂点色
+	RS2PackedColor m_Diffuse;		//	頂点色
 	float m_TexU;			//	テクスチャ U 座標
 public:
 	char *Read(char *, bool);
@@ -100,7 +100,7 @@ class CWireframeVertex{
 private:
 	bool m_IgnoreCant;	//	カント無視
 	VEC3 m_Coord;		//	座標
-	D3DCOLOR m_Diffuse;	//	頂点色
+	RS2PackedColor m_Diffuse;	//	頂点色
 public:
 	char *Read(char *);
 };

@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CEditCtrl.h"
 #include "CSkinPlugin.h"
@@ -197,7 +197,7 @@ int CTreeFileElement::Render(
 		EndRename(true);
 	if(cnt<begin) return 1;
 	CStringDrawer *sd = g_StrTex->DrawString(m_String.c_str(), 0);
-	D3DCOLOR *bc = m_Owner->GetFocusItem()==this
+	RS2PackedColor *bc = m_Owner->GetFocusItem()==this
 		? g_Skin->m_PluginTreeData.m_SelectedBaseColor
 		: g_Skin->m_PluginTreeData.m_DefaultBaseColor;
 	if(m_Width<0) m_Width = sd->GetWidth();

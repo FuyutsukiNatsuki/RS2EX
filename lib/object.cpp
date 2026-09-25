@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 
 //#include "headers.h"
 //#include "debug.h"
@@ -64,7 +64,7 @@ void CObject::SetScale(float s){
 	float sr = s/m_scale;
 
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixScaling(&mtxtmp, sr, sr, sr);
+	RS2MatrixScaling(&mtxtmp, sr, sr, sr);
 	m_mtx = mtxtmp*mtxold;
 	m_scale = s;
 }
@@ -74,7 +74,7 @@ void CObject::SetScale(float s){
  */
 void CObject::SetScale(float sx, float sy, float sz){
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixScaling(&mtxtmp, sx/m_scale, sy/m_scale, sz/m_scale);
+	RS2MatrixScaling(&mtxtmp, sx/m_scale, sy/m_scale, sz/m_scale);
 	m_mtx = mtxtmp*mtxold;
 	m_scale = 1.0f;
 }
@@ -84,7 +84,7 @@ void CObject::SetScale(float sx, float sy, float sz){
  */
 void CObject::Scale(float s){
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixScaling(&mtxtmp, s, s, s);
+	RS2MatrixScaling(&mtxtmp, s, s, s);
 	m_mtx = mtxtmp*mtxold;
 	m_scale *= s;
 }
@@ -108,7 +108,7 @@ void CObject::Move(VEC3 v){
 	v /= m_scale;	//	スケーリングの影響を回避
 
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixTranslation(&mtxtmp, v.x, v.y, v.z);
+	RS2MatrixTranslation(&mtxtmp, v.x, v.y, v.z);
 	m_mtx = mtxtmp*mtxold;
 }
 //	原点中心
@@ -116,7 +116,7 @@ void CObject::Move2(VEC3 v){
 	v /= m_scale;	//	スケーリングの影響を回避
 
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixTranslation(&mtxtmp, v.x, v.y, v.z);
+	RS2MatrixTranslation(&mtxtmp, v.x, v.y, v.z);
 	m_mtx = mtxold*mtxtmp;
 }
 
@@ -129,7 +129,7 @@ void CObject::MoveS(VEC3 v){
 	v /= GetWScale();	//	スケーリングの影響を回避
 
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixTranslation(&mtxtmp, v.x, v.y, v.z);
+	RS2MatrixTranslation(&mtxtmp, v.x, v.y, v.z);
 	m_mtx = mtxtmp*mtxold;
 }
 
@@ -142,13 +142,13 @@ void CObject::MoveS(VEC3 v){
  */
 void CObject::RotX(float v){
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixRotationX(&mtxtmp, v);
+	RS2MatrixRotationX(&mtxtmp, v);
 	m_mtx = mtxtmp*mtxold;
 }
 //	原点中心
 void CObject::RotX2(float v){
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixRotationX(&mtxtmp, v);
+	RS2MatrixRotationX(&mtxtmp, v);
 	m_mtx = mtxold*mtxtmp;
 }
 
@@ -159,13 +159,13 @@ void CObject::RotX2(float v){
  */
 void CObject::RotY(float v){
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixRotationY(&mtxtmp, v);
+	RS2MatrixRotationY(&mtxtmp, v);
 	m_mtx = mtxtmp*mtxold;
 }
 //	原点中心
 void CObject::RotY2(float v){
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixRotationY(&mtxtmp, v);
+	RS2MatrixRotationY(&mtxtmp, v);
 	m_mtx = mtxold*mtxtmp;
 }
 
@@ -176,13 +176,13 @@ void CObject::RotY2(float v){
  */
 void CObject::RotZ(float v){
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixRotationZ(&mtxtmp, v);
+	RS2MatrixRotationZ(&mtxtmp, v);
 	m_mtx = mtxtmp*mtxold;
 }
 //	原点中心
 void CObject::RotZ2(float v){
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixRotationZ(&mtxtmp, v);
+	RS2MatrixRotationZ(&mtxtmp, v);
 	m_mtx = mtxold*mtxtmp;
 }
 
@@ -194,7 +194,7 @@ void CObject::RotZ2(float v){
  */
 void CObject::RotAxis(VEC3 ax, float v){
 	MTX4 mtxold = m_mtx, mtxtmp;
-	D3DXMatrixRotationAxis(&mtxtmp, &ax, v);
+	RS2MatrixRotationAxis(&mtxtmp, &ax, v);
 	m_mtx = mtxtmp*mtxold;
 }
 
@@ -209,9 +209,9 @@ void CObject::Billboard(){
 
 	//	回転行列を得る
 	if(v.x>0.0f)
-		D3DXMatrixRotationY(&m_mtx, -atanf(v.z/v.x)+D3DX_PI/2);
+		RS2MatrixRotationY(&m_mtx, -atanf(v.z/v.x)+RS2_PI/2);
 	else
-		D3DXMatrixRotationY(&m_mtx, -atanf(v.z/v.x)-D3DX_PI/2);
+		RS2MatrixRotationY(&m_mtx, -atanf(v.z/v.x)-RS2_PI/2);
 
 	m_mtx._41 = mtxold._41;
 	m_mtx._42 = mtxold._42;
@@ -233,9 +233,9 @@ void CObject::Billboard2(){
 
 	//	回転行列を得る
 	if(v.x>0.0f)
-		D3DXMatrixRotationZ(&m_mtx, atanf(v.y/v.x)-D3DX_PI/2);
+		RS2MatrixRotationZ(&m_mtx, atanf(v.y/v.x)-RS2_PI/2);
 	else
-		D3DXMatrixRotationZ(&m_mtx, atanf(v.y/v.x)+D3DX_PI/2);
+		RS2MatrixRotationZ(&m_mtx, atanf(v.y/v.x)+RS2_PI/2);
 
 	m_mtx._41 = mtxold._41;
 	m_mtx._42 = mtxold._42;
@@ -255,11 +255,11 @@ void CObject::LookAt(VEC3 at){
 	VEC3 dir, up(0, 1, 0), right;
 
 	dir = at-GetWPos();
-	D3DXVec3Normalize(&dir, &dir);
-	D3DXVec3Cross(&right, &up, &dir);
-	D3DXVec3Normalize(&right, &right);
-	D3DXVec3Cross(&up, &dir, &right);
-	D3DXVec3Normalize(&up, &up);
+	RS2Vec3Normalize(&dir, &dir);
+	RS2Vec3Cross(&right, &up, &dir);
+	RS2Vec3Normalize(&right, &right);
+	RS2Vec3Cross(&up, &dir, &right);
+	RS2Vec3Normalize(&up, &up);
 
 	m_mtx._11 = right.x; m_mtx._12 = right.y; m_mtx._13 = right.z;
 	m_mtx._21 = up.x;	m_mtx._22 = up.y;	m_mtx._23 = up.z;
@@ -281,15 +281,15 @@ void CObject::LookAt2(VEC3 at){
 	float rx = 0, ry, rz = 0;
 
 	//	回転角を得る
-	if	(v.x> 0.0f)	ry = -atanf(v.z/v.x)+D3DX_PI/2;
-	else if(v.x< 0.0f)	ry = -atanf(v.z/v.x)-D3DX_PI/2;
+	if	(v.x> 0.0f)	ry = -atanf(v.z/v.x)+RS2_PI/2;
+	else if(v.x< 0.0f)	ry = -atanf(v.z/v.x)-RS2_PI/2;
 	else if(v.z>=0.0f)	ry = 0;
-	else if(v.z< 0.0f)	ry = -D3DX_PI;
+	else if(v.z< 0.0f)	ry = -RS2_PI;
 
 	//	回転行列を計算
 	MTX4 mtxold = m_mtx;
 
-	D3DXMatrixRotationYawPitchRoll(&m_mtx, ry, rx, rz);
+	RS2MatrixRotationYawPitchRoll(&m_mtx, ry, rx, rz);
 
 	m_mtx._41 = mtxold._41;
 	m_mtx._42 = mtxold._42;
@@ -308,11 +308,11 @@ void CObject::LookAt2(VEC3 at){
 void CObject::SetDir(VEC3 dir, VEC3 up){
 	VEC3 right;
 
-	D3DXVec3Normalize(&dir, &dir);
-	D3DXVec3Cross(&right, &up, &dir);
-	D3DXVec3Normalize(&right, &right);
-	D3DXVec3Cross(&up, &dir, &right);
-	D3DXVec3Normalize(&up, &up);
+	RS2Vec3Normalize(&dir, &dir);
+	RS2Vec3Cross(&right, &up, &dir);
+	RS2Vec3Normalize(&right, &right);
+	RS2Vec3Cross(&up, &dir, &right);
+	RS2Vec3Normalize(&up, &up);
 
 	m_mtx._11 = right.x; m_mtx._12 = right.y; m_mtx._13 = right.z;
 	m_mtx._21 = up.x;	m_mtx._22 = up.y;	m_mtx._23 = up.z;
@@ -508,7 +508,7 @@ VEC3 CObject::GetCenter(){
 
 	MTX4 mtxtmp = m_pParent ? GetWMatrix() : m_mtx;
 	VEC3 vTmp;
-	D3DXVec3TransformCoord(&vTmp, &m_pMesh->m_center, &mtxtmp);
+	RS2Vec3TransformCoord(&vTmp, &m_pMesh->m_center, &mtxtmp);
 	return vTmp;
 }
 
@@ -522,7 +522,7 @@ BOX8 CObject::GetBox(){
 	VEC3 vTmp;
 
 	for(int i = 0; i<8; i++){
-		D3DXVec3TransformCoord(&vTmp, &m_box.v[i], &mtxtmp);
+		RS2Vec3TransformCoord(&vTmp, &m_box.v[i], &mtxtmp);
 		box.v[i] = VEC3(vTmp.x, vTmp.y, vTmp.z);
 	}
 	return box;
@@ -560,18 +560,18 @@ BOOL CObject::IntersectB(VEC3 pos, VEC3 dir){
 	VEC3 vz = GetWDir();
 
 	VEC3 pos2;
-	pos2.x = D3DXVec3Dot(&pos, &vx);
-	pos2.y = D3DXVec3Dot(&pos, &vy);
-	pos2.z = D3DXVec3Dot(&pos, &vz);
+	pos2.x = RS2Vec3Dot(&pos, &vx);
+	pos2.y = RS2Vec3Dot(&pos, &vy);
+	pos2.z = RS2Vec3Dot(&pos, &vz);
 
 	VEC3 dir2;
-	dir2.x = D3DXVec3Dot(&dir, &vx);
-	dir2.y = D3DXVec3Dot(&dir, &vy);
-	dir2.z = D3DXVec3Dot(&dir, &vz);
+	dir2.x = RS2Vec3Dot(&dir, &vx);
+	dir2.y = RS2Vec3Dot(&dir, &vy);
+	dir2.z = RS2Vec3Dot(&dir, &vz);
 	//	}
 	//	TextF(0, 16, "%.1f %.1f %.1f\n", pos2.x, pos2.y, pos2.z);
 	//	TextF(0, 32, "%.1f %.1f %.1f\n", dir2.x, dir2.y, dir2.z);
-	return D3DXBoxBoundProbe(&min, &max, &pos2, &dir2);
+	return RS2BoxBoundProbe(&min, &max, &pos2, &dir2);
 }
 
 /*
@@ -583,7 +583,7 @@ BOOL CObject::IntersectB(VEC3 pos, VEC3 dir){
 BOOL CObject::IntersectS(VEC3 pos, VEC3 dir){
 	VEC3 center = m_pMesh->m_center+GetWPos();
 
-	return D3DXSphereBoundProbe(
+	return RS2SphereBoundProbe(
 		&center,
 		m_pMesh->m_radius *m_scale,
 		&pos,
@@ -610,10 +610,10 @@ BOOL CObject::Pick(VEC3 pos, VEC3 dir, VEC3 *hit, VEC3 tri[3], int inv){
 
 	mw = GetWMatrix();
 	lpos = GetWPos();
-	D3DXMatrixInverse(&mi, NULL, &mw);
-	D3DXVec3TransformNormal(&pos2, &pos, &mi); 
-	D3DXVec3TransformNormal(&dir2, &dir, &mi);
-	D3DXVec3TransformNormal(&pos, &lpos, &mi);
+	RS2MatrixInverse(&mi, NULL, &mw);
+	RS2Vec3TransformNormal(&pos2, &pos, &mi); 
+	RS2Vec3TransformNormal(&dir2, &dir, &mi);
+	RS2Vec3TransformNormal(&pos, &lpos, &mi);
 	pos2 -= pos;
 
 	/*
@@ -648,8 +648,8 @@ BOOL CObject::Pick(VEC3 pos, VEC3 dir, VEC3 *hit, VEC3 tri[3], int inv){
 			|| (inv&2) && IntersectTriangle(pos2, dir2, v0, v2, v1, &t, &v, &u)){
 			tmp = (v1-v0)*u+(v2-v0)*v+v0;
 			/* 進行方向の最近点を選択 */
-			if(D3DXVec3Dot(&dir2, &(tmp-pos2))>=0.0f && (!dwCount ||
-				D3DXVec3Length(&(tmp-pos2))<D3DXVec3Length(&(*hit-pos2)))){
+			if(RS2Vec3Dot(&dir2, &(tmp-pos2))>=0.0f && (!dwCount ||
+				RS2Vec3Length(&(tmp-pos2))<RS2Vec3Length(&(*hit-pos2)))){
 				*hit = tmp;
 				if(tri){ tri[0] = v0; tri[1] = v1; tri[2] = v2; }
 				dwCount++;
@@ -657,11 +657,11 @@ BOOL CObject::Pick(VEC3 pos, VEC3 dir, VEC3 *hit, VEC3 tri[3], int inv){
 		}
 	}
 	if(dwCount>0){
-		D3DXVec3TransformNormal(&tmp, hit, &mw);
+		RS2Vec3TransformNormal(&tmp, hit, &mw);
 		*hit = tmp+lpos;
 		if(tri){
 			for(i = 0; i<3; i++){
-				D3DXVec3TransformNormal(&tmp, &tri[i], &mw);
+				RS2Vec3TransformNormal(&tmp, &tri[i], &mw);
 				tri[i] = tmp+lpos;
 			}
 		}
@@ -713,14 +713,14 @@ BOOL CObject::IsVisible(){
  */
 BOOL BoxTest(BOX8 *pDst, BOX8 *pSrc){
 	//	Aの各面を作成
-	D3DXPLANE p[6];
+	RS2Plane p[6];
 
-	D3DXPlaneFromPoints(&p[0], &pDst->v[0], &pDst->v[1], &pDst->v[2]);	//	right
-	D3DXPlaneFromPoints(&p[1], &pDst->v[2], &pDst->v[3], &pDst->v[7]);	//	bottom
-	D3DXPlaneFromPoints(&p[2], &pDst->v[4], &pDst->v[6], &pDst->v[7]);	//	left
-	D3DXPlaneFromPoints(&p[3], &pDst->v[0], &pDst->v[4], &pDst->v[5]);	//	top
-	D3DXPlaneFromPoints(&p[4], &pDst->v[0], &pDst->v[2], &pDst->v[6]);	//	back
-	D3DXPlaneFromPoints(&p[5], &pDst->v[1], &pDst->v[5], &pDst->v[7]);	//	front
+	RS2PlaneFromPoints(&p[0], &pDst->v[0], &pDst->v[1], &pDst->v[2]);	//	right
+	RS2PlaneFromPoints(&p[1], &pDst->v[2], &pDst->v[3], &pDst->v[7]);	//	bottom
+	RS2PlaneFromPoints(&p[2], &pDst->v[4], &pDst->v[6], &pDst->v[7]);	//	left
+	RS2PlaneFromPoints(&p[3], &pDst->v[0], &pDst->v[4], &pDst->v[5]);	//	top
+	RS2PlaneFromPoints(&p[4], &pDst->v[0], &pDst->v[2], &pDst->v[6]);	//	back
+	RS2PlaneFromPoints(&p[5], &pDst->v[1], &pDst->v[5], &pDst->v[7]);	//	front
 
 	//	Bの頂点が１つでも
 	for(int j = 0; j<8; j++){
@@ -729,7 +729,7 @@ BOOL BoxTest(BOX8 *pDst, BOX8 *pSrc){
 		//	Aの全ての面の内側にあるか？
 		for(int i = 0; i<6; i++){
 			//	外側にあったら別の頂点を調べる
-			if(D3DXPlaneDotCoord(&p[i], &pSrc->v[j])<0){
+			if(RS2PlaneDotCoord(&p[i], &pSrc->v[j])<0){
 				f = FALSE;
 				break;
 			}
@@ -749,35 +749,35 @@ BOOL IntersectTriangle(
 	//	※SDKサンプルそのまま(^^;
 
 	//	 Find vectors for two edges sharing vert0
-	D3DXVECTOR3 edge1 = v1-v0;
-	D3DXVECTOR3 edge2 = v2-v0;
+	VEC3 edge1 = v1-v0;
+	VEC3 edge2 = v2-v0;
 
 	//	 Begin calculating determinant-also used to calculate U parameter
-	D3DXVECTOR3 pvec;
-	D3DXVec3Cross(&pvec, &dir, &edge2);
+	VEC3 pvec;
+	RS2Vec3Cross(&pvec, &dir, &edge2);
 
 	//	 If determinant is near zero, ray lies in plane of triangle
-	FLOAT det = D3DXVec3Dot(&edge1, &pvec);
+	FLOAT det = RS2Vec3Dot(&edge1, &pvec);
 //	if(det<0.0001f) return FALSE;
 	if(det<=0.0f) return FALSE;
 
 	//	 Calculate distance from vert0 to ray origin
-	D3DXVECTOR3 tvec = orig-v0;
+	VEC3 tvec = orig-v0;
 
 	//	 Calculate U parameter and test bounds
-	*u = D3DXVec3Dot(&tvec, &pvec);
+	*u = RS2Vec3Dot(&tvec, &pvec);
 	if(*u<0.0f || *u>det) return FALSE;
 
 	//	 Prepare to test V parameter
-	D3DXVECTOR3 qvec;
-	D3DXVec3Cross(&qvec, &tvec, &edge1);
+	VEC3 qvec;
+	RS2Vec3Cross(&qvec, &tvec, &edge1);
 
 	//	 Calculate V parameter and test bounds
-	*v = D3DXVec3Dot(&dir, &qvec);
+	*v = RS2Vec3Dot(&dir, &qvec);
 	if(*v<0.0f || *u+*v>det) return FALSE;
 
 	//	 Calculate t, scale parameters, ray intersects triangle
-	*t = D3DXVec3Dot(&edge2, &qvec);
+	*t = RS2Vec3Dot(&edge2, &qvec);
 	FLOAT fInvDet = 1.0f/det;
 	*t *= fInvDet;
 	*u *= fInvDet;

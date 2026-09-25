@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 
 /*
@@ -244,7 +245,7 @@ char *ConstFloat(
  */
 char *ColorValue(
 	char *str,		//	‘ÎÛ•¶š—ñ
-	D3DCOLOR *ret	//	“Çæ
+	RS2PackedColor *ret	//	“Çæ
 ){
 	char *tmp;
 	if(tmp = Character(str, '#')){
@@ -256,7 +257,7 @@ char *ColorValue(
 			}else{
 				char save = *tmp;
 				*tmp = 0;
-				D3DCOLOR val;
+				RS2PackedColor val;
 				sscanf(str, "%x", &val);
 				*ret = val;
 				*tmp = save;
@@ -477,7 +478,7 @@ char *AsgnFloat(
 char *AsgnColor(
 	char *str,		//	‘ÎÛ•¶š—ñ
 	char *read,		//	¯•Êq
-	D3DCOLOR *ret,	//	“Çæ
+	RS2PackedColor *ret,	//	“Çæ
 	int n,			//	“ÇŒÂ”
 	bool fill		//	•s‘«©“®•âŠ®
 ){

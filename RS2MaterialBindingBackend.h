@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
 //
@@ -19,7 +20,5 @@
 #include "RS2Material.h"
 #include "RS2TextureResource.h"
 
-void RS2D3D8_SetMaterial(const RS2Material &material);
-void RS2D3D8_BindTexture(unsigned int stage, const RS2TextureRef &texture);
 
 #endif	//	RS2MATERIALBINDINGBACKEND_H_INCLUDED

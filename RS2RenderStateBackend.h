@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25, 2026-09-26.
 //
 //	The Direct3D 8 implementations behind the RenderState boundary.
 //
@@ -18,46 +18,11 @@
 
 #include "RS2RenderState.h"
 
-void RS2D3D8_SetDepthTest(bool enable);
-void RS2D3D8_SetDepthWrite(bool enable);
-void RS2D3D8_SetDepthFunc(RS2CompareFunc func);
-void RS2D3D8_ClearDepth();
-void RS2D3D8_SetBlend(RS2BlendMode mode);
-void RS2D3D8_SetAlphaTest(bool enable);
-void RS2D3D8_SetAlphaRef(unsigned int ref);
-void RS2D3D8_SetAlphaFunc(RS2CompareFunc func);
-void RS2D3D8_SetCullMode(RS2CullMode mode);
-void RS2D3D8_SetShadeMode(RS2ShadeMode mode);
-void RS2D3D8_SetNormalizeNormals(bool enable);
-void RS2D3D8_SetStencilTest(bool enable);
-void RS2D3D8_SetStencilFunc(RS2CompareFunc func);
-void RS2D3D8_SetStencilRef(unsigned int ref);
-void RS2D3D8_SetStencilReadMask(unsigned int mask);
-void RS2D3D8_SetStencilWriteMask(unsigned int mask);
-void RS2D3D8_SetStencilFailOp(RS2StencilOp op);
-void RS2D3D8_SetStencilDepthFailOp(RS2StencilOp op);
-void RS2D3D8_SetStencilPassOp(RS2StencilOp op);
-void RS2D3D8_SetLighting(bool enable);
-void RS2D3D8_SetAmbientLight(RS2PackedColor color);
-void RS2D3D8_SetSpecular(bool enable);
-void RS2D3D8_SetDiffuseColorSource(RS2ColorSource source);
-void RS2D3D8_SetAmbientColorSource(RS2ColorSource source);
-void RS2D3D8_DisableFog();
-void RS2D3D8_SetTextureFilter(unsigned int stage, RS2TextureFilter filter);
-void RS2D3D8_SetBaseTextureCombine();
-void RS2D3D8_SetSecondaryTextureCombine(unsigned int stage, bool enable);
-void RS2D3D8_SetEnvironmentMapping(unsigned int stage, bool enable);
-void RS2D3D8_SetUVTransform(unsigned int stage, bool enable);
-void RS2D3D8_SetUVMatrix(unsigned int stage, const float *matrix);
-void RS2D3D8_ApplyInitialRenderState();
 
 //	-lightingaudit only: log the lighting defaults Direct3D 8 supplies itself.
-void RS2D3D8_AuditInitialLighting();
 
 //	-stageaudit only: log the stage 0 / 1 texture-stage state the device holds.
-void RS2D3D8_AuditStageState(const char *when);
 //	-shadowaudit: the stencil / depth / cull / shade / fog state the device
 //	holds, and whether the per-pass clear includes stencil.
-void RS2D3D8_AuditStencilState(const char *when);
 
 #endif	//	RS2RENDERSTATEBACKEND_H_INCLUDED

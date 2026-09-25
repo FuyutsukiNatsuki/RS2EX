@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 
 #include "headers.h"
 #include "debug.h"
@@ -17,7 +17,7 @@
  *	c1		: 始点色
  *	c2		: 終点色
  */
-void Draw2DLine(int x1, int y1, int x2, int y2, D3DCOLOR c1, D3DCOLOR c2){
+void Draw2DLine(int x1, int y1, int x2, int y2, RS2PackedColor c1, RS2PackedColor c2){
 	if(c2==0) c2 = c1;
 	VTX_TL vt[] = {x1, y1, 0, 1, c1, x2, y2, 0, 1, c2};
 	//CVertex v;
@@ -35,7 +35,7 @@ void Draw2DLine(int x1, int y1, int x2, int y2, D3DCOLOR c1, D3DCOLOR c2){
  *	c1		: 始点色
  *	c2		: 終点色
  */
-void Draw3DLine(VEC3 p1, VEC3 p2, D3DCOLOR c1, D3DCOLOR c2){
+void Draw3DLine(VEC3 p1, VEC3 p2, RS2PackedColor c1, RS2PackedColor c2){
 	if(c2==0) c2 = c1;
 	VTX_L vt[] = {p1.x, p1.y, p1.z, c1, p2.x, p2.y, p2.z, c2};
 	//CVertex v;
@@ -52,7 +52,7 @@ void Draw3DLine(VEC3 p1, VEC3 p2, D3DCOLOR c1, D3DCOLOR c2){
  *	x2, y2	: 右下座標
  *	c		: 色
  */
-void Draw2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
+void Draw2DRect(int x1, int y1, int x2, int y2, RS2PackedColor c){
 	VTX_TL vt[] = {
 		x1,		y1,		0.0f, 1.0f, c,
 		x1,		y2-1,	0.0f, 1.0f, c,
@@ -66,7 +66,7 @@ void Draw2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
 		vt, 5);
 }
 //	塗りつぶし
-void Fill2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
+void Fill2DRect(int x1, int y1, int x2, int y2, RS2PackedColor c){
 	VTX_TL vt[] = {
 		x1-0.5f, y2-0.5f, 0.0f, 1.0f, c,
 		x1-0.5f, y1-0.5f, 0.0f, 1.0f, c,
@@ -79,7 +79,7 @@ void Fill2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
 		vt, 4);
 }
 //	塗りつぶし
-void Grad2DRect(int x1, int y1, int x2, int y2, D3DCOLOR *c){
+void Grad2DRect(int x1, int y1, int x2, int y2, RS2PackedColor *c){
 #if 1
 	VTX_TLX vt[] = {
 		x1-0.5f, y1-0.5f, 0.0f, 1.0f, c[0], 0.0f, 0.0f,
@@ -102,7 +102,7 @@ void Grad2DRect(int x1, int y1, int x2, int y2, D3DCOLOR *c){
 #endif
 }
 //	テクスチャマッピング
-void TexMap2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
+void TexMap2DRect(int x1, int y1, int x2, int y2, RS2PackedColor c){
 	VTX_TLX vt[] = {
 		x1-0.5f, y1-0.5f, 0.0f, 1.0f, c, sv3.u[0], sv3.v[0],
 		x2-0.5f, y1-0.5f, 0.0f, 1.0f, c, sv3.u[1], sv3.v[0],
@@ -115,7 +115,7 @@ void TexMap2DRect(int x1, int y1, int x2, int y2, D3DCOLOR c){
 		vt, 4);
 }
 //	テクスチャマッピング (右 90°回転)
-void TexMap2DRect90(int x1, int y1, int x2, int y2, D3DCOLOR c){
+void TexMap2DRect90(int x1, int y1, int x2, int y2, RS2PackedColor c){
 	VTX_TLX vt[] = {
 		x1-0.5f, y1-0.5f, 0.0f, 1.0f, c, sv3.u[0], sv3.v[1],
 		x2-0.5f, y1-0.5f, 0.0f, 1.0f, c, sv3.u[0], sv3.v[0],
@@ -136,7 +136,7 @@ void TexMap2DRect90(int x1, int y1, int x2, int y2, D3DCOLOR c){
  *	h	: 縦幅
  *	c	: 色
  */
-void Draw3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
+void Draw3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, RS2PackedColor c){
 	VTX_L vt[] = {
 		p1.x, p1.y, p1.z, c,
 		p2.x, p2.y, p2.z, c,
@@ -150,7 +150,7 @@ void Draw3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
 		vt, 5);
 }
 //	塗りつぶし
-void Fill3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
+void Fill3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, RS2PackedColor c){
 	VTX_L vt[] = {
 		p1.x, p1.y, p1.z, c,
 		p2.x, p2.y, p2.z, c,
@@ -163,7 +163,7 @@ void Fill3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
 		vt, 4);
 }
 //	テクスチャーマッピング
-void TexMap3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
+void TexMap3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, RS2PackedColor c){
 	VTX_LX vt[] = {
 		p1.x, p1.y, p1.z, c, sv3.u[0], sv3.v[0],
 		p2.x, p2.y, p2.z, c, sv3.u[1], sv3.v[0],
@@ -176,7 +176,7 @@ void TexMap3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
 		vt, 4);
 }
 //	テクスチャーマッピング×2 (XY平面)
-void Tex2Map3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
+void Tex2Map3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, RS2PackedColor c){
 	VTX_LX2 vt[] = {
 		p1.x, p1.y, p1.z, c, sv3.u[0], sv3.v[0], 0.0f, 0.0f,
 		p2.x, p2.y, p2.z, c, sv3.u[1], sv3.v[0], 1.0f, 0.0f,
@@ -197,9 +197,9 @@ void Tex2Map3DRect(VEC3 p1, VEC3 p2, VEC3 p3, VEC3 p4, D3DCOLOR c){
  *	c	: 色
  */
 //	塗りつぶし
-void Fill3DHex(VEC3 pos, float r, D3DCOLOR cc, D3DCOLOR ca){
+void Fill3DHex(VEC3 pos, float r, RS2PackedColor cc, RS2PackedColor ca){
 	VTX_L vt[6+2];
-	float dr = D3DX_PI/3;
+	float dr = RS2_PI/3;
 	vt[0].x = pos.x;
 	vt[0].y = pos.y;
 	vt[0].z = pos.z;
@@ -225,9 +225,9 @@ void Fill3DHex(VEC3 pos, float r, D3DCOLOR cc, D3DCOLOR ca){
  *	r	: 半径
  *	c	: 色
  */
-void Draw3DCircle(VEC3 pos, float r, D3DCOLOR c){
+void Draw3DCircle(VEC3 pos, float r, RS2PackedColor c){
 	VTX_L vt[36+1];
-	float dr = D3DX_PI/18;
+	float dr = RS2_PI/18;
 	for(int i = 0; i<36; i++){
 		vt[i].x = pos.x+r*cos(dr*i);
 		vt[i].y = pos.y+r*sin(dr*i);
@@ -242,9 +242,9 @@ void Draw3DCircle(VEC3 pos, float r, D3DCOLOR c){
 		vt, 37);
 }
 //	塗りつぶし
-void Fill3DCircle(VEC3 pos, float r, D3DCOLOR cc, D3DCOLOR ca){
+void Fill3DCircle(VEC3 pos, float r, RS2PackedColor cc, RS2PackedColor ca){
 	VTX_L vt[36+2];
-	float dr = D3DX_PI/18;
+	float dr = RS2_PI/18;
 	vt[0].x = pos.x;
 	vt[0].y = pos.y;
 	vt[0].z = pos.z;
@@ -268,7 +268,7 @@ void Fill3DCircle(VEC3 pos, float r, D3DCOLOR cc, D3DCOLOR ca){
  *
  *	※境界ボックス表示用(トランスフォームのリセット忘れずに)
  */
-void DrawBox(BOX8 *pB, D3DCOLOR c){
+void DrawBox(BOX8 *pB, RS2PackedColor c){
 	VTX_L vt[10] = {
 		pB->v[2].x, pB->v[2].y, pB->v[2].z, c,
 		pB->v[0].x, pB->v[0].y, pB->v[0].z, c,

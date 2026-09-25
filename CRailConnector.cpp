@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CRailConnector.h"
 #include "CRailWay.h"
@@ -11,7 +11,7 @@ void CalcCantAxis(VEC3 *, VEC3 *, VEC3 *, float);
 
 //	外部グローバル
 extern CScene *g_Scene;
-extern D3DCOLOR g_ColorSelect[];
+extern RS2PackedColor g_ColorSelect[];
 
 void SetStaticPointOption(void *point_id, int point_opt){
 	if(!point_id || !g_AddressMap.count(point_id)) ErrorDialog("SetStaticPointOption point_id error.");
@@ -446,7 +446,7 @@ bool CRailConnector::Dump(){
  *	コネクタ描画
  */
 void CRailConnector::Render(
-	D3DCOLOR color,	//	線色
+	RS2PackedColor color,	//	線色
 	bool net_point	//	ネットポイント表示
 ){
 	if(!color) color = g_ColorSelect[m_Selected];

@@ -1,12 +1,13 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-25.
+//	Modified for RS2EX on 2026-09-26.
 //
 //	The Direct3D 12 side of live text (v0.1.6).
 //
-//	Direct3D 8 draws this through ID3DXFont, which exists only there.  The
+//	Direct3D 8 drew this through ID3DXFont, which exists only there.  The
 //	replacement is deliberately not a new text system: GDI rasterises the line
-//	with the font Direct3D 8 is given - the same LOGFONT, face, charset,
-//	quality and height, see RS2D3D8Text.cpp - into a DIB, the coverage becomes
+//	with the font Direct3D 8 was given - the same LOGFONT, face, charset,
+//	quality and height as v0.1.6's RS2D3D8Text.cpp - into a DIB, the coverage becomes
 //	the alpha of a white A4R4G4B4 line in a mutable texture, and the line is
 //	drawn as a screen-space quad in the requested colour.  The mutable texture
 //	is the string texture's; the ordering it guarantees is what lets the edit

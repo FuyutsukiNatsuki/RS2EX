@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CScene.h"
 #include "CStruct.h"
@@ -66,7 +66,7 @@ CStructBuildMode::~CStructBuildMode(){
 void CStructBuildMode::GetBuildDir(
 	VEC3 *dir, VEC3 *up	//	äiî[êÊ
 ){
-	float theta = 2.0f*D3DX_PI*m_BuildAngle/GetAngleSplit();
+	float theta = 2.0f*RS2_PI*m_BuildAngle/GetAngleSplit();
 	*dir = VEC3(sinf(theta), 0.0f, cosf(theta));
 	if(!m_HitFlag || !ms_FitNormal.GetCheck()){
 		*up = V3UP;

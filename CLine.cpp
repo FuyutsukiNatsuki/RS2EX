@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CLine.h"
 #include "CScene.h"
@@ -28,7 +28,7 @@ CPoleLink::CPoleLink(
  *	Ú‘±“_•`‰æ
  */
 void CPoleLink::Render(
-	D3DCOLOR color	//	üF
+	RS2PackedColor color	//	üF
 ){
 	Draw3DPointAs2DRect(GetPos(), color, 5);
 }

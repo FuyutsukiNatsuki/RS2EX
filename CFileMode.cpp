@@ -147,6 +147,10 @@ CFileMode::CFileMode(){
 		TILE_UNIT*5, TILE_UNIT, lang(SaveAs), &m_FileWindow);
 	m_NetworkButton.Init(TILE_UNIT*21+TILE_HALF*4, TILE_UNIT*5,
 		TILE_UNIT*5, TILE_UNIT, lang(Download), &m_FileWindow);
+	//	[RS2EX] v0.2.0: the network sessions were removed; the button that
+	//	joined one to download its layout stays out of sight.
+	m_NetworkButton.Show(false);
+	m_NetworkButton.Enable(false);
 	char *fcol[3] = {lang(FileName), lang(Date), lang(Description)};
 	m_FileListView.Init(TILE_UNIT, TILE_UNIT*6+TILE_HALF, WW-TILE_UNIT*2, 1,
 		&m_FileWindow, 3, fcol, DRAG_NONE, LISTVIEW_RENAMABLE, this, CMD_FILE);
@@ -177,9 +181,8 @@ CFileMode::CFileMode(){
 	new CPopMenu(lang(Overwrite), m_FileMenu);
 	new CPopMenu(lang(Delete), m_FileMenu);
 	new CPopMenu(lang(ChangeName), m_FileMenu);
-	new CPopMenu("-", m_FileMenu);
-	new CPopMenu(lang(CreateSession), m_FileMenu);
-	new CPopMenu(lang(JoinSession), m_FileMenu);
+	//	[RS2EX] v0.2.0: "create session" / "join session" removed with the
+	//	network sessions.  They were the last entries, so nothing renumbers.
 	chdir(g_BaseDir);
 	if(chdir(LAYOUT_DIRNAME)) mkdir(LAYOUT_DIRNAME);
 	chdir(g_BaseDir);

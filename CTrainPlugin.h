@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CTRAINPLUGIN_H_INCLUDED
 #define CTRAINPLUGIN_H_INCLUDED
 
@@ -17,7 +17,7 @@ public:
 	VEC3 GetPos(){
 		VEC3 ret(0.0f, m_AttachCoord.y, m_AttachCoord.x);
 		CObject *obj = m_Link->GetObject();
-		return *D3DXVec3TransformCoord(
+		return *RS2Vec3TransformCoord(
 			&ret, &(ret/obj->GetScale()), &obj->GetMatrix());
 	}
 	VEC3 GetRight(){
@@ -37,7 +37,7 @@ public:
 	VEC3 GetPos(){
 		VEC3 ret(m_AttachX, m_AttachCoord.y, m_AttachCoord.x);
 		CObject *obj = m_Link->GetObject();
-		return *D3DXVec3TransformCoord(
+		return *RS2Vec3TransformCoord(
 			&ret, &(ret/obj->GetScale()), &obj->GetMatrix());
 	}
 };

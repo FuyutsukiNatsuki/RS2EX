@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
-//	Modified for RS2EX on 2026-09-21, 2026-09-22.
+//	Modified for RS2EX on 2026-09-21, 2026-09-22, 2026-09-26.
 //
 //	Renderer facade.
 //
@@ -37,15 +37,16 @@ class IRS2RendererBackend;
  */
 enum RS2RendererBackendType
 {
-	RS2_RENDERER_D3D8,
+	RS2_RENDERER_NONE,
 	RS2_RENDERER_D3D12
 };
 
 /*
  *	Renderer backend interface
  *
- *	Implemented once, by CRS2D3D8Backend.  Static source-level backends only:
- *	there is no plugin mechanism and no external ABI promise.
+ *	Implemented once, by CRS2D3D12Backend (v0.2.0; the Direct3D 8 backend was
+ *	removed).  Static source-level backends only: there is no plugin
+ *	mechanism and no external ABI promise.
  */
 class IRS2RendererBackend
 {
@@ -158,9 +159,8 @@ public:
 	 *	Whether the backend can read rendered pixels back.
 	 *
 	 *	[RS2EX] Capture, the offscreen target and GetPixelColor all depend on
-	 *	readback.  v0.0.9 leaves them on Direct3D 8 deliberately, so a future
-	 *	backend has to answer false here rather than have those paths reach for
-	 *	a device it does not have.  The D3D8 backend answers true.
+	 *	readback.  They were Direct3D 8 only, and v0.2.0 removed that backend,
+	 *	so the Direct3D 12 backend answers false and those paths are inert.
 	 */
 	bool SupportsReadback() const;
 

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	Copyright (c) 2002 Midikyou
 
 #ifndef LIBLARIES_H
@@ -21,9 +22,6 @@
 //	VC++—p
 #else
 	#pragma comment(lib, "dxguid.lib")
-	#pragma comment(lib, "d3d8.lib")
-	#pragma comment(lib, "d3dx8.lib")
-	#pragma comment(lib, "d3dxof.lib")
 	#pragma comment(lib, "dinput8.lib")
 	#pragma comment(lib, "dsound.lib")
 	//#pragma comment(lib, "strmiids.lib")

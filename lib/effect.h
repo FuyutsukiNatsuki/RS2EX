@@ -1,6 +1,7 @@
+//	Modified for RS2EX on 2026-09-26.
 //	Copyright (c) 2002 Midikyou
 
-D3DCOLOR GetPixelColor(int x, int y);
+RS2PackedColor GetPixelColor(int x, int y);
 void RenderLensFlare(VEC3 pos, float size, BOOL fWhite);
 
 /*

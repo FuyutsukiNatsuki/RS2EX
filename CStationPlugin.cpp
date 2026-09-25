@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CRailPlugin.h"
@@ -161,7 +161,7 @@ CRailBuilder *CPlatform::SetBuilder(
 	for(; iv!=m_CoordList.end(); iv++){
 		VEC3 p;
 		if(m_ParentObject) p = *iv;
-		else D3DXVec3TransformCoord(&p, &*iv, mtx);
+		else RS2Vec3TransformCoord(&p, &*iv, mtx);
 		prev = new CRailBuilder(p, prev);
 		if(!builder) builder = prev;
 	}

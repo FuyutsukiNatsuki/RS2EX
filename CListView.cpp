@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CListView.h"
 #include "CPopMenu.h"
@@ -68,7 +68,7 @@ void CListElement::RenderDragItem(
 ){
 	CStringDrawer *sd = g_StrTex->DrawString(m_String[0].c_str(), 0);
 	int tw = sd->GetWidth()+LV_COL_MARGIN*2;
-	D3DCOLOR fc;
+	RS2PackedColor fc;
 	RS2BindTexture(0, RS2TextureRef());
 	if(m_Selected){
 		Grad2DRect(x, y, x+tw, y+FONT_HEIGHT,
@@ -91,7 +91,7 @@ bool CListElement::Render(
 	bool focus,		//	フォーカス
 	bool drop		//	ドロップ
 ){
-	D3DCOLOR fc;
+	RS2PackedColor fc;
 	RS2BindTexture(0, RS2TextureRef());
 	if(m_Selected || drop){
 		Grad2DRect(x, y, x+tw, y+th,
@@ -152,7 +152,7 @@ void CIconListElement::RenderDragItem(
 ){
 	CStringDrawer *sd = g_StrTex->DrawString(m_String[0].c_str(), 0);
 	int tw = TILE_UNIT+sd->GetWidth()+LV_COL_MARGIN*3;
-	D3DCOLOR fc;
+	RS2PackedColor fc;
 	if(!m_IconTex.IsEmpty()) RS2BindTexture(0, m_IconTex);
 	else g_Skin->SetInterfaceTexture();
 	SetUVMap(m_IconRect[0], m_IconRect[1],
@@ -181,7 +181,7 @@ bool CIconListElement::Render(
 	bool focus,		//	フォーカス
 	bool drop		//	ドロップ
 ){
-	D3DCOLOR fc;
+	RS2PackedColor fc;
 	if(!m_IconTex.IsEmpty()) RS2BindTexture(0, m_IconTex);
 	else g_Skin->SetInterfaceTexture();
 	int tiw = m_Owner->m_ColHeader[0].GetWidth()-LV_COL_MARGIN;

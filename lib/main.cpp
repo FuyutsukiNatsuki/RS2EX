@@ -169,9 +169,7 @@ BOOL CApp::Init(HINSTANCE hInst){
 	if(!InitDirectShow()) return FALSE;
 #endif
 
-#ifndef NO_COMM
-	if(!InitDirectPlay()) return FALSE;
-#endif
+	//	[RS2EX] v0.2.0: no DirectPlay: the network sessions were removed.
 
 	g_frame.Init();	//	FPSŠÇ—‹@\‚Ì‰Šú‰»
 
@@ -188,9 +186,6 @@ CApp::~CApp(){
 	//	[RS2EX] -moduleaudit: which DLLs this run loaded (v0.2.0).
 	RS2ModuleAuditDump();
 	//	DirectXŠÖ˜A‚Ì‰ğ•ú
-#ifndef NO_COMM
-	FreeDirectPlay();
-#endif
 
 #ifndef NO_MOVIE
 	FreeDirectShow();

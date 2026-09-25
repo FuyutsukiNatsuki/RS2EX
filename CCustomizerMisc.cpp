@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "CCustomizerMisc.h"
 #include "CNamedObject.h"
@@ -298,7 +298,7 @@ void CTextureTransformer::SetUpMatrix(
 	case 1: m_Matrix = TTMTX(1.0f, 0.0f, a[0], 0.0f, 1.0f, a[1]); break;
 	case 2: m_Matrix = TTMTX(a[0], 0.0f, a[2], 0.0f, a[1], a[3]); break;
 	case 3: {
-		float rad = D3DXToRadian(a[0]), c = cosf(rad), s = sinf(rad);
+		float rad = RS2ToRadian(a[0]), c = cosf(rad), s = sinf(rad);
 		m_Matrix = TTMTX(c, -s, (1.0f-c)*a[1]+s*a[2], s, c, -s*a[1]+(1.0f-c)*a[2]);
 		break; }
 	case 4: for(i = 0; i<6; i++) m_Matrix.a[i] = a[i]; break;

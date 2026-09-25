@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CENVPLUGIN_H_INCLUDED
 #define CENVPLUGIN_H_INCLUDED
 
@@ -12,9 +12,9 @@ class CLightSetting{
 	friend class CEnvPlugin;
 private:
 	float m_SunAlt;			//	太陽高度
-	D3DCOLOR m_Directional;	//	平行光源色
-	D3DCOLOR m_Ambient;		//	環境光源色
-	D3DCOLOR m_SkyColor;	//	空の色
+	RS2PackedColor m_Directional;	//	平行光源色
+	RS2PackedColor m_Ambient;		//	環境光源色
+	RS2PackedColor m_SkyColor;	//	空の色
 public:
 	char *Read(char *);
 	bool operator<(const CLightSetting &rhs){
@@ -68,7 +68,7 @@ private:
 	CLensFlare m_SunLensFlare;		//	太陽レンズフレア
 	CWhiteout m_SunWhiteout;		//	太陽ホワイトアウト
 	float m_NightThreshold;			//	昼夜閾値
-	D3DCOLOR m_ShadowColor;			//	影の色
+	RS2PackedColor m_ShadowColor;			//	影の色
 	list<CLightSetting> m_Light;	//	光源設定
 	list<CMoon> m_Moon;				//	月リスト
 public:
@@ -82,7 +82,7 @@ public:
 	void SetEnvMapTexture(){ RS2BindTexture(1, m_EnvMapTexture); }
 	void Render(double abstime = -1.0);
 	void RenderAfter();
-	D3DCOLOR GetShadowColor(){ return m_ShadowColor; }
+	RS2PackedColor GetShadowColor(){ return m_ShadowColor; }
 	CPLUGIN_CASTFUNC(CEnvPlugin);
 };
 
@@ -102,7 +102,7 @@ public:
 //	外部グローバル
 extern float g_DayAlpha;
 extern float g_NightAlpha;
-extern D3DCOLOR g_NoLightColor;
+extern RS2PackedColor g_NoLightColor;
 extern CEnvPlugin *g_Env;
 extern CEnvPlugin *g_DefaultEnv;
 extern CEnvPluginList *g_EnvPluginList;

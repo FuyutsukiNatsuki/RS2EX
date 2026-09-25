@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CCamera.h"
@@ -30,9 +31,9 @@ void CRailPlanCurve::Curve(
 		V3Norm(&tup, &tup);
 		VEC3 tdir(tup.z, 0.0f, -tup.x);
 		void (CStringTexture::*func1)(
-			VEC3, VEC3, VEC3, D3DCOLOR, D3DCOLOR, const char *, float);
+			VEC3, VEC3, VEC3, RS2PackedColor, RS2PackedColor, const char *, float);
 		void (CStringTexture::*func2)(
-			VEC3, VEC3, VEC3, D3DCOLOR, D3DCOLOR, const char *, float);
+			VEC3, VEC3, VEC3, RS2PackedColor, RS2PackedColor, const char *, float);
 		VEC3 cdir = GetVDir();
 		if(V3Dot(&GetVDir(), &tup)<0.0f){
 			tdir = -tdir;

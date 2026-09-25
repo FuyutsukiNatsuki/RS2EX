@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 
 #include "headers.h"
 #include "debug.h"
@@ -15,8 +15,8 @@ void CalcNormal(VEC3 t[3], VEC3 *n){
 	VEC3 v = t[2]-t[0];
 	VEC3 tmp;
 
-	D3DXVec3Cross(&tmp, &u, &v); 
-	D3DXVec3Normalize(n, &tmp);
+	RS2Vec3Cross(&tmp, &u, &v); 
+	RS2Vec3Normalize(n, &tmp);
 }
 
 /*

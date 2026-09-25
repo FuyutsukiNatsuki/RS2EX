@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 
 #include "..\RS2Draw.h"
 
@@ -19,10 +19,8 @@ struct BOX8{
  *	[RS2EX] Transitional.  Ownership of the fields below is split, and the
  *	split is deliberate rather than settled:
  *
- *	  pD3D / pDev / d3dpp   owned by the Direct3D 8 backend.  Still exposed
- *	                        so legacy resource and draw code keeps working.
- *	                        New high-level code must not take a device
- *	                        lifecycle dependency on them.
+ *	  [v0.2.0: the Direct3D 8 device, parameters and sprite fields were
+ *	  removed with the Direct3D 8 renderer.]
  *	  width / height /
  *	  format / iAdapter /
  *	  fWindowed / type      written by the backend at start-up and reset.
@@ -33,11 +31,6 @@ struct BOX8{
  *	See docs/v0.0.4-d3d8-inventory.md for the full ownership table.
  */
 struct SYSVALUE_3D{
-	LPDIRECT3D8				pD3D;	//	Direct3D本体
-	LPDIRECT3DDEVICE8		pDev;	//	3Dデバイス
-	D3DPRESENT_PARAMETERS	d3dpp;	//	スクリーンのフォーマット
-	LPD3DXSPRITE			pSpr;	//	スプライト操作用
-
 	MTX4 mtxWorld;	//	ワールド変換マトリクス
 	MTX4 mtxView;	//	ビュー変換マトリクス
 	MTX4 mtxViewInv;//	上記の逆行列
@@ -65,7 +58,6 @@ struct SYSVALUE_3D{
 	char type[8];	//	3Dデバイスのタイプ
 	int width;		//	スクリーンの横幅（g_winWとは必ずしも一致しない）
 	int height;	//	スクリーンの縦幅（g_winHとは必ずしも一致しない）
-	D3DFORMAT format;	//	スクリーンのフォーマット
 
 	DWORD capsMaxPrim;	//	同時にレンダリングできるプリミティブ数（頂点／三角？）
 	DWORD capsMaxLight;	//	同時にアクティブにできるライト数
@@ -90,16 +82,16 @@ void AffectWindowSize();
 void InitMetrics();
 void InitRenderState();
 
-BOOL BeginScene(D3DCOLOR c = 0xff000000);
+BOOL BeginScene(RS2PackedColor c = 0xff000000);
 void EndScene();
 
-D3DCOLOR GetXRGB32(DWORD d, D3DFORMAT fmt);
 
 /*
  *	D3DCOLORの作成
  */
-#define MAKE_AC D3DCOLOR_ARGB	//	アルファ指定
-#define MAKE_XC D3DCOLOR_XRGB	//	アルファMAXで固定
+//	[RS2EX] v0.2.0: the packing D3DCOLOR_ARGB / D3DCOLOR_XRGB did, without d3d8.h.
+#define MAKE_AC(a, r, g, b)	((RS2PackedColor)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
+#define MAKE_XC(r, g, b)	MAKE_AC(0xff, r, g, b)
 /*
  *	D3DCOLORVALUEの作成
  *
@@ -108,8 +100,8 @@ D3DCOLOR GetXRGB32(DWORD d, D3DFORMAT fmt);
  *	b		: B値
  *	a		: Alpha値
  */
-inline D3DCOLORVALUE MAKE_CV(float r, float g, float b, float a){
-	D3DCOLORVALUE cv;
+inline RS2Color4 MAKE_CV(float r, float g, float b, float a){
+	RS2Color4 cv;
 	cv.r = r, cv.g = g, cv.b = b, cv.a = a;
 	return cv;
 }

@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CListView.h"
 #include "CModelInst.h"
@@ -339,7 +339,7 @@ void CFreeObject3D::SetPostureFreeObject(){
 	obj->SetPos(m_Joint.GetPos());
 	if(m_Joint.m_FixCenter){
 		VEC3 pos;
-		D3DXVec3TransformCoord(&pos,
+		RS2Vec3TransformCoord(&pos,
 			&(-m_Joint.m_LocalCoord/obj->GetScale()), &obj->GetMatrix());
 		obj->SetPos(pos);
 	}

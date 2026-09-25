@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CShadowVolume.h"
 #include "CCamera.h"
@@ -370,13 +370,13 @@ void CProfilePlugin::Dump(
 	float len,	//	テクスチャ延長長さ
 	int prev	//	プレビュー (1: render, 2: settex, 4: mapscroll)
 ){
-	void (CLineDumpN::*f_ll)(VEC3, D3DCOLOR, VEC3, D3DCOLOR);
+	void (CLineDumpN::*f_ll)(VEC3, RS2PackedColor, VEC3, RS2PackedColor);
 	void (CQuadDumpN::*f_qn)(
-		VEC3, VEC3, D3DCOLOR, VEC3, VEC3, D3DCOLOR,
-		VEC3, VEC3, D3DCOLOR, VEC3, VEC3, D3DCOLOR);
+		VEC3, VEC3, RS2PackedColor, VEC3, VEC3, RS2PackedColor,
+		VEC3, VEC3, RS2PackedColor, VEC3, VEC3, RS2PackedColor);
 	void (CQuadDumpNX::*f_qnx)(
-		VEC3, VEC3, D3DCOLOR, float, float, VEC3, VEC3, D3DCOLOR, float, float,
-		VEC3, VEC3, D3DCOLOR, float, float, VEC3, VEC3, D3DCOLOR, float, float);
+		VEC3, VEC3, RS2PackedColor, float, float, VEC3, VEC3, RS2PackedColor, float, float,
+		VEC3, VEC3, RS2PackedColor, float, float, VEC3, VEC3, RS2PackedColor, float, float);
 	if(prev&1){
 		f_ll = &CLineDumpN::Preview;
 		f_qn = &CQuadDumpN::Preview;
@@ -405,7 +405,7 @@ void CProfilePlugin::Dump(
 			for(; iv2!=ir->m_Vertex.end(); iv1++, iv2++){
 				VEC2 &c1 = iv1->m_Coord, &c2 = iv2->m_Coord;
 				VEC2 &n1 = iv1->m_Normal, &n2 = iv2->m_Normal;
-				D3DCOLOR &df1 = iv1->m_Diffuse, &df2 = iv2->m_Diffuse;
+				RS2PackedColor &df1 = iv1->m_Diffuse, &df2 = iv2->m_Diffuse;
 				if(ip->m_UseTexture){
 					float &tu1 = iv1->m_TexU, &tu2 = iv2->m_TexU;
 					if(iv1->m_IgnoreCant){
@@ -475,7 +475,7 @@ void CProfilePlugin::Dump(
 			iv2++;
 			for(; iv2!=ir->m_Vertex.end(); iv1++, iv2++){
 				VEC3 &c1 = iv1->m_Coord, &c2 = iv2->m_Coord;
-				D3DCOLOR &df1 = iv1->m_Diffuse, &df2 = iv2->m_Diffuse;
+				RS2PackedColor &df1 = iv1->m_Diffuse, &df2 = iv2->m_Diffuse;
 				if(iv1->m_IgnoreCant){
 					if(iv2->m_IgnoreCant) (dump_n->*f_ll)(
 						CalcMidProfile(ip1, ir1, iu1, ip2, ir2, iu2, c1), df1,

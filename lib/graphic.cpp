@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 
 #include "headers.h"
 #include "debug.h"
@@ -16,7 +16,7 @@
 //	内部定数
 extern const float CLIP_PLANE_NEAR = 0.5f;		//	前方クリップ面
 extern const float CLIP_PLANE_FAR = 10000.0f;	//	後方クリップ面
-extern const float FOV_DEF = 0.25f*D3DX_PI;		//	デフォルト視野角
+extern const float FOV_DEF = 0.25f*RS2_PI;		//	デフォルト視野角
 
 //	外部グローバル
 extern int g_DispWidth;
@@ -32,7 +32,7 @@ DWORD g_BufferClearMode;
  *	Direct3Dの初期化
  *
  *	[RS2EX] Compatibility entry point.  Device lifecycle now belongs to the
- *	renderer backend - see RS2D3D8Backend.cpp.
+ *	renderer backend - see RS2D3D12Backend.cpp.
  */
 BOOL InitDirect3D(){
 	DebugHL();
@@ -44,7 +44,7 @@ BOOL InitDirect3D(){
 /*
  *	Direct3Dの解放
  *
- *	[RS2EX] Compatibility entry point - see RS2D3D8Backend.cpp.
+ *	[RS2EX] Compatibility entry point - see RS2D3D12Backend.cpp.
  */
 void FreeDirect3D(){
 	DebugHL();
@@ -63,9 +63,9 @@ void AffectWindowSize()
 	//int width = sv3.width, height = sv3.height;
 	int width = svw.winW, height = svw.winH;
 
-	D3DXMatrixPerspectiveFovLH(
+	RS2MatrixPerspectiveFovLH(
 		&sv3.mtxProj,
-		D3DX_PI/4,
+		RS2_PI/4,
 		(float)width / height,
 		CLIP_PLANE_NEAR,
 		CLIP_PLANE_FAR
@@ -84,31 +84,20 @@ void AffectWindowSize()
  *	座標系の初期化
  */
 void InitMetrics(){
-#if 0
-	// viewport
-	D3DVIEWPORT8 vp;
-    vp.X = sv3.width / 2;
-    vp.Y = 0;
-    vp.Width = sv3.width / 2;
-    vp.Height = sv3.height;
-    vp.MinZ = 0.0f;
-    vp.MaxZ = 1.0f;
-	sv3.pDev->SetViewport(&vp);
-#endif
 
 	//	各座標変換行列の指定
 	sv3.mtxWorld = MTX4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 	RS2SetWorldTransform(sv3.mtxWorld);
 
-	D3DXMatrixLookAtLH(
+	RS2MatrixLookAtLH(
 		&sv3.mtxView,
-		&D3DXVECTOR3(0.0f, 0.0f, -1.0f),
-		&D3DXVECTOR3(0.0f, 0.0f, 0.0f),
-		&D3DXVECTOR3(0.0f, 1.0f, 0.0f));
+		&VEC3(0.0f, 0.0f, -1.0f),
+		&VEC3(0.0f, 0.0f, 0.0f),
+		&VEC3(0.0f, 1.0f, 0.0f));
 	RS2SetViewTransform(sv3.mtxView);
 
-	//	[RS2EX] The clip status moved into the D3D8 backend in v0.0.9: it is a
-	//	device setting, and InitMetrics is about matrices.
+	//	[RS2EX] The clip status moved into the renderer backend in v0.0.9: it
+	//	is a device setting, and InitMetrics is about matrices.
 
 	//	向き行列の作成
 	sv3.mtxFront = MTX4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
@@ -149,15 +138,15 @@ void InitRenderState(){
  *	[RS2EX] Compatibility wrapper.  The device work moved to the renderer
  *	backend; the view-derived matrices below are engine math and stay here.
  */
-BOOL BeginScene(D3DCOLOR c){
+BOOL BeginScene(RS2PackedColor c){
 	if(!GetRS2Renderer().BeginRenderPass(c, c!=0)) return FALSE;
 
 	//	各種変換行列の計算
 	float tmp;
-	D3DXMatrixInverse(&sv3.mtxViewInv, &tmp, &sv3.mtxView);
+	RS2MatrixInverse(&sv3.mtxViewInv, &tmp, &sv3.mtxView);
 
 	sv3.mtxWtoS = /*sv3.mtxWorld**/ sv3.mtxView*sv3.mtxProj*sv3.mtxVPort;
-	D3DXMatrixInverse(&sv3.mtxStoW, &tmp, &sv3.mtxWtoS);
+	RS2MatrixInverse(&sv3.mtxStoW, &tmp, &sv3.mtxWtoS);
 
 	return TRUE;
 }
@@ -173,53 +162,8 @@ void EndScene(){
 	GetRS2Renderer().Present();
 }
 
-/*
- *	カラー値をX8R8G8B8フォーマットに変換する
- *
- *	d		: 任意フォーマットの色
- *	fmt	: フォーマット
- */
-D3DCOLOR GetXRGB32(DWORD d, D3DFORMAT fmt){
-	D3DCOLOR c;
-	DWORD r, g, b;
-
-	switch(fmt){
-	case D3DFMT_R8G8B8:
-		c = 0xff000000|(d>>8);
-		break;
-
-	case D3DFMT_A8R8G8B8:
-	case D3DFMT_X8R8G8B8:
-		c = 0xff000000|d;
-		break;
-
-	case D3DFMT_R5G6B5:
-		r = min((DWORD)0xff, ((d&0xf800)>>11)*8);
-		g = min((DWORD)0xff, ((d&0x07e0)>> 5)*4);
-		b = min((DWORD)0xff, (d&0x001f)*8);
-		c = 0xff000000|r|g|b;
-		break;
-
-	case D3DFMT_X1R5G5B5:
-	case D3DFMT_A1R5G5B5:
-		r = min((DWORD)0xff, ((d&0x7e00)>>11)*8);
-		g = min((DWORD)0xff, ((d&0x03e0)>>5)*8);
-		b = min((DWORD)0xff, (d&0x001f)*8);
-		c = 0xff000000|r|g|b;
-		break;
-
-	case D3DFMT_A4R4G4B4:
-		r = min((DWORD)0xff, ((d&0x0f00)>>8)*16);
-		g = min((DWORD)0xff, ((d&0x00f0)>>4)*16);
-		b = min((DWORD)0xff, (d&0x000f)*16);
-		c = 0xff000000|r|g|b;
-		break;
-
-	default:
-		c = 0;
-	}
-	return c;
-}
+//	[RS2EX] v0.2.0: GetXRGB32 (Direct3D 8 surface formats) removed with its
+//	only caller, the Direct3D 8 pixel read in lib/effect.cpp.
 
 /*
  *	マテリアルの初期化

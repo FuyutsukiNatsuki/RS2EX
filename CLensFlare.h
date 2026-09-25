@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CLENSFLARE_H_INCLUDED
 #define CLENSFLARE_H_INCLUDED
 
@@ -15,8 +15,8 @@ private:
 	int m_Type;				//	タイプ
 	float m_Distance;		//	距離
 	float m_Radius;			//	半径
-	D3DCOLOR m_InnerColor;	//	内側の色
-	D3DCOLOR m_OuterColor;	//	外側の色
+	RS2PackedColor m_InnerColor;	//	内側の色
+	RS2PackedColor m_OuterColor;	//	外側の色
 	string m_TexFileName;	//	テクスチャファイル名
 	RS2TextureRef m_Texture;	//	テクスチャ
 public:
@@ -51,7 +51,7 @@ public:
 class CWhiteout{
 private:
 	float m_StartAngle;	//	開始角度 (cos)
-	D3DCOLOR m_Color;	//	色
+	RS2PackedColor m_Color;	//	色
 public:
 	CWhiteout(){ m_Color = 0; }
 	char *Read(char *);

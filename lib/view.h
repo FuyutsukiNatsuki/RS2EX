@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	Copyright (c) 2002 Midikyou
 
 void RotVX(float v);
@@ -47,7 +48,7 @@ VEC3 ScreenToWorld(VEC3 pos);
  */
 #define VMTX_ROTA(axis, v) { \
 	sv3.mtxOld = sv3.mtxView; \
-	D3DXMatrixRotationAxis(&sv3.mtxTmp, &axis, v); \
+	RS2MatrixRotationAxis(&sv3.mtxTmp, &axis, v); \
 	sv3.mtxView = sv3.mtxOld*sv3.mtxTmp; \
 }
 
@@ -132,7 +133,7 @@ inline VEC3 CalcPlaneNormal(VEC3 v0, VEC3 v1, VEC3 v2){
 
 	v3 = v1-v0;
 	v4 = v2-v1;
-	D3DXVec3Cross(&tmp, &v3, &v4);
-	D3DXVec3Normalize(&n, &tmp);
+	RS2Vec3Cross(&tmp, &v3, &v4);
+	RS2Vec3Normalize(&n, &tmp);
 	return n;
 }

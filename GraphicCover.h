@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-22, 2026-09-26.
 #ifndef GRAPHICCOVER_H_INCLUDED
 #define GRAPHICCOVER_H_INCLUDED
 
@@ -12,10 +12,10 @@ void LinePointPosition(VEC3 *, VEC3 *, VEC3 *, VEC3 *, VEC3 *, float);
 void InitGrid();
 void FreeGraphicCoverResources();
 void DrawGrid(VEC3);
-void DrawTangent(VEC3, VEC3, D3DCOLOR, CLineDumpL *);
+void DrawTangent(VEC3, VEC3, RS2PackedColor, CLineDumpL *);
 void DrawFocus(VEC3);
-void Draw3DLineWithShadow(VEC3, VEC3, D3DCOLOR, D3DCOLOR c2 = 0);
-void Draw3DPointAs2DRect(VEC3, D3DCOLOR, int);
+void Draw3DLineWithShadow(VEC3, VEC3, RS2PackedColor, RS2PackedColor c2 = 0);
+void Draw3DPointAs2DRect(VEC3, RS2PackedColor, int);
 
 void InitShadow();
 void CastShadow(CObject *);
@@ -25,7 +25,7 @@ void RenderShadow();
  *	Šp“x³‹K‰» (0`2PI ‚É‚¨‚³‚ß‚é)
  */
 inline float NormAngle(double a){
-	return (float)(a-2.0f*D3DX_PI*ceil(a/(2.0*D3DX_PI)));
+	return (float)(a-2.0f*RS2_PI*ceil(a/(2.0*RS2_PI)));
 }
 
 /*
@@ -82,7 +82,7 @@ inline VEC3 VEC2toVEC3( VEC2 vec )
 }
 
 /*
- *	D3DCOLOR §Œä
+ *	RS2PackedColor §Œä
  */
 inline void SplitXC(
 	DWORD c,				//	•ª‰ð‚·‚éF
@@ -101,19 +101,19 @@ inline void SplitAC(
 	*g = (c&0x0000ff00)>>8;
 	*b = c&0x000000ff;
 }
-inline D3DCOLOR MaxColor(D3DCOLOR c1, D3DCOLOR c2){
+inline RS2PackedColor MaxColor(RS2PackedColor c1, RS2PackedColor c2){
 	int a1, r1, g1, b1, a2, r2, g2, b2;
 	SplitAC(c1, &a1, &r1, &g1, &b1);
 	SplitAC(c2, &a2, &r2, &g2, &b2);
 	return MAKE_AC(a1>a2 ? a1 : a2, r1>r2 ? r1 : r2, g1>g2 ? g1 : g2, b1>b2 ? b1 : b2);
 }
-inline D3DCOLOR MultiplyColor(D3DCOLOR c1, D3DCOLOR c2){
+inline RS2PackedColor MultiplyColor(RS2PackedColor c1, RS2PackedColor c2){
 	int a1, r1, g1, b1, a2, r2, g2, b2;
 	SplitAC(c1, &a1, &r1, &g1, &b1);
 	SplitAC(c2, &a2, &r2, &g2, &b2);
 	return MAKE_AC(a1*a2/255, r1*r2/255, g1*g2/255, b1*b2/255);
 }
-inline D3DCOLOR MixColor(D3DCOLOR c1, D3DCOLOR c2, float p1){
+inline RS2PackedColor MixColor(RS2PackedColor c1, RS2PackedColor c2, float p1){
 	float p2 = 1.0f-p1;
 	int a1, r1, g1, b1, a2, r2, g2, b2;
 	SplitAC(c1, &a1, &r1, &g1, &b1);
@@ -121,11 +121,11 @@ inline D3DCOLOR MixColor(D3DCOLOR c1, D3DCOLOR c2, float p1){
 	return MAKE_AC(
 		Round(p1*a1+p2*a2), Round(p1*r1+p2*r2), Round(p1*g1+p2*g2), Round(p1*b1+p2*b2));
 }
-inline D3DCOLOR ScaleColor(D3DCOLOR c, float s){
+inline RS2PackedColor ScaleColor(RS2PackedColor c, float s){
 	ValueArea(&s, 0.0f, 1.0f);
 	return (Round((c>>24)*s)<<24)|(c&0x00ffffff);
 }
-inline D3DCOLORVALUE ACtoCV(D3DCOLOR c){
+inline RS2Color4 ACtoCV(RS2PackedColor c){
 	int a, r, g, b;
 	SplitAC(c, &a, &r, &g, &b);
 	return MAKE_CV(r/255.0f, g/255.0f, b/255.0f, a/255.0f);

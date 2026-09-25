@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-25.
 //
@@ -344,8 +345,8 @@ bool RS2MutableProbeRun(){
 		//	composing line draws three strings through one live-text line.
 		{
 			const int th = RS2GetTextHeight(), ex = 20, ey = 384, cy = 414;
-			D3DCOLOR base[4] = { 0xff304860, 0xff304860, 0xff182430, 0xff182430 };
-			D3DCOLOR selected[4] = { 0xff806020, 0xff806020, 0xff403010, 0xff403010 };
+			RS2PackedColor base[4] = { 0xff304860, 0xff304860, 0xff182430, 0xff182430 };
+			RS2PackedColor selected[4] = { 0xff806020, 0xff806020, 0xff403010, 0xff403010 };
 			const char *typed = "Edit ABC 123";
 			const int pos = 4, len = (int)strlen(typed);
 

@@ -14,7 +14,6 @@
 #define UDX_MESH_TIMER_RAII(name)
 #endif
 
-#include "..\RS2LegacyXMeshImporter.h"
 #include "..\RS2MeshImport.h"
 #include "..\RS2MaterialBinding.h"
 #include "..\CModelPlugin.h"
@@ -62,7 +61,7 @@ CMesh::~CMesh(){
 BOOL CMesh::Load(
 	BOOL fRes,			//	リソースか？
 	char *strName,		//	ファイル・リソース名
-	D3DCOLOR cTrans,	//	テクスチャーの透過色
+	RS2PackedColor cTrans,	//	テクスチャーの透過色
 	int nMipLv			//	ミップマップ LV
 ){
 	//	既存なら解放
@@ -140,121 +139,8 @@ BOOL CMesh::Load(
 	return TRUE;
 }
 
-/*
- *	球の作成
- *
- *	sl	: スライス数
- *	st	: スタック数
- *	cv	: 色
- */
-BOOL CMesh::CreateSphere(float r, UINT sl, UINT st, RS2Color4 cv){
-	//	既存なら解放
-	Free();
 
-	if(!RS2ImportLegacySphere(r, sl, st, &m_Data)) return FALSE;
-	m_strName = "";
 
-	m_dwNumMat = 1;
-	m_pMatFlag = new DWORD[m_dwNumMat];
-	m_pMat = new RS2Material[m_dwNumMat];
-	m_pCustomMat = new RS2Material[m_dwNumMat];
-	m_pTex = new RS2TextureRef[m_dwNumMat];
-	m_pCustomTex = new RS2TextureRef[m_dwNumMat];
-	m_pTexTrans = new TTMTX[m_dwNumMat];
-
-	m_pMat[0].Diffuse = m_pMat[0].Ambient = cv;
-	m_pMat[0].Specular = m_pMat[0].Emissive = RS2MakeColor4(0, 0, 0, 0);
-	m_pMat[0].Power = 0.0f;
-	m_pTex[0].Clear();
-
-	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
-	//	backend gets a copy.  No ID3DXMesh survives the generator.
-	if(!CreateGeometry()){
-		Free();
-		return FALSE;
-	}
-
-	ComputeBoundary();
-	return TRUE;
-}
-
-/*
- *	直方体の作成
- *
- *	x		: Xサイズ
- *	y		: Yサイズ
- *	z		: Zサイズ
- *	cv	: 色
- */
-BOOL CMesh::CreateBox(float x, float y, float z, RS2Color4 cv){
-	//	既存なら解放
-	Free();
-
-	if(!RS2ImportLegacyBox(x, y, z, &m_Data)) return FALSE;
-	m_strName = "";
-
-	m_dwNumMat = 1;
-	m_pMatFlag = new DWORD[m_dwNumMat];
-	m_pMat = new RS2Material[m_dwNumMat];
-	m_pCustomMat = new RS2Material[m_dwNumMat];
-	m_pTex = new RS2TextureRef[m_dwNumMat];
-	m_pCustomTex = new RS2TextureRef[m_dwNumMat];
-	m_pTexTrans = new TTMTX[m_dwNumMat];
-
-	m_pMat[0].Diffuse = m_pMat[0].Ambient = cv;
-	m_pMat[0].Specular = m_pMat[0].Emissive = RS2MakeColor4(0, 0, 0, 0);
-	m_pMat[0].Power = 0.0f;
-	m_pTex[0].Clear();
-
-	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
-	//	backend gets a copy.  No ID3DXMesh survives the generator.
-	if(!CreateGeometry()){
-		Free();
-		return FALSE;
-	}
-
-	ComputeBoundary();
-	return TRUE;
-}
-
-/*
- *	直方体の作成
- *
- *	x		: Xサイズ
- *	y		: Yサイズ
- *	z		: Zサイズ
- *	cv	: 色
- */
-BOOL CMesh::CreateTeapot(RS2Color4 cv){
-	//	既存なら解放
-	Free();
-
-	if(!RS2ImportLegacyTeapot(&m_Data)) return FALSE;
-	m_strName = "";
-
-	m_dwNumMat = 1;
-	m_pMatFlag = new DWORD[m_dwNumMat];
-	m_pMat = new RS2Material[m_dwNumMat];
-	m_pCustomMat = new RS2Material[m_dwNumMat];
-	m_pTex = new RS2TextureRef[m_dwNumMat];
-	m_pCustomTex = new RS2TextureRef[m_dwNumMat];
-	m_pTexTrans = new TTMTX[m_dwNumMat];
-
-	m_pMat[0].Diffuse = m_pMat[0].Ambient = cv;
-	m_pMat[0].Specular = m_pMat[0].Emissive = RS2MakeColor4(0, 0, 0, 0);
-	m_pMat[0].Power = 0.0f;
-	m_pTex[0].Clear();
-
-	//	[RS2EX] Same path as an imported mesh: RS2 owns the geometry and the
-	//	backend gets a copy.  No ID3DXMesh survives the generator.
-	if(!CreateGeometry()){
-		Free();
-		return FALSE;
-	}
-
-	ComputeBoundary();
-	return TRUE;
-}
 
 /*
  *	メッシュの解放
@@ -693,7 +579,7 @@ CMeshList::~CMeshList(){
 /*
  *	メッシュをリストから検索し、なければロード
  */
-CMesh *CMeshList::Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv){
+CMesh *CMeshList::Get(BOOL fRes, LPCSTR strName, RS2PackedColor cTrans, int nMipLv){
 	if(!strName || !*strName) return NULL;
 
 	//	リストからテクスチャーを検索

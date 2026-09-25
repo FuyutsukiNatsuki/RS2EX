@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CSKINPLUGIN_H_INCLUDED
 #define CSKINPLUGIN_H_INCLUDED
 
@@ -30,52 +30,52 @@ public:
 		string m_TexFileName;			//	テクスチャファイル名
 		string m_FontName;				//	フォント名
 		HFONT m_hFont;					//	フォントハンドル
-		D3DCOLOR m_TitleBarFontColor;	//	タイトルバーフォント色
-		D3DCOLOR m_ButtonFontColor;		//	ボタンフォント色
-		D3DCOLOR m_StaticFontColor;		//	スタティックフォント色
-		D3DCOLOR m_FocusFrameColor;		//	フォーカス枠色
+		RS2PackedColor m_TitleBarFontColor;	//	タイトルバーフォント色
+		RS2PackedColor m_ButtonFontColor;		//	ボタンフォント色
+		RS2PackedColor m_StaticFontColor;		//	スタティックフォント色
+		RS2PackedColor m_FocusFrameColor;		//	フォーカス枠色
 	} m_InterfaceData;
 	struct _BACKGROUNDDATA{	//	背景設定
 		string m_TexFileName;		//	テクスチャファイル名
-		D3DCOLOR m_BackgroundColor;	//	背景色
+		RS2PackedColor m_BackgroundColor;	//	背景色
 		int m_ImageSize[2];			//	画像サイズ
 	} m_BackgroundData;
 	struct _FRAMEDATA{	//	フレーム設定
 		string m_FrameTexFileName;			//	テクスチャファイル名
 		string m_IconTexFileName[MODE_NUM];	//	アイコンファイル名
-		D3DCOLOR m_LabelFontColor;			//	タイトルバーフォント色
-		D3DCOLOR m_InfoFontColor;			//	情報フォント色
-		D3DCOLOR m_FloatFontColor;			//	フロートフォント色
+		RS2PackedColor m_LabelFontColor;			//	タイトルバーフォント色
+		RS2PackedColor m_InfoFontColor;			//	情報フォント色
+		RS2PackedColor m_FloatFontColor;			//	フロートフォント色
 	} m_FrameData;
 	struct _EDITCTRLDATA{	//	エディットコントロール設定
-		D3DCOLOR m_DefaultFontColor;		//	既定フォント色
-		D3DCOLOR m_EditBaseColor[4];		//	偶数列背景色
-		D3DCOLOR m_EditFontColor;			//	編集中フォント色
-		D3DCOLOR m_ConvertFontColor;		//	変換中フォント色
-		D3DCOLOR m_ConvertClauseColor[2];	//	変換中文節下線色
-		D3DCOLOR m_SelectedBaseColor[4];	//	選択中背景色
+		RS2PackedColor m_DefaultFontColor;		//	既定フォント色
+		RS2PackedColor m_EditBaseColor[4];		//	偶数列背景色
+		RS2PackedColor m_EditFontColor;			//	編集中フォント色
+		RS2PackedColor m_ConvertFontColor;		//	変換中フォント色
+		RS2PackedColor m_ConvertClauseColor[2];	//	変換中文節下線色
+		RS2PackedColor m_SelectedBaseColor[4];	//	選択中背景色
 	} m_EditCtrlData;
 	struct _LISTVIEWDATA{	//	リストボックス設定
-		D3DCOLOR m_DefaultBaseColorOdd[4];	//	奇数列背景色
-		D3DCOLOR m_DefaultBaseColorEven[4];	//	偶数列背景色
-		D3DCOLOR m_DefaultFontColor;		//	既定フォント色
-		D3DCOLOR m_SelectedBaseColor[4];	//	選択背景色
-		D3DCOLOR m_SelectedFontColor;		//	選択フォント色
-		D3DCOLOR m_FocusFrameColor;			//	フォーカス枠色
+		RS2PackedColor m_DefaultBaseColorOdd[4];	//	奇数列背景色
+		RS2PackedColor m_DefaultBaseColorEven[4];	//	偶数列背景色
+		RS2PackedColor m_DefaultFontColor;		//	既定フォント色
+		RS2PackedColor m_SelectedBaseColor[4];	//	選択背景色
+		RS2PackedColor m_SelectedFontColor;		//	選択フォント色
+		RS2PackedColor m_FocusFrameColor;			//	フォーカス枠色
 	} m_ListViewData;
 	struct _PLUGINTREEDATA{	//	プラグインリスト設定
-		D3DCOLOR m_DefaultBaseColor[4];		//	既定背景色
-		D3DCOLOR m_DefaultFontColor;		//	既定フォント色
-		D3DCOLOR m_SelectedBaseColor[4];	//	選択背景色
-		D3DCOLOR m_SelectedFontColor;		//	選択フォント色
-		D3DCOLOR m_FocusFrameColor;			//	フォーカス枠色
+		RS2PackedColor m_DefaultBaseColor[4];		//	既定背景色
+		RS2PackedColor m_DefaultFontColor;		//	既定フォント色
+		RS2PackedColor m_SelectedBaseColor[4];	//	選択背景色
+		RS2PackedColor m_SelectedFontColor;		//	選択フォント色
+		RS2PackedColor m_FocusFrameColor;			//	フォーカス枠色
 	} m_PluginTreeData;
 	struct _POPUPMENUDATA{	//	ポップアップメニュー設定
-		D3DCOLOR m_DefaultFontColor;		//	既定フォント色
-		D3DCOLOR m_DisabledFontColor;		//	無効フォント色
-		D3DCOLOR m_DisabledShadowColor;		//	無効陰影色
-		D3DCOLOR m_SelectedBaseColor[4];	//	選択背景色
-		D3DCOLOR m_SelectedFontColor;		//	選択フォント色
+		RS2PackedColor m_DefaultFontColor;		//	既定フォント色
+		RS2PackedColor m_DisabledFontColor;		//	無効フォント色
+		RS2PackedColor m_DisabledShadowColor;		//	無効陰影色
+		RS2PackedColor m_SelectedBaseColor[4];	//	選択背景色
+		RS2PackedColor m_SelectedFontColor;		//	選択フォント色
 	} m_PopupMenuData;
 	struct _MODELDATA{	//	各種モデル設定
 		string m_ArrowModelFileName;		//	矢印モデルファイル名

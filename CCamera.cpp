@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "RS2Renderer.h"
 #include "CCamera.h"
@@ -20,8 +20,8 @@ const float CAM_PITCH = 0.001f;				//	ピッチ感度
 //const float CAM_BANK = 0.001f;			//	バンク感度
 const float CAM_FOWARD = 0.0001f;			//	前後感度
 const float CAM_ZOOM = 0.00002f;			//	ズーム感度
-const float FOV_MIN = D3DXToRadian(0.1f);	//	最小視野角
-const float FOV_MAX = D3DXToRadian(179.0f);	//	最大視野角
+const float FOV_MIN = RS2ToRadian(0.1f);	//	最小視野角
+const float FOV_MAX = RS2ToRadian(179.0f);	//	最大視野角
 const int CAM_EDGE_MOVE = 20;				//	画面端移動速度
 
 //	外部グローバル
@@ -74,7 +74,7 @@ void CCamera::ResetCamera(
 	m_Pitch = pitch;
 //	m_Bank = bank;
 	m_Dist = dist<0.0f ? m_DefDist : dist;
-	m_FieldOfView = 0.25f*D3DX_PI;
+	m_FieldOfView = 0.25f*RS2_PI;
 	m_Wheel = 0.0f;
 	SetCenter();
 }
@@ -188,7 +188,7 @@ void CCamera::InvCalcParam(
 	dir.y = 0.0f;
 	V3Norm(&dir, &dir);
 	m_Head = acosf(dir.x);
-	if(dir.z<0.0f) m_Head = 2.0f*D3DX_PI-m_Head;
+	if(dir.z<0.0f) m_Head = 2.0f*RS2_PI-m_Head;
 	m_Dist = V3Len(&(m_Focus-m_CameraPos));
 }
 
@@ -321,7 +321,7 @@ void CCamera::ApplyProjection(
 	if(g_HidefCaptureFlag){
 		float vph = 2.0f*zn*tanf(0.5f*m_FieldOfViewEffect);
 		float vpw = (vph*viewportW)/viewportH;
-		D3DXMatrixPerspectiveOffCenterLH(&sv3.mtxProj,
+		RS2MatrixPerspectiveOffCenterLH(&sv3.mtxProj,
 			g_HidefLeft*vpw, g_HidefRight*vpw, g_HidefBottom*vph, g_HidefTop*vph, zn, zf);
 		int bx, by;
 		for(by = 0; by<g_HidefQuality; ++by){
@@ -330,13 +330,13 @@ void CCamera::ApplyProjection(
 			for(bx = 0; bx<g_HidefQuality; ++bx){
 				float ofsx = (g_HidefRight-g_HidefLeft)
 					/g_HidefBufferSize*(bx-(g_HidefQuality-1)*0.5f);
-				D3DXMatrixPerspectiveOffCenterLH(&g_BoldLineMtx[by][bx],
+				RS2MatrixPerspectiveOffCenterLH(&g_BoldLineMtx[by][bx],
 					(g_HidefLeft+ofsx)*vpw, (g_HidefRight+ofsx)*vpw,
 					(g_HidefBottom+ofsy)*vph, (g_HidefTop+ofsy)*vph, zn, zf);
 			}
 		}
 	}else{
-		D3DXMatrixPerspectiveFovLH(&sv3.mtxProj, m_FieldOfViewEffect,
+		RS2MatrixPerspectiveFovLH(&sv3.mtxProj, m_FieldOfViewEffect,
 			(float)viewportW/viewportH, zn, zf);
 	}
 	RS2SetProjectionTransform(sv3.mtxProj);
@@ -359,11 +359,11 @@ void CCamera::PrintInfo(
 	int fx = Round(50*sinf(0.5f*m_FieldOfViewEffect));
 	int fy = Round(50*cosf(0.5f*m_FieldOfViewEffect));
 	RS2BindTexture(0, RS2TextureRef());
-	D3DCOLOR white = ScaleColor(0xffffffff, alpha), black = ScaleColor(0xff000000, alpha);
-	D3DCOLOR white2 = ScaleColor(0x80ffffff, alpha), black2 = ScaleColor(0x80000000, alpha);
+	RS2PackedColor white = ScaleColor(0xffffffff, alpha), black = ScaleColor(0xff000000, alpha);
+	RS2PackedColor white2 = ScaleColor(0x80ffffff, alpha), black2 = ScaleColor(0x80000000, alpha);
 	int deg;
 	for(deg = 0; deg<=180; deg += 15){
-		float rad = D3DXToRadian(deg);
+		float rad = RS2ToRadian(deg);
 		int dx1 = Round(50*cosf(rad)), dy1 = Round(50*sinf(rad));
 		int dx2 = Round(40*cosf(rad)), dy2 = Round(40*sinf(rad));
 		Draw2DLine(cx+dx1+1, cy-dy1+1, cx+dx2+1, cy-dy2+1, black2, 0x01000000);
@@ -374,7 +374,7 @@ void CCamera::PrintInfo(
 	Draw2DLine(cx, cy, cx+fx, cy-fy, white, 0x01ffffff);
 	Draw2DLine(cx, cy, cx-fx, cy-fy, white, 0x01ffffff);
 	g_StrTex->RenderLeft(ix, iy-TILE_UNIT*2, white, black,
-		FlashIn("%s: %.1f [deg]", lang(FieldOfView), D3DXToDegree(m_FieldOfViewEffect)));
+		FlashIn("%s: %.1f [deg]", lang(FieldOfView), RS2ToDegree(m_FieldOfViewEffect)));
 	g_StrTex->RenderLeft(ix, iy-TILE_UNIT, white, black,
 		FlashIn("%s: %.1f [m]", lang(Distance), m_Dist));
 	if(ext){
@@ -434,9 +434,9 @@ int CCamera::ScanInput(
 	if(wh) BeginPrint();
 	if(CheckShift()){
 		if(CheckCtrl()){
-			m_FieldOfView = 5.f*Round(D3DXToDegree(m_FieldOfView/5));
+			m_FieldOfView = 5.f*Round(RS2ToDegree(m_FieldOfView/5));
 			if(wh) m_FieldOfView += wh>0 ? -5.0f : 5.0f;
-			m_FieldOfView = D3DXToRadian(m_FieldOfView);
+			m_FieldOfView = RS2ToRadian(m_FieldOfView);
 		}else{
 			//	[RS2EX] m_Wheel is a velocity integrated once per rendered frame.
 			m_FieldOfView -= m_Wheel*CAM_ZOOM*ratio*sqrtf(m_FieldOfView)
@@ -560,8 +560,8 @@ int CCamera::ScanInput(
 			if(!m_LockPos || !GetFocusInst() && !tlocal){
 				m_Head -= delta.x*CAM_HEAD;
 				m_Pitch += delta.y*CAM_PITCH;
-				ValueCircular(&m_Head, 0.0f, 2.0f*D3DX_PI);
-				ValueArea(&m_Pitch, -0.49f*D3DX_PI, 0.49f*D3DX_PI);
+				ValueCircular(&m_Head, 0.0f, 2.0f*RS2_PI);
+				ValueArea(&m_Pitch, -0.49f*RS2_PI, 0.49f*RS2_PI);
 			}
 			break;
 		}

@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CVERTEXDUMP_H_INCLUDED
 #define CVERTEXDUMP_H_INCLUDED
 
@@ -10,12 +10,12 @@
  */
 class CDiffusePointer{
 private:
-	D3DCOLOR *m_Pointer;	//	ポインタ
-	D3DCOLOR m_Default;		//	デフォルト値
+	RS2PackedColor *m_Pointer;	//	ポインタ
+	RS2PackedColor m_Default;		//	デフォルト値
 public:
-	CDiffusePointer(D3DCOLOR *p){ m_Default = *(m_Pointer = p); }
+	CDiffusePointer(RS2PackedColor *p){ m_Default = *(m_Pointer = p); }
 	void Restore(){ *m_Pointer = m_Default; }
-	void Set(D3DCOLOR c){ *m_Pointer = c; }
+	void Set(RS2PackedColor c){ *m_Pointer = c; }
 };
 
 //	反復子
@@ -45,8 +45,8 @@ public:
 	~CLineDumpTL();
 	int GetCount(){ return m_Count; }
 	void Feed();
-	void Add(VEC2, D3DCOLOR, VEC2, D3DCOLOR);
-	void Preview(VEC2, D3DCOLOR, VEC2, D3DCOLOR);
+	void Add(VEC2, RS2PackedColor, VEC2, RS2PackedColor);
+	void Preview(VEC2, RS2PackedColor, VEC2, RS2PackedColor);
 	void PrepareVertex();
 	void Render(bool drawup);
 };
@@ -67,8 +67,8 @@ public:
 	~CLineDumpL();
 	int GetCount(){ return m_Count; }
 	void Feed();
-	void Add(VEC3, D3DCOLOR, VEC3, D3DCOLOR);
-	void Preview(VEC3, D3DCOLOR, VEC3, D3DCOLOR);
+	void Add(VEC3, RS2PackedColor, VEC3, RS2PackedColor);
+	void Preview(VEC3, RS2PackedColor, VEC3, RS2PackedColor);
 	void PrepareVertex();
 	void Render(bool drawup);
 };
@@ -89,8 +89,8 @@ public:
 	~CLineDumpN();
 	int GetCount(){ return m_Count; }
 	void Feed();
-	void Add(VEC3, D3DCOLOR, VEC3, D3DCOLOR);
-	void Preview(VEC3, D3DCOLOR, VEC3, D3DCOLOR);
+	void Add(VEC3, RS2PackedColor, VEC3, RS2PackedColor);
+	void Preview(VEC3, RS2PackedColor, VEC3, RS2PackedColor);
 	void PrepareVertex();
 	void Render(bool drawup);
 };
@@ -112,11 +112,11 @@ public:
 	int GetCount(){ return m_Count; }
 	void Feed();
 	void Add(
-		VEC3, VEC3, D3DCOLOR, VEC3, VEC3, D3DCOLOR,
-		VEC3, VEC3, D3DCOLOR, VEC3, VEC3, D3DCOLOR);
+		VEC3, VEC3, RS2PackedColor, VEC3, VEC3, RS2PackedColor,
+		VEC3, VEC3, RS2PackedColor, VEC3, VEC3, RS2PackedColor);
 	void Preview(
-		VEC3, VEC3, D3DCOLOR, VEC3, VEC3, D3DCOLOR,
-		VEC3, VEC3, D3DCOLOR, VEC3, VEC3, D3DCOLOR);
+		VEC3, VEC3, RS2PackedColor, VEC3, VEC3, RS2PackedColor,
+		VEC3, VEC3, RS2PackedColor, VEC3, VEC3, RS2PackedColor);
 	void PrepareVertex();
 	void Render(bool drawup);
 };
@@ -139,11 +139,11 @@ public:
 	int GetCount(){ return m_Count; }
 	void Feed();
 	void Add(
-		VEC3, VEC3, D3DCOLOR, float, float, VEC3, VEC3, D3DCOLOR, float, float,
-		VEC3, VEC3, D3DCOLOR, float, float, VEC3, VEC3, D3DCOLOR, float, float);
+		VEC3, VEC3, RS2PackedColor, float, float, VEC3, VEC3, RS2PackedColor, float, float,
+		VEC3, VEC3, RS2PackedColor, float, float, VEC3, VEC3, RS2PackedColor, float, float);
 	void Preview(
-		VEC3, VEC3, D3DCOLOR, float, float, VEC3, VEC3, D3DCOLOR, float, float,
-		VEC3, VEC3, D3DCOLOR, float, float, VEC3, VEC3, D3DCOLOR, float, float);
+		VEC3, VEC3, RS2PackedColor, float, float, VEC3, VEC3, RS2PackedColor, float, float,
+		VEC3, VEC3, RS2PackedColor, float, float, VEC3, VEC3, RS2PackedColor, float, float);
 	void PrepareVertex();
 	void Render(bool drawup);
 };

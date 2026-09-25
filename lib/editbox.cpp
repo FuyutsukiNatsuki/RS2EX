@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 //	Copyright (c) 2002 Midikyou
 
 #include "headers.h"
@@ -200,7 +200,7 @@ void CEditBox::Render(){
 			m_x+sel2*RS2GetTextHeight()/2, m_y+RS2GetTextHeight(), g_Skin->m_EditCtrlData.m_SelectedBaseColor);
 
 		for(i = 0; i<n-1; i++){
-			D3DCOLOR col = g_Skin->m_EditCtrlData.
+			RS2PackedColor col = g_Skin->m_EditCtrlData.
 				m_ConvertClauseColor[pAttr[pClause[i]]==ATTR_TARGET_CONVERTED];
 			int tx = m_x+((m_pos+pClause[i])*RS2GetTextHeight()/2)+1, ty = m_y+RS2GetTextHeight()-2;
 			int tx2 = m_x+((m_pos+pClause[i+1])*RS2GetTextHeight()/2)-1;

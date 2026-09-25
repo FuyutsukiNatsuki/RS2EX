@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 
 //	内部定数
@@ -56,8 +56,8 @@ void CLineDumpTL::Feed(){
  *	プリミティブ追加
  */
 void CLineDumpTL::Add(
-	VEC2 p1, D3DCOLOR c1,	//	頂点 1
-	VEC2 p2, D3DCOLOR c2	//	頂点 2
+	VEC2 p1, RS2PackedColor c1,	//	頂点 1
+	VEC2 p2, RS2PackedColor c2	//	頂点 2
 ){
 	if(m_Count==m_LineNum) Feed();
 	VTX_TL *buf = &m_Buffer[m_Count*2];
@@ -71,8 +71,8 @@ void CLineDumpTL::Add(
  *	即描画
  */
 void CLineDumpTL::Preview(
-	VEC2 p1, D3DCOLOR c1,	//	頂点 1
-	VEC2 p2, D3DCOLOR c2	//	頂点 2
+	VEC2 p1, RS2PackedColor c1,	//	頂点 1
+	VEC2 p2, RS2PackedColor c2	//	頂点 2
 ){
 	VTX_TL prev[2], *buf = prev;
 	buf->x = p1.x; buf->y = p1.y; buf->z = 0.0f; buf->d = c1;
@@ -155,8 +155,8 @@ void CLineDumpL::Feed(){
  *	プリミティブ追加
  */
 void CLineDumpL::Add(
-	VEC3 p1, D3DCOLOR c1,	//	頂点 1
-	VEC3 p2, D3DCOLOR c2	//	頂点 2
+	VEC3 p1, RS2PackedColor c1,	//	頂点 1
+	VEC3 p2, RS2PackedColor c2	//	頂点 2
 ){
 	if(m_Count==m_LineNum) Feed();
 	VTX_L *buf = &m_Buffer[m_Count*2];
@@ -170,8 +170,8 @@ void CLineDumpL::Add(
  *	即描画
  */
 void CLineDumpL::Preview(
-	VEC3 p1, D3DCOLOR c1,	//	頂点 1
-	VEC3 p2, D3DCOLOR c2	//	頂点 2
+	VEC3 p1, RS2PackedColor c1,	//	頂点 1
+	VEC3 p2, RS2PackedColor c2	//	頂点 2
 ){
 	VTX_L prev[2], *buf = prev;
 	buf->x = p1.x; buf->y = p1.y; buf->z = p1.z; buf->d = c1;
@@ -254,8 +254,8 @@ void CLineDumpN::Feed(){
  *	プリミティブ追加
  */
 void CLineDumpN::Add(
-	VEC3 p1, D3DCOLOR c1,	//	頂点 1
-	VEC3 p2, D3DCOLOR c2	//	頂点 2
+	VEC3 p1, RS2PackedColor c1,	//	頂点 1
+	VEC3 p2, RS2PackedColor c2	//	頂点 2
 ){
 	if(m_Count==m_LineNum) Feed();
 	VTX_N *buf = &m_Buffer[m_Count*2];
@@ -269,8 +269,8 @@ void CLineDumpN::Add(
  *	即描画
  */
 void CLineDumpN::Preview(
-	VEC3 p1, D3DCOLOR c1,	//	頂点 1
-	VEC3 p2, D3DCOLOR c2	//	頂点 2
+	VEC3 p1, RS2PackedColor c1,	//	頂点 1
+	VEC3 p2, RS2PackedColor c2	//	頂点 2
 ){
 	VTX_N prev[2], *buf = prev;
 	buf->x = p1.x; buf->y = p1.y; buf->z = p1.z; buf->d = c1; buf->n = V3UP;
@@ -369,10 +369,10 @@ void CQuadDumpN::Feed(){
  *	プリミティブ追加
  */
 void CQuadDumpN::Add(
-	VEC3 p1, VEC3 n1, D3DCOLOR c1,	//	頂点 1
-	VEC3 p2, VEC3 n2, D3DCOLOR c2,	//	頂点 2
-	VEC3 p3, VEC3 n3, D3DCOLOR c3,	//	頂点 3
-	VEC3 p4, VEC3 n4, D3DCOLOR c4	//	頂点 4
+	VEC3 p1, VEC3 n1, RS2PackedColor c1,	//	頂点 1
+	VEC3 p2, VEC3 n2, RS2PackedColor c2,	//	頂点 2
+	VEC3 p3, VEC3 n3, RS2PackedColor c3,	//	頂点 3
+	VEC3 p4, VEC3 n4, RS2PackedColor c4	//	頂点 4
 ){
 	if(m_Count==m_QuadNum) Feed();
 	VTX_N *buf = &m_Buffer[m_Count*6];
@@ -400,10 +400,10 @@ void CQuadDumpN::Add(
  *	即描画
  */
 void CQuadDumpN::Preview(
-	VEC3 p1, VEC3 n1, D3DCOLOR c1,	//	頂点 1
-	VEC3 p2, VEC3 n2, D3DCOLOR c2,	//	頂点 2
-	VEC3 p3, VEC3 n3, D3DCOLOR c3,	//	頂点 3
-	VEC3 p4, VEC3 n4, D3DCOLOR c4	//	頂点 4
+	VEC3 p1, VEC3 n1, RS2PackedColor c1,	//	頂点 1
+	VEC3 p2, VEC3 n2, RS2PackedColor c2,	//	頂点 2
+	VEC3 p3, VEC3 n3, RS2PackedColor c3,	//	頂点 3
+	VEC3 p4, VEC3 n4, RS2PackedColor c4	//	頂点 4
 ){
 	VTX_N prev[6], *buf = prev;
 	buf->x = p1.x; buf->y = p1.y; buf->z = p1.z;
@@ -503,10 +503,10 @@ void CQuadDumpNX::Feed(){
  *	プリミティブ追加
  */
 void CQuadDumpNX::Add(
-	VEC3 p1, VEC3 n1, D3DCOLOR c1, float u1, float v1,	//	頂点 1
-	VEC3 p2, VEC3 n2, D3DCOLOR c2, float u2, float v2,	//	頂点 2
-	VEC3 p3, VEC3 n3, D3DCOLOR c3, float u3, float v3,	//	頂点 3
-	VEC3 p4, VEC3 n4, D3DCOLOR c4, float u4, float v4	//	頂点 4
+	VEC3 p1, VEC3 n1, RS2PackedColor c1, float u1, float v1,	//	頂点 1
+	VEC3 p2, VEC3 n2, RS2PackedColor c2, float u2, float v2,	//	頂点 2
+	VEC3 p3, VEC3 n3, RS2PackedColor c3, float u3, float v3,	//	頂点 3
+	VEC3 p4, VEC3 n4, RS2PackedColor c4, float u4, float v4	//	頂点 4
 ){
 	if(m_Count==m_QuadNum) Feed();
 	VTX_NX *buf = &m_Buffer[m_Count*6];
@@ -534,10 +534,10 @@ void CQuadDumpNX::Add(
  *	即描画
  */
 void CQuadDumpNX::Preview(
-	VEC3 p1, VEC3 n1, D3DCOLOR c1, float u1, float v1,	//	頂点 1
-	VEC3 p2, VEC3 n2, D3DCOLOR c2, float u2, float v2,	//	頂点 2
-	VEC3 p3, VEC3 n3, D3DCOLOR c3, float u3, float v3,	//	頂点 3
-	VEC3 p4, VEC3 n4, D3DCOLOR c4, float u4, float v4	//	頂点 4
+	VEC3 p1, VEC3 n1, RS2PackedColor c1, float u1, float v1,	//	頂点 1
+	VEC3 p2, VEC3 n2, RS2PackedColor c2, float u2, float v2,	//	頂点 2
+	VEC3 p3, VEC3 n3, RS2PackedColor c3, float u3, float v3,	//	頂点 3
+	VEC3 p4, VEC3 n4, RS2PackedColor c4, float u4, float v4	//	頂点 4
 ){
 	VTX_NX prev[6], *buf = prev;
 	buf->x = p1.x; buf->y = p1.y; buf->z = p1.z;

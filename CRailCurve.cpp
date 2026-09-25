@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CRailCurve.h"
 #include "CRailTraceCurve.h"
@@ -107,7 +108,7 @@ LINECOMP:;
 		m_SplitPos = (1.0f+cosf(0.5f*theta))*m_Radius*out+mid;
 		V3Norm(&out, &(-dir1-dir2));
 		VEC3 vert = m_SplitDir-out*V3Dot(&out, &m_SplitDir);
-		m_SplitDir = out*(m_Radius*(2.0f*D3DX_PI-theta))+2.0f*vert;
+		m_SplitDir = out*(m_Radius*(2.0f*RS2_PI-theta))+2.0f*vert;
 	}else{
 		m_SplitPos = (1.0f-cosf(0.5f*theta))*m_Radius*out+mid;
 		V3Norm(&out, &(dir1+dir2));

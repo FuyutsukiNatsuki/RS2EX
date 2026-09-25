@@ -2,11 +2,11 @@
 //	Created for RS2EX on 2026-09-26.
 //
 //	Mesh import: the result type and the entry point CMesh uses.
-//	CRS2MeshImportResult moved here verbatim from RS2LegacyXMeshImporter.cpp.
+//	CRS2MeshImportResult moved here verbatim from RS2LegacyXMeshImporter.cpp
+//	(removed in v0.2.0).
 
 #include "stdafx.h"
 #include "RS2MeshImport.h"
-#include "RS2LegacyXMeshImporter.h"
 
 CRS2MeshImportResult::CRS2MeshImportResult()
 	: m_Materials(0), m_TextureNames(0), m_MaterialCount(0)
@@ -61,15 +61,8 @@ void CRS2MeshImportResult::SetMaterial(
 }
 
 bool RS2ImportMeshFile(BOOL fRes, const char *name, CRS2MeshImportResult *out){
-	//	v0.2.0 WP2: the D3DX8 importer stays reachable, on request only, until
-	//	the new one has been compared against it.  It goes in WP3.
-	static int legacy = -1;
-
-	if(legacy<0){
-		legacy = CheckArguments("-ximportlegacy") ? 1 : 0;
-		if(legacy) Debug("[RS2EX Import] -ximportlegacy: the D3DX8 importer is used\n");
-	}
-	if(legacy) return RS2ImportLegacyXMesh(fRes, name, out);
+	//	v0.2.0: the D3DX8 importer was compared against (WP2) and removed (WP3);
+	//	docs v0.2.0-x-import-contract has the evidence.
 	if(fRes){
 		Debug("[RS2EX Import] %s: resource meshes are not supported\n", name);
 		return false;

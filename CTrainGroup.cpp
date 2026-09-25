@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CSimpleDialog.h"
@@ -626,7 +626,7 @@ void CTrainGroup::SetSetBuffer(){
  */
 void CTrainGroup::SetError(const char *msg){
 	if(g_NetworkInitialized){
-		void PushChatLog(char *, D3DCOLOR c);
+		void PushChatLog(char *, RS2PackedColor c);
 		PushChatLog(FlashIn("%s (%s): %s", lang(TrainOperation), m_Name.c_str(), msg), 0xffffffff);
 	}else{
 		EnqueueCommonDialog(new CSimpleDialog((char *)msg, lang(Error)));

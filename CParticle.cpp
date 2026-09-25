@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19, 2026-09-21.
+//	Modified for RS2EX on 2026-09-19, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CModelPlugin.h"
 #include "CEnvPlugin.h"
@@ -28,7 +28,7 @@ CParticleInst::CParticleInst(
 	m_InitRadius = initradius;
 	m_FinRadius = finradius;
 	m_Alpha = 0.0f;
-	m_Angle = FRand(2.0f*D3DX_PI);
+	m_Angle = FRand(2.0f*RS2_PI);
 	m_Color = MixColor(m_Emitter->m_Color[0], m_Emitter->m_Color[1], FRand(1.0f));
 	m_Lifetime = lifetime;
 	if(m_Lifetime<=0) m_Lifetime = 1;
@@ -45,7 +45,7 @@ void CParticleInst::Render(){
 	RS2BindTexture(0, m_Emitter->m_Texture);
 	float radius = 1.41421356f*(m_Alpha*m_InitRadius+(1.0f-m_Alpha)*m_FinRadius);
 	float si = sinf(m_Angle)*radius, co = cosf(m_Angle)*radius;
-	D3DCOLOR col = ScaleColor(m_Color, m_Alpha);
+	RS2PackedColor col = ScaleColor(m_Color, m_Alpha);
 	if(m_Emitter->m_BlendMode){
 		RS2SetBlend(RS2_BLEND_ALPHA_ADD);
 	}else{

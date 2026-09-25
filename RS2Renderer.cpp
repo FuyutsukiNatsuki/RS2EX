@@ -1,10 +1,9 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
-//	Modified for RS2EX on 2026-09-21, 2026-09-22, 2026-09-23, 2026-09-24, 2026-09-25.
+//	Modified for RS2EX on 2026-09-21, 2026-09-22, 2026-09-23, 2026-09-24, 2026-09-25, 2026-09-26.
 
 #include "stdafx.h"
 #include "RS2Renderer.h"
-#include "RS2D3D8Backend.h"
 #include "RS2D3D12Availability.h"
 #include "RS2D3D12Backend.h"
 #include "RS2TextureAudit.h"
@@ -36,27 +35,13 @@ CRS2Renderer &GetRS2Renderer(){
 }
 
 /*
- *	Which backend was asked for.
- *
- *	[RS2EX] Direct3D 8 is the default and stays the reference renderer.
- *	-dx12 is a developer switch: no settings entry and nothing saved, so a
- *	comparison is one command line away and no configuration has to migrate
- *	while the Direct3D 12 backend is still incomplete.
- *
- *	Resolved once.  A selection that could change mid-run would make every
- *	dispatch decision built on it unanswerable.
+ *	[RS2EX] v0.2.0: Direct3D 12 is the renderer.  The Direct3D 8 backend was
+ *	removed (the v0.1.6 release is the frozen Direct3D 8 reference); -dx12,
+ *	which used to select Direct3D 12, is accepted and changes nothing.
  */
-static RS2RendererBackendType RS2RequestedBackend(){
-	static int requested = -1;
-
-	if(requested<0)
-		requested = CheckArguments("-dx12") ? RS2_RENDERER_D3D12 : RS2_RENDERER_D3D8;
-	return (RS2RendererBackendType)requested;
-}
-
 CRS2Renderer::CRS2Renderer()
 	: m_Backend(NULL),
-	  m_BackendType(RS2_RENDERER_D3D8),
+	  m_BackendType(RS2_RENDERER_NONE),
 	  m_InRenderPass(false)
 {
 }
@@ -74,21 +59,14 @@ CRS2Renderer::~CRS2Renderer(){
 bool CRS2Renderer::Initialize(int width, int height){
 	if(m_Backend) return true;
 
-	m_BackendType = RS2RequestedBackend();
-
-	if(m_BackendType==RS2_RENDERER_D3D12){
-		//	Asked for explicitly, so failing loudly is the point.  Falling back
-		//	to Direct3D 8 would make every -dx12 test result mean "one of the
-		//	two backends worked", which is not a result.
-		if(!RS2D3D12IsRuntimeUsable()){
-			Debug("[RS2EX Renderer] -dx12 requested but Direct3D 12 is unusable here\n");
-			return false;
-		}
-
-		m_Backend = new CRS2D3D12Backend;
-	}else{
-		m_Backend = new CRS2D3D8Backend;
+	//	There is nothing to fall back to, and there never should be: a
+	//	machine without Direct3D 12 is told so and the program does not start.
+	if(!RS2D3D12IsRuntimeUsable()){
+		Debug("[RS2EX Renderer] Direct3D 12 is unusable here\n");
+		return false;
 	}
+	m_BackendType = RS2_RENDERER_D3D12;
+	m_Backend = new CRS2D3D12Backend;
 
 	Debug("[RS2EX Renderer] backend = %s\n", GetBackendName());
 	Debug("[RS2EX Renderer] initialize %d x %d\n", width, height);
@@ -128,7 +106,6 @@ void CRS2Renderer::Shutdown(){
 	if(!m_Backend) return;
 
 	Debug("[RS2EX Renderer] shutdown\n");
-	if(m_BackendType==RS2_RENDERER_D3D8) RS2TextureAuditDump();
 	RS2LightingAuditDump();
 	RS2StageAuditDump();
 	RS2ShadowAuditDump();

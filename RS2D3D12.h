@@ -1,23 +1,21 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-26.
 //
 //	The one place Direct3D 12 and DXGI headers are included.
 //
-//	Include-path order matters here and is not obvious.  The DirectX 8.1 SDK
-//	ships 2001-era copies of basetsd.h, dshow.h, strmif.h, ks.h and about
-//	seventy other headers that also exist in the Windows 10/11 SDK.  If its
-//	include directory comes first, its basetsd.h shadows the modern one, and
-//	winnt.h then fails on PVOID64 before anything Direct3D 12 is even reached.
-//	The build appends the DX8 directory rather than prepending it, so the
-//	Windows SDK keeps priority and DX8 only fills in what is missing - d3d8*.h,
-//	d3dx8*.h and their libraries, which the Direct3D 8 backend and the legacy
-//	mesh importer still need.  Do not reorder it.
+//	v0.2.0: the build no longer uses the DirectX 8.1 SDK at all.  Up to v0.1.6
+//	its include directory had to be appended after the Windows SDK's, because
+//	its 2001-era basetsd.h and friends shadowed the modern ones and broke
+//	winnt.h; that ordering problem went away with the SDK.
 //
 //	d3d12.lib and dxgi.lib are linked normally rather than resolved at run
-//	time.  That makes the executable require Windows 10 even when it is running
-//	the default Direct3D 8 backend.  It was an explicit decision - the
-//	alternative preserved start-up on Windows 8.1 and earlier at the cost of
-//	dynamic loading in the backend - and v0.1.0-validation.md records it.
+//	time, so the executable requires Windows 10.  It was an explicit decision
+//	in v0.1.0, and since v0.2.0 Direct3D 12 is the only renderer anyway.
+//
+//	Comments in the Direct3D 12 files that name "the Direct3D 8 backend" or
+//	its RS2D3D8_* functions describe the v0.1.6 behaviour this port matches.
+//	That code was removed in v0.2.0; the tagged v0.1.6 build is the reference.
 
 #ifndef RS2D3D12_H_INCLUDED
 #define RS2D3D12_H_INCLUDED

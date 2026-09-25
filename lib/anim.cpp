@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	Copyright (c) 2002 Midikyou
 
 #include "headers.h"
@@ -100,12 +101,12 @@ void CAnim::ComputeMatrix(MTX4 *pMtx, int s1, int s2, float rate){
 	QUAT qua;
 	VEC3 pos;
 
-	D3DXQuaternionSlerp(
+	RS2QuaternionSlerp(
 		&qua,
 		&m_pStateTable[s1].qua,
 		&m_pStateTable[s2].qua,
 		rate);
-	D3DXMatrixRotationQuaternion(
+	RS2MatrixRotationQuaternion(
 		pMtx,
 		&qua);
 	pos = m_pStateTable[s1].pos*(1-rate)

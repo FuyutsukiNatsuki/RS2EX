@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CPushButton.h"
 #include "CSkinPlugin.h"
@@ -91,7 +92,7 @@ void CPushButton::Render(){
 		SetUVMap(0.25f, tv, 0.375f, tv+0.125f);
 		TexMap2DRect(px+m_Width-TILE_UNIT, py, px+m_Width, py+m_Height, 0xffffffff);
 	}
-	D3DCOLOR fc = g_Skin->m_InterfaceData.m_ButtonFontColor, sdw = 0;
+	RS2PackedColor fc = g_Skin->m_InterfaceData.m_ButtonFontColor, sdw = 0;
 	if(!m_Enabled){
 		fc = g_Skin->m_PopupMenuData.m_DisabledFontColor;
 		sdw = g_Skin->m_PopupMenuData.m_DisabledShadowColor;

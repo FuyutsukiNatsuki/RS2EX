@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 
 //	内部グローバル
@@ -40,7 +40,7 @@ void CStringDrawer::Enable(
 	int w, int h,		//	サイズ
 	int cols,			//	列数
 	HFONT font,			//	フォント
-	D3DCOLOR sdw		//	陰影色
+	RS2PackedColor sdw		//	陰影色
 ){
 	CStringDrawer *tmp = m_Key ? m_Key : this;
 	int n = tmp->m_Cols, i, j = 0;
@@ -68,7 +68,7 @@ void CStringDrawer::Enable(
  */
 bool CStringDrawer::Check(
 	const char *str,	//	文字列
-	D3DCOLOR sdw		//	陰影色
+	RS2PackedColor sdw		//	陰影色
 ){
 	if(!m_Key && m_Date && m_ShadowColor==sdw && m_String==str){
 		int i;
@@ -97,7 +97,7 @@ DWORD CStringDrawer::FindNewest(
  */
 void CStringDrawer::RenderLeft(
 	int x, int y,	//	左上座標
-	D3DCOLOR c,		//	色
+	RS2PackedColor c,		//	色
 	int mw, int mh	//	サイズ制限
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
@@ -115,7 +115,7 @@ void CStringDrawer::RenderLeft(
  */
 void CStringDrawer::RenderCenter(
 	int x, int y,	//	上辺中央座標
-	D3DCOLOR c,		//	色
+	RS2PackedColor c,		//	色
 	int mw, int mh	//	サイズ制限
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
@@ -134,7 +134,7 @@ void CStringDrawer::RenderCenter(
  */
 void CStringDrawer::RenderRight(
 	int x, int y,	//	右上座標
-	D3DCOLOR c,		//	色
+	RS2PackedColor c,		//	色
 	int mw, int mh	//	サイズ制限
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
@@ -152,7 +152,7 @@ void CStringDrawer::RenderRight(
  */
 void CStringDrawer::RenderLeftV(
 	int x, int y,	//	左上座標 (回転前)
-	D3DCOLOR c,		//	色
+	RS2PackedColor c,		//	色
 	int mw, int mh	//	サイズ制限 (回転前)
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
@@ -170,7 +170,7 @@ void CStringDrawer::RenderLeftV(
  */
 void CStringDrawer::RenderCenterV(
 	int x, int y,	//	上辺中央座標 (回転前)
-	D3DCOLOR c,		//	色
+	RS2PackedColor c,		//	色
 	int mw, int mh	//	サイズ制限 (回転前)
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
@@ -189,7 +189,7 @@ void CStringDrawer::RenderCenterV(
  */
 void CStringDrawer::RenderRightV(
 	int x, int y,	//	右上座標 (回転前)
-	D3DCOLOR c,		//	色
+	RS2PackedColor c,		//	色
 	int mw, int mh	//	サイズ制限 (回転前)
 ){
 	if(mw<0 || mw>m_Width) mw = m_Width;
@@ -209,7 +209,7 @@ void CStringDrawer::RenderLeft3D(
 	VEC3 pos,		//	左辺中央座標
 	VEC3 right,		//	右ベクトル
 	VEC3 up,		//	上ベクトル
-	D3DCOLOR c,		//	色
+	RS2PackedColor c,		//	色
 	float scale		//	スケール [m/px]
 ){
 	float tw = m_Width*scale, th = m_Height*scale;
@@ -229,7 +229,7 @@ void CStringDrawer::RenderCenter3D(
 	VEC3 pos,		//	縦横中央座標
 	VEC3 right,		//	右ベクトル
 	VEC3 up,		//	上ベクトル
-	D3DCOLOR c,		//	色
+	RS2PackedColor c,		//	色
 	float scale		//	スケール [m/px]
 ){
 	float tw = m_Width*scale, th = m_Height*scale;
@@ -249,7 +249,7 @@ void CStringDrawer::RenderRight3D(
 	VEC3 pos,		//	右辺中央座標
 	VEC3 right,		//	右ベクトル
 	VEC3 up,		//	上ベクトル
-	D3DCOLOR c,		//	色
+	RS2PackedColor c,		//	色
 	float scale		//	スケール [m/px]
 ){
 	float tw = m_Width*scale, th = m_Height*scale;
@@ -304,7 +304,7 @@ CStringTexture::~CStringTexture(){
  */
 CStringDrawer *CStringTexture::DrawString(
 	const char *str,	//	文字列
-	D3DCOLOR sdw		//	影色
+	RS2PackedColor sdw		//	影色
 ){
 	int i, j, p;
 	DWORD oldtime[512/64];

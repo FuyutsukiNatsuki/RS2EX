@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-22.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-22, 2026-09-26.
 #include "stdafx.h"
 #include "CJobTimer.h"
 #include "CShadowVolume.h"
@@ -212,11 +212,11 @@ void CShadowVolume::BuildFromMesh(
 		mesh.GetPosition(edge.m_Index2, &tv2);
 		if(cnt<0){
 			cnt = -cnt;
-			D3DXVec3TransformCoord(&v2, &tv1, &mtxWorld);
-			D3DXVec3TransformCoord(&v1, &tv2, &mtxWorld);
+			RS2Vec3TransformCoord(&v2, &tv1, &mtxWorld);
+			RS2Vec3TransformCoord(&v1, &tv2, &mtxWorld);
 		}else{
-			D3DXVec3TransformCoord(&v1, &tv1, &mtxWorld);
-			D3DXVec3TransformCoord(&v2, &tv2, &mtxWorld);
+			RS2Vec3TransformCoord(&v1, &tv1, &mtxWorld);
+			RS2Vec3TransformCoord(&v2, &tv2, &mtxWorld);
 		}
 		for(j = 0; j<cnt; j++) m_FaceVolume->Add(v1, v2, vLight*SHADOW_INF_DIST);
 	}
@@ -281,7 +281,7 @@ void CShadowVolume::Render(){
  *	ï`âÊ
  */
 void CShadowVolume::Draw(
-	D3DCOLOR color	//	shadow color
+	RS2PackedColor color	//	shadow color
 ){
 	//	Ç¢ÇÎÇ¢ÇÎê›íË
 	RS2SetDepthTest(false);

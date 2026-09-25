@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CInterface.h"
 #include "CPopMenu.h"
@@ -218,7 +218,7 @@ void CPopMenu::Render(){
 				m_PosX+m_Width-TILE_HALF, ty+TILE_HALF,
 				g_Skin->m_PopupMenuData.m_DisabledShadowColor);
 		}else{
-			D3DCOLOR fc, sdw = 0;
+			RS2PackedColor fc, sdw = 0;
 			if(ptr->m_Enabled){
 				if(ptr==m_Pointed){
 					RS2BindTexture(0, RS2TextureRef());

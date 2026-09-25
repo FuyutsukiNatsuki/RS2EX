@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CWindowCtrl.h"
 #include "CSkinPlugin.h"
@@ -286,7 +287,7 @@ void CWindowCtrl::Render(){
 	g_Skin->SetInterfaceTexture();
 	if(g_ConfigMode->GetWindowShadow()){
 		const int SO = TILE_QUAD;
-		D3DCOLOR sc = (m_Color>>1)&0xff000000;
+		RS2PackedColor sc = (m_Color>>1)&0xff000000;
 		SetUVMap(0.0f, 0.0f, 0.125f, 0.125f);
 		TexMap2DRect(px+SO, py+SO, px+TILE_UNIT+SO, py+TILE_UNIT+SO, sc);
 		SetUVMap(0.125f, 0.0f, 0.25f, 0.125f);

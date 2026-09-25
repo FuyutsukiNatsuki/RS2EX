@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19, 2026-09-20.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CTrainPlugin.h"
@@ -90,7 +90,7 @@ float CAxleObject::CalcRotation(
 	float dist	//	êiçsãóó£
 ){
 	if(!m_Diameter) return 0.0f;
-	float tmp = m_MaxRotation*(1.0f-expf(-fabsf(dist)/(m_MaxRotation*m_Diameter*D3DX_PI)));
+	float tmp = m_MaxRotation*(1.0f-expf(-fabsf(dist)/(m_MaxRotation*m_Diameter*RS2_PI)));
 	return dist<0.0f ? -tmp : tmp;
 }
 
@@ -119,7 +119,7 @@ void CAxleObject::SetPosture(
 	SetMesh(obj);
 	obj->SetPos(pos+m_Coord.y*up);
 	obj->SetDir(dir, m_Turn ? -up : up);
-	if(m_Diameter) obj->RotX(2.0f*D3DX_PI*rot);
+	if(m_Diameter) obj->RotX(2.0f*RS2_PI*rot);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,7 +147,7 @@ char *CBodyObject::Read(
 		if(!(str = AsgnFloat(eee = str, "TiltRatio", &m_TiltRatio))) throw CSynErr(eee);
 		if(!(str = AsgnFloat(eee = str, "MaxAngle", &m_TiltMaxAngle))) throw CSynErr(eee);
 		if(!(str = AsgnFloat(eee = str, "BaseAlt", &m_TiltBaseAlt))) throw CSynErr(eee);
-		m_TiltMaxAngle = D3DXToRadian(m_TiltMaxAngle);
+		m_TiltMaxAngle = RS2ToRadian(m_TiltMaxAngle);
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 	}else{
 		m_TiltMaxAngle = 0.0f;

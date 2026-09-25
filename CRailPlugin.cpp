@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CRailPlugin.h"
 #include "CTiePlugin.h"
@@ -126,9 +126,9 @@ bool CRailPlugin::Load(){
 		if(!(str = AsgnFloat(eee = str, "Height", &m_Height))) throw CSynErr(eee);
 		if(!(str = AsgnFloat(eee = str, "SurfaceAlt", &m_SurfaceAlt))) throw CSynErr(eee);
 		if(!(str = AsgnFloat(eee = str, "CantRatio", &m_CantRatio))) throw CSynErr(eee);
-		m_CantRatio = D3DXToRadian(m_CantRatio);
+		m_CantRatio = RS2ToRadian(m_CantRatio);
 		if(!(str = AsgnFloat(eee = str, "MaxCant", &m_MaxCant))) throw CSynErr(eee);
-		m_MaxCant = tanf(D3DXToRadian(m_MaxCant));
+		m_MaxCant = tanf(RS2ToRadian(m_MaxCant));
 		if(tmp = AsgnYesNo(eee = str, "FlattenCant", &m_FlattenCant)) str = tmp;
 		else m_FlattenCant = false;
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);

@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19, 2026-09-21.
+//	Modified for RS2EX on 2026-09-19, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "md5.h"
 #include "Network.h"
@@ -68,7 +68,7 @@ int g_NetworkDummyMapAddress = 1;
 const GUID RSN_GUID_APP =
 {0x937ce2dd, 0x5120, 0x40da, {0x8d, 0xe6, 0xa, 0x29, 0x86, 0x47, 0x4f, 0xad}};
 
-const D3DCOLOR RSN_MEMBER_COLORS[RSN_MEMBER_MAX] =
+const RS2PackedColor RSN_MEMBER_COLORS[RSN_MEMBER_MAX] =
 {
 	0xffff8080, 0xff80ff80, 0xff8080ff, 0xff80ffff, 0xffff80ff, 0xffffff80,
 	0xffffc040, 0xff40ffc0, 0xffc040ff, 0xffff40c0, 0xffc0ff40, 0xff40c0ff,
@@ -208,7 +208,7 @@ struct RSNMemberInfo{
 	DPNID id;
 	string name;
 	int color_id;
-	D3DCOLOR color;
+	RS2PackedColor color;
 	int sim_speed;
 	int sync_limit;
 	vector<RSNTrainControlInfo> train_ctrl;
@@ -223,11 +223,11 @@ bool g_NetworkMemberUpdated = false;
 
 struct RSNChatLog{
 	string chat;
-	D3DCOLOR color;
+	RS2PackedColor color;
 };
 static list<RSNChatLog> g_ChatLog;
 
-void PushChatLog(char *, D3DCOLOR color = 0xffffffff);
+void PushChatLog(char *, RS2PackedColor color = 0xffffffff);
 
 vector<DPNID> g_LayoutTransferQueue;
 
@@ -295,7 +295,7 @@ struct RSNNotifyMemberList{
 	struct{
 		DPNID id;
 		char name[RSN_SCRNAME_MAX+1];
-		D3DCOLOR color;
+		RS2PackedColor color;
 		int sync_limit;
 	} data[RSN_MEMBER_MAX];
 };
@@ -608,7 +608,7 @@ void RSNReceiveCommon(RECEIVE_DATA *ptr, DWORD size, LPARAM lp){
 	switch(type){
 	case RSN_MSG_CHAT: {
 		RSNNotifyString *recv = (RSNNotifyString *)ptr;
-		D3DCOLOR color = 0xffffffff;
+		RS2PackedColor color = 0xffffffff;
 		EnterCriticalSection(&g_NetworkCS);
 		string name = "???";
 		for(i = 0; i<g_NetworkMembers.size(); i++){
@@ -1248,7 +1248,7 @@ void RenderNetworkInterface(){
 	}
 }
 
-void PushChatLog(char *chat, D3DCOLOR color){
+void PushChatLog(char *chat, RS2PackedColor color){
 	if(!g_NetworkInitialized) return;
 	EnterCriticalSection(&g_NetworkCS);
 	while(g_ChatLog.size()>=CHAT_MSG_MAX) g_ChatLog.pop_front();

@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 
 #include "headers.h"
 #include "debug.h"
@@ -34,7 +34,7 @@ CTexture::~CTexture(){
  *	cTrans	: 透過色
  *	nMipLv	: ミップマップＬＶ
  */
-BOOL CTexture::Load(LPCSTR strFile, D3DCOLOR cTrans, int nMipLv){
+BOOL CTexture::Load(LPCSTR strFile, RS2PackedColor cTrans, int nMipLv){
 	Free();	//	既存なら解放
 	m_Texture = g_TexList.Get(FALSE, strFile, cTrans, nMipLv);
 	if(m_Texture.IsEmpty()) return FALSE;
@@ -42,7 +42,7 @@ BOOL CTexture::Load(LPCSTR strFile, D3DCOLOR cTrans, int nMipLv){
 	return TRUE;
 }
 //	リソース（ビットマップのみ）
-BOOL CTexture::LoadResource(LPCSTR strRes, D3DCOLOR cTrans, int nMipLv){
+BOOL CTexture::LoadResource(LPCSTR strRes, RS2PackedColor cTrans, int nMipLv){
 	Free();	//	既存なら解放
 	m_Texture = g_TexList.Get(TRUE, strRes, cTrans, nMipLv);
 	if(m_Texture.IsEmpty()) return FALSE;
@@ -98,7 +98,7 @@ BOOL CTexture::Create(int w, int h){
  *	font	: フォントハンドル
  */
 BOOL CTexture::DrawInText(int x, int y, LPCSTR str,
-	HFONT hFont, D3DCOLOR col, D3DCOLOR sdw, int w, int h){
+	HFONT hFont, RS2PackedColor col, RS2PackedColor sdw, int w, int h){
 	if(m_Texture.IsEmpty()) return FALSE;
 
 	HDC hDC = CreateCompatibleDC(NULL);
@@ -251,7 +251,7 @@ CTexList::~CTexList(){
  *	テクスチャをリストから検索し、なければロード
  */
 RS2TextureRef CTexList::Get(
-	BOOL fRes, LPCSTR strName, D3DCOLOR cTrans, int nMipLv
+	BOOL fRes, LPCSTR strName, RS2PackedColor cTrans, int nMipLv
 ){
 	//	リストからテクスチャーを検索
 	TEXINFO *p = m_pList;
@@ -347,7 +347,7 @@ void CTexList::Release(RS2TextureRef tex){
 /*
  *	テクスチャファイル名から透過色を求める
  */
-D3DCOLOR CheckTexTrans(LPCSTR str){
+RS2PackedColor CheckTexTrans(LPCSTR str){
 	char *ptr = (char *)str, *sharp = NULL, *dot = NULL;
 	while(*ptr){
 		switch(*ptr){
@@ -372,7 +372,7 @@ D3DCOLOR CheckTexTrans(LPCSTR str){
 		case 'W': case 'w': return 0xffffffff;
 		}
 	}else if(len==9){
-		D3DCOLOR trans;
+		RS2PackedColor trans;
 		if(sscanf(sharp+1, "%x", &trans)==1) return trans;
 	}
 	return 0x00000000;

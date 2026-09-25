@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "CCursor.h"
 #include "CSkinPlugin.h"
@@ -305,8 +305,8 @@ void CSkinPlugin::VideoStop(){
 void CSkinPlugin::DrawBackground(
 	bool light	//	”wŒiƒ‰ƒCƒg
 ){
-	D3DCOLOR lc = light ? 0xffffffff : 0xff202020;
-	D3DCOLOR bg = MultiplyColor(m_BackgroundData.m_BackgroundColor, lc);
+	RS2PackedColor lc = light ? 0xffffffff : 0xff202020;
+	RS2PackedColor bg = MultiplyColor(m_BackgroundData.m_BackgroundColor, lc);
 	BeginScene(bg);
 	if(*m_BackgroundData.m_ImageSize){
 		RS2BindTexture(0, m_WallpaperTexture);

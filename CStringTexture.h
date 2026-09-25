@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CSTRINGTEXTURE_H_INCLUDED
 #define CSTRINGTEXTURE_H_INCLUDED
 
@@ -12,25 +13,25 @@ private:
 	int m_Cols;				//	占有列数 (0, 1, ..., STRTEX_COLS-1)
 	DWORD m_Date;			//	更新時刻
 	string m_String;		//	文字列
-	D3DCOLOR m_ShadowColor;	//	陰影色
+	RS2PackedColor m_ShadowColor;	//	陰影色
 	CTexture *m_Texture;	//	テクスチャ
 	CStringDrawer *m_Key;	//	基準位置
 public:
 	void Init(int, int, CTexture *);
 	void Reset(CStringDrawer *);
-	void Enable(const char *, int, int, int, HFONT, D3DCOLOR);
-	bool Check(const char *, D3DCOLOR);
+	void Enable(const char *, int, int, int, HFONT, RS2PackedColor);
+	bool Check(const char *, RS2PackedColor);
 	DWORD FindNewest(int);
 	int GetWidth(){ return m_Width; }
-	void RenderLeft(int, int, D3DCOLOR, int mw = -1, int mh = -1);
-	void RenderCenter(int, int, D3DCOLOR, int mw = -1, int mh = -1);
-	void RenderRight(int, int, D3DCOLOR, int mw = -1, int mh = -1);
-	void RenderLeftV(int, int, D3DCOLOR, int mw = -1, int mh = -1);
-	void RenderCenterV(int, int, D3DCOLOR, int mw = -1, int mh = -1);
-	void RenderRightV(int, int, D3DCOLOR, int mw = -1, int mh = -1);
-	void RenderLeft3D(VEC3, VEC3, VEC3, D3DCOLOR, float);
-	void RenderCenter3D(VEC3, VEC3, VEC3, D3DCOLOR, float);
-	void RenderRight3D(VEC3, VEC3, VEC3, D3DCOLOR, float);
+	void RenderLeft(int, int, RS2PackedColor, int mw = -1, int mh = -1);
+	void RenderCenter(int, int, RS2PackedColor, int mw = -1, int mh = -1);
+	void RenderRight(int, int, RS2PackedColor, int mw = -1, int mh = -1);
+	void RenderLeftV(int, int, RS2PackedColor, int mw = -1, int mh = -1);
+	void RenderCenterV(int, int, RS2PackedColor, int mw = -1, int mh = -1);
+	void RenderRightV(int, int, RS2PackedColor, int mw = -1, int mh = -1);
+	void RenderLeft3D(VEC3, VEC3, VEC3, RS2PackedColor, float);
+	void RenderCenter3D(VEC3, VEC3, VEC3, RS2PackedColor, float);
+	void RenderRight3D(VEC3, VEC3, VEC3, RS2PackedColor, float);
 };
 
 /*
@@ -49,59 +50,59 @@ public:
 	CStringTexture(int, int);
 	~CStringTexture();
 	void SetFont(HFONT hf){ m_hFont = hf; }
-	CStringDrawer *DrawString(const char *, D3DCOLOR);
+	CStringDrawer *DrawString(const char *, RS2PackedColor);
 	void RenderAll(int, int, int);
-	void RenderLeft(int x, int y, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderLeft(int x, int y, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, int mw = -1, int mh = -1){
 		DrawString(str, sdw)->RenderLeft(x, y, c, mw, mh);
 	}
-	void RenderCenter(int x, int y, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderCenter(int x, int y, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, int mw = -1, int mh = -1){
 		DrawString(str, sdw)->RenderCenter(x, y, c, mw, mh);
 	}
-	void RenderRight(int x, int y, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderRight(int x, int y, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, int mw = -1, int mh = -1){
 		DrawString(str, sdw)->RenderRight(x, y, c, mw, mh);
 	}
-	void RenderLeftS(int x, int y, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderLeftS(int x, int y, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, int mw = -1, int mh = -1){
 		CStringDrawer *sd = DrawString(str, 0);
 		if(sdw) sd->RenderLeft(x+1, y+1, sdw, mw, mh);
 		sd->RenderLeft(x, y, c, mw, mh);
 	}
-	void RenderCenterS(int x, int y, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderCenterS(int x, int y, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, int mw = -1, int mh = -1){
 		CStringDrawer *sd = DrawString(str, 0);
 		if(sdw) sd->RenderCenter(x+1, y+1, sdw, mw, mh);
 		sd->RenderCenter(x, y, c, mw, mh);
 	}
-	void RenderRightS(int x, int y, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderRightS(int x, int y, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, int mw = -1, int mh = -1){
 		CStringDrawer *sd = DrawString(str, 0);
 		if(sdw) sd->RenderRight(x+1, y+1, sdw, mw, mh);
 		sd->RenderRight(x, y, c, mw, mh);
 	}
-	void RenderLeftV(int x, int y, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderLeftV(int x, int y, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, int mw = -1, int mh = -1){
 		DrawString(str, sdw)->RenderLeftV(x, y, c, mw, mh);
 	}
-	void RenderCenterV(int x, int y, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderCenterV(int x, int y, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, int mw = -1, int mh = -1){
 		DrawString(str, sdw)->RenderCenterV(x, y, c, mw, mh);
 	}
-	void RenderRightV(int x, int y, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderRightV(int x, int y, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, int mw = -1, int mh = -1){
 		DrawString(str, sdw)->RenderRightV(x, y, c, mw, mh);
 	}
-	void RenderLeft3D(VEC3 p, VEC3 d, VEC3 u, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderLeft3D(VEC3 p, VEC3 d, VEC3 u, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, float s){
 		DrawString(str, sdw)->RenderLeft3D(p, d, u, c, s);
 	}
-	void RenderCenter3D(VEC3 p, VEC3 d, VEC3 u, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderCenter3D(VEC3 p, VEC3 d, VEC3 u, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, float s){
 		DrawString(str, sdw)->RenderCenter3D(p, d, u, c, s);
 	}
-	void RenderRight3D(VEC3 p, VEC3 d, VEC3 u, D3DCOLOR c, D3DCOLOR sdw,
+	void RenderRight3D(VEC3 p, VEC3 d, VEC3 u, RS2PackedColor c, RS2PackedColor sdw,
 		const char *str, float s){
 		DrawString(str, sdw)->RenderRight3D(p, d, u, c, s);
 	}

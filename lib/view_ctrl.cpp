@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 //	Copyright (c) 2002 Midikyou
 
 #include "headers.h"
@@ -53,8 +53,8 @@ void KeyLook(float r){
 void MouseLook(float r){
 	//	カーソル位置の変化分だけ回転
 	static POINT p, op = {svw.winW/2, svw.winH/2};
-	static float dx = svw.winW/(D3DX_PI/3);
-	static float dy = svw.winH/(D3DX_PI/2);
+	static float dx = svw.winW/(RS2_PI/3);
+	static float dy = svw.winH/(RS2_PI/2);
 
 	p = GetCursorXY();
 	RotVUp((op.x-p.x)/dx);

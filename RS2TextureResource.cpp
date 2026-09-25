@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
-//	Modified for RS2EX on 2026-09-22, 2026-09-24, 2026-09-25.
+//	Modified for RS2EX on 2026-09-22, 2026-09-24, 2026-09-25, 2026-09-26.
 //
 //	This file owns neutral lifetime and identity.  It never interprets a payload:
 //	the backend that created one supplies the operations that destroy or lock it.
@@ -9,7 +9,6 @@
 #include "RS2Renderer.h"
 #include "RS2D3D12Unsupported.h"
 #include "RS2TextureResource.h"
-#include "RS2D3D8Resources.h"
 #include "RS2D3D12TextureBackend.h"
 #include "RS2StageAudit.h"
 #include "RS2MutableAudit.h"
@@ -30,7 +29,7 @@ bool RS2TextureRef::GetSize(int *width, int *height) const{
 }
 
 CRS2TextureResource::CRS2TextureResource()
-	: m_Backend(RS2_RENDERER_D3D8),
+	: m_Backend(RS2_RENDERER_NONE),
 	  m_Payload(0),
 	  m_Ops(0),
 	  m_Width(0),
@@ -45,7 +44,7 @@ CRS2TextureResource::~CRS2TextureResource(){
 void CRS2TextureResource::Free(){
 	if(m_Payload && m_Ops && m_Ops->destroy) m_Ops->destroy(m_Payload);
 
-	m_Backend = RS2_RENDERER_D3D8;
+	m_Backend = RS2_RENDERER_NONE;
 	m_Payload = 0;
 	m_Ops = 0;
 	m_Width = 0;
@@ -104,45 +103,23 @@ void CRS2TextureResource::Unlock(){
 //	Creation
 ////////////////////////////////////////////////////////////////////////////////
 
-/*
- *	Wrap a created D3D8 payload. D3D12 uses the same neutral owner below,
- *	with its own operations and no native handle crossing this boundary.
- */
-static CRS2TextureResource *RS2AdoptD3D8Texture(
-	void *payload,
-	int width,
-	int height
-){
-	if(!payload) return 0;
-
-	CRS2TextureResource *resource = new CRS2TextureResource;
-	resource->AdoptPayloadFromBackend(
-		RS2_RENDERER_D3D8,
-		payload,
-		width,
-		height,
-		RS2D3D8_GetTexturePayloadOps());
-
-	return resource;
-}
+//	[RS2EX] v0.2.0: Direct3D 12 is the only backend; the Direct3D 8 payload
+//	path went with the Direct3D 8 renderer.
 
 CRS2TextureResource *RS2CreateTextureFromFile(
 	const char *strFile, unsigned long cTrans, int nMipLv
 ){
 	void *payload = 0;
 	int width = 0, height = 0;
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12){
-		if(!RS2D3D12_CreateTexturePayloadFromFile(
-				&payload, &width, &height, strFile, cTrans, nMipLv)) return 0;
-		CRS2TextureResource *resource = new CRS2TextureResource;
-		resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
-			payload, width, height, RS2D3D12_GetTexturePayloadOps());
-		return RS2AuditCreated(resource, strFile, false);
-	}
 
-	if(!RS2D3D8_CreateTexturePayloadFromFile(
-		&payload, &width, &height, strFile, cTrans, nMipLv)) return 0;
-	return RS2AuditCreated(RS2AdoptD3D8Texture(payload, width, height), strFile, false);
+	if(!RS2D3D12_CreateTexturePayloadFromFile(
+			&payload, &width, &height, strFile, cTrans, nMipLv)) return 0;
+
+	CRS2TextureResource *resource = new CRS2TextureResource;
+
+	resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
+		payload, width, height, RS2D3D12_GetTexturePayloadOps());
+	return RS2AuditCreated(resource, strFile, false);
 }
 
 CRS2TextureResource *RS2CreateTextureFromResource(
@@ -150,51 +127,32 @@ CRS2TextureResource *RS2CreateTextureFromResource(
 ){
 	void *payload = 0;
 	int width = 0, height = 0;
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12){
-		if(!RS2D3D12_CreateTexturePayloadFromResource(
-				&payload, &width, &height, strRes, cTrans, nMipLv)) return 0;
-		CRS2TextureResource *resource = new CRS2TextureResource;
-		resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
-			payload, width, height, RS2D3D12_GetTexturePayloadOps());
-		return RS2AuditCreated(resource, strRes, true);
-	}
 
-	if(!RS2D3D8_CreateTexturePayloadFromResource(
-		&payload, &width, &height, strRes, cTrans, nMipLv)) return 0;
-	return RS2AuditCreated(RS2AdoptD3D8Texture(payload, width, height), strRes, true);
+	if(!RS2D3D12_CreateTexturePayloadFromResource(
+			&payload, &width, &height, strRes, cTrans, nMipLv)) return 0;
+
+	CRS2TextureResource *resource = new CRS2TextureResource;
+
+	resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
+		payload, width, height, RS2D3D12_GetTexturePayloadOps());
+	return RS2AuditCreated(resource, strRes, true);
 }
 
 CRS2TextureResource *RS2CreateMutableTexture(int w, int h){
 	//	[RS2EX] v0.1.6: Direct3D 12 keeps an A4R4G4B4 CPU copy that Lock hands
 	//	out, and uploads what changed before the next draw that reads it.
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12){
-		void *payload = 0;
-		int width = 0, height = 0;
-
-		if(!RS2D3D12_CreateMutableTexturePayload(&payload, &width, &height, w, h)){
-			RS2MutableAuditCreated(0, w, h);
-			return 0;
-		}
-
-		CRS2TextureResource *resource = new CRS2TextureResource;
-
-		resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
-			payload, width, height, RS2D3D12_GetMutableTexturePayloadOps());
-		RS2MutableAuditCreated(resource, w, h);
-		return resource;
-	}
-
 	void *payload = 0;
 	int width = 0, height = 0;
 
-	if(!RS2D3D8_CreateMutableTexturePayload(
-		&payload, &width, &height, w, h)){
+	if(!RS2D3D12_CreateMutableTexturePayload(&payload, &width, &height, w, h)){
 		RS2MutableAuditCreated(0, w, h);
 		return 0;
 	}
 
-	CRS2TextureResource *resource = RS2AdoptD3D8Texture(payload, width, height);
+	CRS2TextureResource *resource = new CRS2TextureResource;
 
+	resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
+		payload, width, height, RS2D3D12_GetMutableTexturePayloadOps());
 	RS2MutableAuditCreated(resource, w, h);
 	return resource;
 }
@@ -272,7 +230,7 @@ bool RS2TextureOwnershipSmoke(){
 			resource->GetBackendForBackend()==RS2_RENDERER_D3D12 &&
 			resource->GetPayloadForBackend()==probe &&
 			resource->IsOwnedByBackend(RS2_RENDERER_D3D12) &&
-			!resource->IsOwnedByBackend(RS2_RENDERER_D3D8) &&
+			!resource->IsOwnedByBackend(RS2_RENDERER_NONE) &&
 			ref==copy &&
 			ref.GetSize(&width, &height) &&
 			width==32 && height==16 &&

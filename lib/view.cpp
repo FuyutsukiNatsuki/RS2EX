@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 
 #include "headers.h"
 #include "debug.h"
@@ -20,7 +20,7 @@ extern int g_DispHeight;
  *	※回転の方向＝軸の＋方向に左手親指を向けた時の人差し指の方向
  */
 void RotVX(float v){
-	VMTX_ROT(D3DXMatrixRotationX, -v);
+	VMTX_ROT(RS2MatrixRotationX, -v);
 }
 
 /*
@@ -29,7 +29,7 @@ void RotVX(float v){
  *	v	: 回転角（rad）
  */
 void RotVY(float v){
-	VMTX_ROT(D3DXMatrixRotationY, -v);
+	VMTX_ROT(RS2MatrixRotationY, -v);
 }
 
 /*
@@ -38,7 +38,7 @@ void RotVY(float v){
  *	v	: 回転角（rad）
  */
 void RotVZ(float v){
-	VMTX_ROT(D3DXMatrixRotationZ, -v);
+	VMTX_ROT(RS2MatrixRotationZ, -v);
 }
 
 /*
@@ -47,7 +47,7 @@ void RotVZ(float v){
  *	v	: 回転角（rad）
  */
 void RotVUp(float v){
-	VMTX_ROTA(D3DXVECTOR3(VMTX_21, VMTX_22, VMTX_23), v);
+	VMTX_ROTA(VEC3(VMTX_21, VMTX_22, VMTX_23), v);
 }
 
 /*
@@ -56,7 +56,7 @@ void RotVUp(float v){
  *	v	: 移動ベクトル
  */
 void MoveV(VEC3 v){
-	VMTX_MOVE(D3DXMatrixTranslation, -v);
+	VMTX_MOVE(RS2MatrixTranslation, -v);
 }
 
 /*
@@ -65,7 +65,7 @@ void MoveV(VEC3 v){
  *	v	: 移動ベクトル
  */
 void MoveVW(VEC3 v){
-	VMTX_MOVEW(D3DXMatrixTranslation, -v);
+	VMTX_MOVEW(RS2MatrixTranslation, -v);
 }
 
 /*
@@ -74,7 +74,7 @@ void MoveVW(VEC3 v){
  *	v	: 位置ベクトル
  */
 void SetVPos(VEC3 v){
-	VMTX_MOVEW(D3DXMatrixTranslation, GetVPos()-v);
+	VMTX_MOVEW(RS2MatrixTranslation, GetVPos()-v);
 }
 
 /*
@@ -85,7 +85,7 @@ void SetVPos(VEC3 v){
  *	up ：上方向ベクトル
  */
 void SetView(VEC3 pos, VEC3 dir, VEC3 up){
-	D3DXMatrixLookAtLH(&sv3.mtxView, &pos, &dir, &up);
+	RS2MatrixLookAtLH(&sv3.mtxView, &pos, &dir, &up);
 }
 
 /*
@@ -112,7 +112,7 @@ void SetViewport(DWORD x, DWORD y, DWORD w, DWORD h, float znear, float zfar){
 void LookAtV(VEC3 at){
 	VEC3 up(0, 1, 0);
 	VEC3 pos = GetVPos();
-	D3DXMatrixLookAtLH(&sv3.mtxView, &pos, &at, &up);
+	RS2MatrixLookAtLH(&sv3.mtxView, &pos, &at, &up);
 }
 
 /*
@@ -123,8 +123,8 @@ void LookAtV(VEC3 at){
 VEC3 WorldToScreen(VEC3 pos){
 	VEC3 out;
 
-	D3DXVec3TransformCoord(&out, &pos, &sv3.mtxWtoS);
-	if(D3DXVec3Dot(&(pos-GetVPos()), &GetVDir())>=0){
+	RS2Vec3TransformCoord(&out, &pos, &sv3.mtxWtoS);
+	if(RS2Vec3Dot(&(pos-GetVPos()), &GetVDir())>=0){
 		out.z = 0.0f;
 	}else{
 		out.z = -1.0f;
@@ -141,6 +141,6 @@ VEC3 WorldToScreen(VEC3 pos){
  */
 VEC3 ScreenToWorld(VEC3 pos){
 	VEC3 v3;
-	D3DXVec3TransformCoord(&v3, &pos, &sv3.mtxStoW);
+	RS2Vec3TransformCoord(&v3, &pos, &sv3.mtxStoW);
 	return VEC3(v3.x, v3.y, v3.z);
 }

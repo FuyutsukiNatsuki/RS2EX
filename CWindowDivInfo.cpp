@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "RS2Renderer.h"
 #include "CWindowDivInfo.h"
@@ -359,8 +359,8 @@ int CWindowDivInfo::ScanInputRecursive(CWindowDivInfo** info, int x, int y, int 
 void CWindowDivInfo::RenderInterface(){
 	if(s_DragState==DRAG_STATE_NONE) return;
 	POINT pos = g_Cursor.GetPos();
-	const D3DCOLOR rect_color = 0xffffff00;
-	const D3DCOLOR div_color = 0xffff0000;
+	const RS2PackedColor rect_color = 0xffffff00;
+	const RS2PackedColor div_color = 0xffff0000;
 	const int tx1 = s_TargetPosX+WIN_DIV_MARGIN, tx2 = s_TargetPosX+s_TargetWidth-WIN_DIV_MARGIN;
 	const int ty1 = s_TargetPosY+WIN_DIV_MARGIN, ty2 = s_TargetPosY+s_TargetHeight-WIN_DIV_MARGIN;
 	Fill2DRect(s_TargetPosX, s_TargetPosY, s_TargetPosX+s_TargetWidth, ty1, rect_color);
@@ -400,8 +400,8 @@ void CWindowDivInfo::RenderInterfaceRecursive(int x, int y, int w, int h){
 	const bool dragging = s_DragDivInfo && *s_DragDivInfo==this;
 	const bool div_horz = (s_DragState&DRAG_STATE_HORZ)!=0;
 	const bool div_vert = (s_DragState&DRAG_STATE_VERT)!=0;
-	D3DCOLOR div_color_horz = (dragging || s_MoveDivInfo==this) && div_horz ? 0xffff0000 : 0xff000000;
-	D3DCOLOR div_color_vert = (dragging || s_MoveDivInfo==this) && div_vert ? 0xffff0000 : 0xff000000;
+	RS2PackedColor div_color_horz = (dragging || s_MoveDivInfo==this) && div_horz ? 0xffff0000 : 0xff000000;
+	RS2PackedColor div_color_vert = (dragging || s_MoveDivInfo==this) && div_vert ? 0xffff0000 : 0xff000000;
 	CalcChildSize(w, h);
 	int i, j;
 	for(i = 0; i<2; ++i){

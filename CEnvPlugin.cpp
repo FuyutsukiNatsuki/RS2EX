@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CSaveFile.h"
@@ -9,10 +9,10 @@
 #include "CConfigMode.h"
 
 //	ì‡ïîíËêî
-const float AXIAL_INCLINATION = D3DXToRadian(23.44f);	//	íné≤ÇÃåXÇ´
+const float AXIAL_INCLINATION = RS2ToRadian(23.44f);	//	íné≤ÇÃåXÇ´
 const float DAYS_PER_YEAR = 365.2425f;					//	îNìñÇΩÇËïΩãœì˙êî
-const float REV_PER_DAY = 2.0f*D3DX_PI/DAYS_PER_YEAR;	//	1 ì˙ìñÇΩÇËåˆì]äpìx
-const float ROT_PER_DAY = 2.0f*D3DX_PI+REV_PER_DAY;		//	1 ì˙ìñÇΩÇËé©ì]äpìx
+const float REV_PER_DAY = 2.0f*RS2_PI/DAYS_PER_YEAR;	//	1 ì˙ìñÇΩÇËåˆì]äpìx
+const float ROT_PER_DAY = 2.0f*RS2_PI+REV_PER_DAY;		//	1 ì˙ìñÇΩÇËé©ì]äpìx
 
 //	äOïîÉOÉçÅ[ÉoÉã
 extern int g_AncientNightFlag;
@@ -22,7 +22,7 @@ extern bool g_HidefCaptureFlag;
 //	ì‡ïîÉOÉçÅ[ÉoÉã
 float g_DayAlpha;
 float g_NightAlpha;
-D3DCOLOR g_NoLightColor;
+RS2PackedColor g_NoLightColor;
 
 /*
  *	ì«çû
@@ -55,10 +55,10 @@ char *CMoon::Read(
 	if(tmp = AsgnFloat(str, "ModelScale", &m_MoonScale)) str = tmp;
 	else m_MoonScale = 1.0f;
 	if(!(str = AsgnFloat(eee = str, "AxialInclination", &m_AxialInclination))) throw CSynErr(eee);
-	m_AxialInclination = D3DXToRadian(m_AxialInclination);
+	m_AxialInclination = RS2ToRadian(m_AxialInclination);
 	if(!(str = AsgnFloat(eee = str, "RevolutionPeriod", &m_RevolutionPeriod))) throw CSynErr(eee);
 	if(!(str = AsgnFloat(eee = str, "InitialPhase", &m_InitialPhase))) throw CSynErr(eee);
-	m_RevolutionPerDay = 2.0f*D3DX_PI/m_RevolutionPeriod;
+	m_RevolutionPerDay = 2.0f*RS2_PI/m_RevolutionPeriod;
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 	return str;
 }
@@ -109,7 +109,7 @@ bool CEnvPlugin::Load(){
 		if(!(str = AsgnFloat(eee = str, "Latitude", &m_Latitude))) throw CSynErr(eee);
 		if(!(str = AsgnString(eee = str, "EnvMapTexFileName", &m_EnvMapTexFile))) throw CSynErr(eee);
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
-		m_Latitude = D3DXToRadian(m_Latitude);
+		m_Latitude = RS2ToRadian(m_Latitude);
 
 		if(!(str = BeginBlock(eee = str, "Landscape"))) throw CSynErr(eee);
 		if(!(str = AsgnString(eee = str, "ModelFileName", &m_LandscapeFile))) throw CSynErr(eee);
@@ -122,7 +122,7 @@ bool CEnvPlugin::Load(){
 		if(tmp = AsgnFloat(str, "ModelScale", &m_SunScale)) str = tmp;
 		else m_SunScale = 1.0f;
 		if(!(str = AsgnFloat(eee = str, "AxialInclination", &m_SunAxialInclination))) throw CSynErr(eee);
-		m_SunAxialInclination = D3DXToRadian(m_SunAxialInclination);
+		m_SunAxialInclination = RS2ToRadian(m_SunAxialInclination);
 		if(tmp = m_SunLensFlare.Read(str)) str = tmp;
 		if(tmp = m_SunWhiteout.Read(str)) str = tmp;
 
@@ -219,7 +219,7 @@ void CEnvPlugin::Render(
 	ValueArea(&g_DayAlpha, 0.0f, 1.0f);
 	g_NightAlpha = 1.0f-g_DayAlpha;
 	m_SunObject.SetPos(GetVPos()+10.0f*sdir);
-	D3DCOLOR directional, ambient, skycolor;
+	RS2PackedColor directional, ambient, skycolor;
 	float sunalt = sdir.y;
 	g_SystemSwitch[SYS_SW_NIGHT].SetValue(g_AncientNightFlag = sunalt<m_NightThreshold);
 	if(m_Light.size()){
@@ -245,7 +245,7 @@ void CEnvPlugin::Render(
 		skycolor = 0xff000000;
 	}
 	const VEC3 ldir = -sdir;
-	const D3DCOLORVALUE lcol = ACtoCV(directional);
+	const RS2Color4 lcol = ACtoCV(directional);
 	RS2SetDirectionalLight(RS2MakeDirection(ldir.x, ldir.y, ldir.z),
 		RS2MakeColor4(lcol.r, lcol.g, lcol.b, lcol.a));
 	if(g_HidefCaptureFlag) g_HidefCapture.Begin(skycolor);

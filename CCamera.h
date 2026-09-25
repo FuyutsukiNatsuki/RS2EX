@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CCAMERA_H_INCLUDED
 #define CCAMERA_H_INCLUDED
 
@@ -39,8 +39,8 @@ private:
 public:
 	static CCamera *GetCurrentCamera(){ return ms_CurrentCamera; }
 	void Init(float, float, float, bool);
-	void ResetCamera(float head = -0.25f*D3DX_PI,
-		float pitch = 0.25f*D3DX_PI, float bank = 0.0f, float dist = -1.0f);
+	void ResetCamera(float head = -0.25f*RS2_PI,
+		float pitch = 0.25f*RS2_PI, float bank = 0.0f, float dist = -1.0f);
 	void SetCenter(){ m_Focus = V3ZERO; }
 	float GetFieldOfView(){ return m_FieldOfView; }
 	VEC3 GetFocus(){ return m_Focus; }

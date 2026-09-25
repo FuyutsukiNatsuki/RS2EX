@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CRailSplitCurve.h"
 #include "CRailWay.h"
@@ -60,7 +61,7 @@ void CRailSplitCurve::Trace(
 				//	カント終了
 				if(V3Len(&(up2-up1))<0.1f) goto FIN;
 				VEC3 sright, sup;
-				float tcant = bcant1*(1.0f-sinf(0.5f*D3DX_PI
+				float tcant = bcant1*(1.0f-sinf(0.5f*RS2_PI
 					*V3Len(&(bpos1-m_SplitPos))/V3Len(&(bpos2-bpos1))));
 				CalcCantAxis(&sright, &sup, &m_SplitDir, tcant);
 				CRailSplitCurve curve(m_RailPlugin, m_TiePlugin, m_GirderPlugin, m_RailWay);
@@ -74,7 +75,7 @@ void CRailSplitCurve::Trace(
 				//	カント開始
 				if(V3Len(&(up2-up1))<0.1f) goto FIN;
 				VEC3 sright, sup;
-				float tcant = bcant2*(1.0f-sinf(0.5f*D3DX_PI
+				float tcant = bcant2*(1.0f-sinf(0.5f*RS2_PI
 					*V3Len(&(bpos2-m_SplitPos))/V3Len(&(bpos2-bpos1))));
 				CalcCantAxis(&sright, &sup, &m_SplitDir, tcant);
 				CRailSplitCurve curve(m_RailPlugin, m_TiePlugin, m_GirderPlugin, m_RailWay);
@@ -85,12 +86,12 @@ void CRailSplitCurve::Trace(
 					pos2, right2, up2, dir2, bpos1, bcant1, bpos2, bcant2);
 				return; }
 			}
-			VEC3 rpos1 = pos1+0.5f*D3DX_PI*CANT_GRAD_DIST*dir1;
-			VEC3 rpos2 = pos2-0.5f*D3DX_PI*CANT_GRAD_DIST*dir2;
+			VEC3 rpos1 = pos1+0.5f*RS2_PI*CANT_GRAD_DIST*dir1;
+			VEC3 rpos2 = pos2-0.5f*RS2_PI*CANT_GRAD_DIST*dir2;
 			VEC3 rright, rup = V3UP;
 			V3NormAxis(&rright, &rup, &m_SplitDir);
 			if(fcant1 && fcant2){
-				if(m_SegLen>1.03f*D3DX_PI*CANT_GRAD_DIST){
+				if(m_SegLen>1.03f*RS2_PI*CANT_GRAD_DIST){
 					//	両側カント
 					CRailSplitCurve curve(m_RailPlugin, m_TiePlugin, m_GirderPlugin, m_RailWay);
 					curve.SetGradMode(1);
@@ -116,7 +117,7 @@ void CRailSplitCurve::Trace(
 					return;
 				}
 			}else if(fcant1){
-				if(m_SegLen>0.53f*D3DX_PI*CANT_GRAD_DIST){
+				if(m_SegLen>0.53f*RS2_PI*CANT_GRAD_DIST){
 					//	カント開始
 					CRailSplitCurve curve(m_RailPlugin, m_TiePlugin, m_GirderPlugin, m_RailWay);
 					curve.SetGradMode(1);
@@ -135,7 +136,7 @@ void CRailSplitCurve::Trace(
 					return;
 				}
 			}else{
-				if(m_SegLen>0.53f*D3DX_PI*CANT_GRAD_DIST){
+				if(m_SegLen>0.53f*RS2_PI*CANT_GRAD_DIST){
 					//	カント終了
 					CRailSplitCurve curve(m_RailPlugin, m_TiePlugin, m_GirderPlugin, m_RailWay);
 					curve.SetGradMode(0);

@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CCheckBox.h"
 #include "CSkinPlugin.h"
@@ -79,7 +79,7 @@ void CCheckBox::Render(){
 	SetUVMap(0.375f, tv, 0.5f, tv+0.125f);
 	TexMap2DRect(px, py, px+TILE_UNIT, py+m_Height, 0xffffffff);
 	int lim = m_Width-TILE_UNIT*3/2-push;
-	D3DCOLOR fc = g_Skin->m_InterfaceData.m_StaticFontColor, sdw = 0;
+	RS2PackedColor fc = g_Skin->m_InterfaceData.m_StaticFontColor, sdw = 0;
 	if(!m_Enabled){
 		fc = g_Skin->m_PopupMenuData.m_DisabledFontColor;
 		sdw = g_Skin->m_PopupMenuData.m_DisabledShadowColor;

@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 
 using namespace std;
 
@@ -24,9 +24,10 @@ using namespace std;
  *
  *	※サイズが２の乗数でない場合は自動的に透明な領域が追加される。
  */
-//	[RS2EX] LOAD_TEXTURE() and LOAD_TEXTURE_RES() moved to RS2D3D8Resources.
-//	They put D3DX texture creation in a header included by almost every
-//	translation unit, which is the opposite of having one owner for it.
+//	[RS2EX] LOAD_TEXTURE() and LOAD_TEXTURE_RES() moved to RS2D3D8Resources,
+//	and went with it when v0.2.0 removed the Direct3D 8 backend.  They put D3DX texture creation in a header included by almost every
+//	translation unit, which is the opposite of having one owner for it;
+//	texture creation now belongs to RS2TextureResource.
 //	システムメモリへ
 //
 //	[RS2EX] Left here deliberately.  Its only caller is lib/height_field.cpp,
@@ -34,17 +35,8 @@ using namespace std;
 //	add a function nothing calls - but deleting it would break that file if it
 //	is ever revived.  An unowned creation path that is unreachable; recorded in
 //	docs/v0.0.5-resource-inventory.md rather than touched.
-inline HRESULT LOAD_TEXTURE_SYS(
-	LPTEX8 *ppTex, LPCSTR strFile, D3DCOLOR cTrans = 0, int nMipLv = 1){
-	HRESULT hr;
-
-	hr = D3DXCreateTextureFromFileExA(
-		sv3.pDev, strFile, 0, 0, nMipLv, 0,
-		D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,
-		D3DX_DEFAULT, D3DX_DEFAULT,
-		cTrans, NULL, NULL, ppTex);
-	return hr;
-}
+//	[RS2EX] v0.2.0: LOAD_TEXTURE_SYS (D3DX8, only lib/height_field.cpp, not
+//	built) removed with D3DX8.
 
 /*
  *	テクスチャ・クラス
@@ -60,13 +52,13 @@ public:
 	CTexture();
 	~CTexture();
 
-	BOOL Load(LPCSTR strFile, D3DCOLOR cTrans = 0, int nMipLv = 1);
-	BOOL LoadResource(LPCSTR strRes, D3DCOLOR cTrans = 0, int nMipLv = 1);
+	BOOL Load(LPCSTR strFile, RS2PackedColor cTrans = 0, int nMipLv = 1);
+	BOOL LoadResource(LPCSTR strRes, RS2PackedColor cTrans = 0, int nMipLv = 1);
 	void Free();
 
 	BOOL Create(int w, int h);
 	BOOL DrawInText(int x, int y, LPCSTR str, HFONT hFont,
-		D3DCOLOR col = 0xffffffff, D3DCOLOR sdw = 0, int w = -1, int h = -1);
+		RS2PackedColor col = 0xffffffff, RS2PackedColor sdw = 0, int w = -1, int h = -1);
 	void Render(int x, int y);
 
 	/*
@@ -95,7 +87,7 @@ struct TEXINFO{
 	CRS2TextureResource *pTex;	//	[RS2EX] owned by this entry
 	string strName;
 	int nRef;
-	D3DCOLOR cTrans;
+	RS2PackedColor cTrans;
 	int nMipLv;
 	TEXINFO *pNext;
 };
@@ -110,12 +102,12 @@ class CTexList{
 public:
 	CTexList();
 	~CTexList();
-	RS2TextureRef Get(BOOL fRes, LPCSTR strName, D3DCOLOR cTrans = 0, int nMipLv = 1);
+	RS2TextureRef Get(BOOL fRes, LPCSTR strName, RS2PackedColor cTrans = 0, int nMipLv = 1);
 	void Release(RS2TextureRef tex);
 };
 
 //	関数宣言
-D3DCOLOR CheckTexTrans(LPCSTR str);
+RS2PackedColor CheckTexTrans(LPCSTR str);
 void CalcTextRect(int *w, int *h, LPCSTR str, HFONT hFont);
 
 //	[RS2EX] The texture-stage wrappers that used to live here moved to

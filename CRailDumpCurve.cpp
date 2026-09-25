@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CRailDetectCurve.h"
@@ -33,8 +33,8 @@ RS2Material g_MatSelectA[5] = {										//	選択マテリアル (半透明)
 	{{0,0,0,0.75f}, {0,0,0,1}, {0,0,0,1}, {0,1,0,1}, 1.0f},			//	選択
 	{{0,0,0,0.75f}, {0,0,0,1}, {0,0,0,1}, {1,1,0,1}, 1.0f},			//	選択+ハイライト
 	{{0,0,0,0.75f}, {0,0,0,1}, {0,0,0,1}, {1,0.5f,0,1}, 1.0f}};		//	薄いハイライト
-D3DCOLOR g_ColorSelect[5] = {
-	0xffffffff, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff800000};	//	D3DCOLOR 版
+RS2PackedColor g_ColorSelect[5] = {
+	0xffffffff, 0xffff0000, 0xff00ff00, 0xffffff00, 0xff800000};	//	RS2PackedColor 版
 
 /*
  *	トレース完了

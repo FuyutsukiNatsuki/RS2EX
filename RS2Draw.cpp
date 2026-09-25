@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25, 2026-09-26.
 //
 //	Draw: the public boundary, routed to the active backend.
 //
@@ -67,16 +67,12 @@ CRS2GeometryResource *RS2CreateGeometry(
 		backend, layout.stride, vertexCount, 0);
 	bool built = false;
 
-	if(backend==RS2_RENDERER_D3D8)
-		built = RS2D3D8_CreateGeometry(geometry, layout, vertices);
-	else
-		built = RS2D3D12_CreateGeometry(geometry, layout, vertices);
+	built = RS2D3D12_CreateGeometry(geometry, layout, vertices);
 
 	if(!built){
 		//	Whatever the backend managed to build is released before the
 		//	resource goes, so a failure leaves nothing behind.
-		if(backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
-		else RS2D3D12_DestroyGeometry(geometry);
+		RS2D3D12_DestroyGeometry(geometry);
 		RS2GeometryFree(geometry);
 		return 0;
 	}
@@ -101,14 +97,10 @@ CRS2GeometryResource *RS2CreateIndexedGeometry(
 		backend, layout.stride, vertexCount, indexCount);
 	bool built = false;
 
-	if(backend==RS2_RENDERER_D3D8)
-		built = RS2D3D8_CreateIndexedGeometry(geometry, layout, vertices, indices);
-	else
-		built = RS2D3D12_CreateIndexedGeometry(geometry, layout, vertices, indices);
+	built = RS2D3D12_CreateIndexedGeometry(geometry, layout, vertices, indices);
 
 	if(!built){
-		if(backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
-		else RS2D3D12_DestroyGeometry(geometry);
+		RS2D3D12_DestroyGeometry(geometry);
 		RS2GeometryFree(geometry);
 		return 0;
 	}
@@ -125,9 +117,6 @@ bool RS2UpdateGeometry(
 	unsigned int vertexCount	//	vertices to write
 ){
 	if(!RS2GeometryUsable(geometry, "RS2UpdateGeometry")) return false;
-
-	if(geometry->backend==RS2_RENDERER_D3D8)
-		return RS2D3D8_UpdateGeometry(geometry, vertices, vertexCount);
 
 	RS2D3D12Unsupported("RS2UpdateGeometry");
 	return false;
@@ -148,8 +137,7 @@ void RS2DestroyGeometry(
 
 	RS2LightingAuditGeometryDestroyed(geometry);
 	RS2StageAuditGeometryDestroyed(geometry);
-	if(geometry->backend==RS2_RENDERER_D3D8) RS2D3D8_DestroyGeometry(geometry);
-	else RS2D3D12_DestroyGeometry(geometry);
+	RS2D3D12_DestroyGeometry(geometry);
 
 	RS2GeometryFree(geometry);
 }
@@ -169,9 +157,7 @@ void RS2DrawImmediate(const RS2MeshVertexLayout &layout, RS2PrimitiveType primit
 	RS2StageAuditDrawImmediate(layout);
 	RS2ShadowAuditDrawImmediate(layout, vertices, vertexCount);
 	RS2MutableAuditDrawImmediate(layout, vertices, vertexCount);
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		RS2D3D8_DrawImmediate(layout, primitive, vertices, vertexCount);
-	else RS2D3D12_DrawImmediate(layout, primitive, vertices, vertexCount);
+	RS2D3D12_DrawImmediate(layout, primitive, vertices, vertexCount);
 }
 
 void RS2DrawBuffered(const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
@@ -182,9 +168,7 @@ void RS2DrawBuffered(const CRS2GeometryResource *geometry, RS2PrimitiveType prim
 	RS2ShadowAuditDrawGeometry(geometry, vertexCount, false);
 	RS2MutableAuditDrawGeometry(geometry);
 
-	if(geometry->backend==RS2_RENDERER_D3D8)
-		RS2D3D8_DrawBuffered(geometry, primitive, firstVertex, vertexCount);
-	else RS2D3D12_DrawBuffered(geometry, primitive, firstVertex, vertexCount);
+	RS2D3D12_DrawBuffered(geometry, primitive, firstVertex, vertexCount);
 }
 
 void RS2DrawIndexed(const CRS2GeometryResource *geometry, RS2PrimitiveType primitive,
@@ -195,26 +179,18 @@ void RS2DrawIndexed(const CRS2GeometryResource *geometry, RS2PrimitiveType primi
 	RS2ShadowAuditDrawGeometry(geometry, indexCount, true);
 	RS2MutableAuditDrawGeometry(geometry);
 
-	if(geometry->backend==RS2_RENDERER_D3D8)
-		RS2D3D8_DrawIndexed(geometry, primitive, firstIndex, indexCount);
-	else RS2D3D12_DrawIndexed(geometry, primitive, firstIndex, indexCount);
+	RS2D3D12_DrawIndexed(geometry, primitive, firstIndex, indexCount);
 }
 
 void RS2SetWorldTransform(const float *matrix){
 	RS2LightingAuditWorld(matrix);
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		RS2D3D8_SetWorldTransform(matrix);
-	else RS2D3D12_SetWorldTransform(matrix);
+	RS2D3D12_SetWorldTransform(matrix);
 }
 
 void RS2SetViewTransform(const float *matrix){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		RS2D3D8_SetViewTransform(matrix);
-	else RS2D3D12_SetViewTransform(matrix);
+	RS2D3D12_SetViewTransform(matrix);
 }
 
 void RS2SetProjectionTransform(const float *matrix){
-	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
-		RS2D3D8_SetProjectionTransform(matrix);
-	else RS2D3D12_SetProjectionTransform(matrix);
+	RS2D3D12_SetProjectionTransform(matrix);
 }

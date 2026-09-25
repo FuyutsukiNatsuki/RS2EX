@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CRAILCONNECTOR_H_INCLUDED
 #define CRAILCONNECTOR_H_INCLUDED
 
@@ -63,7 +64,7 @@ public:
 	bool CheckRailBlock(CTrainGroup *);
 	void ScanInput(int, VEC3 &, VEC3 &);
 	bool Dump();
-	void Render(D3DCOLOR, bool);
+	void Render(RS2PackedColor, bool);
 	void RestoreAddress();
 	char *Read(char *);
 	void Save(FILE *);

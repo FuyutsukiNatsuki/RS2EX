@@ -327,22 +327,10 @@
     <ClCompile Include="RS2Renderer.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
-    <ClCompile Include="RS2D3D8Backend.cpp">
-      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
-    </ClCompile>
     <ClCompile Include="RS2RenderResource.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
-    <ClCompile Include="RS2D3D8Resources.cpp">
-      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
-    </ClCompile>
     <ClCompile Include="RS2MeshData.cpp">
-      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
-    </ClCompile>
-    <ClCompile Include="RS2LegacyXMeshImporter.cpp">
-      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
-    </ClCompile>
-    <ClCompile Include="RS2LegacyImportDevice.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
     <ClCompile Include="RS2TextureResource.cpp">
@@ -384,6 +372,9 @@
     <ClCompile Include="RS2MeshImport.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
+    <ClCompile Include="RS2Math.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
     <ClCompile Include="RS2XFileImporter.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
@@ -417,19 +408,7 @@
     <ClCompile Include="RS2D3D12Descriptors.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
-    <ClCompile Include="RS2D3D8MaterialBinding.cpp">
-      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
-    </ClCompile>
     <ClCompile Include="RS2Lighting.cpp">
-      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
-    </ClCompile>
-    <ClCompile Include="RS2D3D8RenderState.cpp">
-      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
-    </ClCompile>
-    <ClCompile Include="RS2D3D8Draw.cpp">
-      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
-    </ClCompile>
-    <ClCompile Include="RS2D3D8Text.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
     <ClCompile Include="RS2D3D12Text.cpp">
@@ -640,9 +619,6 @@
       <Filter>Source Files\RS2 Source\Misc Source</Filter>
     </ClCompile>
     <ClCompile Include="lib\anim.cpp">
-      <Filter>Source Files\UDX Source</Filter>
-    </ClCompile>
-    <ClCompile Include="lib\comm.cpp">
       <Filter>Source Files\UDX Source</Filter>
     </ClCompile>
     <ClCompile Include="lib\debug.cpp">
@@ -1093,22 +1069,10 @@
     <ClInclude Include="RS2Renderer.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
-    <ClInclude Include="RS2D3D8Backend.h">
-      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
-    </ClInclude>
     <ClInclude Include="RS2RenderResource.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
-    <ClInclude Include="RS2D3D8Resources.h">
-      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
-    </ClInclude>
     <ClInclude Include="RS2MeshData.h">
-      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
-    </ClInclude>
-    <ClInclude Include="RS2LegacyXMeshImporter.h">
-      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
-    </ClInclude>
-    <ClInclude Include="RS2LegacyImportDevice.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2Material.h">
@@ -1153,6 +1117,12 @@
     <ClInclude Include="RS2MeshImport.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
+    <ClInclude Include="RS2Math.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
+    <ClInclude Include="RS2NetworkDisabled.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
     <ClInclude Include="RS2StageProbe.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
@@ -1189,16 +1159,10 @@
     <ClInclude Include="RS2Lighting.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
-    <ClInclude Include="RS2D3D8Lighting.h">
-      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
-    </ClInclude>
     <ClInclude Include="RS2Color.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2Draw.h">
-      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
-    </ClInclude>
-    <ClInclude Include="RS2D3D8Draw.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2Text.h">
@@ -1226,9 +1190,6 @@
       <Filter>Header Files\UDX Header</Filter>
     </ClInclude>
     <ClInclude Include="lib\bcc.h">
-      <Filter>Header Files\UDX Header</Filter>
-    </ClInclude>
-    <ClInclude Include="lib\comm.h">
       <Filter>Header Files\UDX Header</Filter>
     </ClInclude>
     <ClInclude Include="lib\debug.h">

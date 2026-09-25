@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 
 #include <io.h>
 #include <direct.h>
@@ -35,28 +35,24 @@ typedef unsigned long *DWORD_PTR;
 	#define DIRECTINPUT_VERSION 0x0800
 #endif
 
-#include <d3d8.h>
-#include <d3dx8.h>
+//	[RS2EX] v0.2.0: no Direct3D 8 / D3DX8 / DirectXFile / DirectMusic
+//	headers.  The math types are RS2's (RS2Math.h); DirectInput and
+//	DirectSound come from the Windows SDK.
 #include <dinput.h>
-#include <dmusicc.h>
-#include <dmusici.h>
-//#include <dshow.h>
-#include <dxfile.h>
+#include <dsound.h>
+#include "..\RS2Math.h"
 
 /*
  *	å^ñºïœçX
  */
-typedef D3DXVECTOR2		VEC2;
-typedef D3DXVECTOR3		VEC3;
-typedef D3DXVECTOR4		VEC4;
-typedef D3DXMATRIX		MTX4;
+typedef RS2Vector2		VEC2;
+typedef RS2Vector3		VEC3;
+typedef RS2Vector4		VEC4;
+typedef RS2Matrix		MTX4;
 //	[RS2EX] MAT8 removed in v0.0.7.  Materials are RS2Material, below;
 //	D3DMATERIAL8 survives only where it legitimately arrives or departs:
 //	the .x importer and the Direct3D 8 binder.
-typedef D3DXQUATERNION	QUAT;
-
-typedef LPDIRECT3DTEXTURE8 LPTEX8;
-typedef LPDIRECT3DSURFACE8 LPSURF8;
+typedef RS2Quaternion	QUAT;
 
 //	[RS2EX] RailSim-owned material values, replacing MAT8.
 #include "..\RS2Material.h"

@@ -98,7 +98,7 @@ CSaveFile::~CSaveFile(){
  *	•—•ûŒü‚ÌXV
  */
 void CSaveFile::UpdateWind(){
-	float theta = FRand(2.0f*D3DX_PI);
+	float theta = FRand(2.0f*RS2_PI);
 	float speed = FRand(WIND_MAX)*FRand(WIND_MAX)/WIND_MAX;
 	m_WindDir1 = m_WindDir2;
 	m_WindDir2 = speed*VEC3(sinf(theta), 0.0f, cosf(theta));

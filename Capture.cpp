@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CPixelbit.h"
 #include "Capture.h"
@@ -69,103 +69,11 @@ void ReleaseCaptureRS(){
  *	‚‰æŽ¿ŽB‰e
  */
 void HidefCapture(CSceneryMode *scenerymode){
-	//	[RS2EX] Readback is a deferred capability (v0.0.9 WP9).  A backend
-	//	that cannot read rendered pixels answers false here, and this path
-	//	stops rather than reaching for a device it does not have.
+	//	[RS2EX] Readback is a deferred capability (v0.0.9 WP9), and the
+	//	Direct3D 8 readback that was here went with the Direct3D 8 renderer in
+	//	v0.2.0.  Capture refresh is v0.4.0 scope.
+	(void)scenerymode;
 	if(!GetRS2Renderer().SupportsReadback()) return;
-
-	LPTEX8 tex;
-	HRESULT hr = sv3.pDev->CreateTexture(
-		g_HidefBufferSize, g_HidefBufferSize,
-		1, 0, sv3.d3dpp.BackBufferFormat,
-		D3DPOOL_MANAGED, &tex);
-	if(FAILED(hr)) return;
-	g_HidefCapture.Create(g_HidefBufferSize, g_HidefBufferSize);
-	g_HidefCaptureFlag = true;
-	int vx, vy;
-	int kx = Round(ceil((float)(sv3.width*g_HidefQuality)/g_HidefBufferSize));
-	int ky = Round(ceil((float)(sv3.height*g_HidefQuality)/g_HidefBufferSize));
-	CPixelbit hidef_horz(g_HidefBufferSize*kx, g_HidefBufferSize);
-	CPixelbit hidef_vert(sv3.width, g_HidefBufferSize*ky);
-	for(vy = 0; vy<ky; ++vy){
-		g_HidefBottom = (float)(ky-vy-1)/ky-0.5f;
-		g_HidefTop = (float)(ky-vy)/ky-0.5f;
-		for(vx = 0; vx<kx; ++vx){
-			g_HidefLeft = (float)vx/kx-0.5f;
-			g_HidefRight = (float)(vx+1)/kx-0.5f;
-			RS2SetDepthFunc(RS2_COMPARE_LESS_EQUAL);
-			g_ConfigMode->SetTexFilter();
-			scenerymode->ApplyCamera();
-			g_SaveFile->RenderScene(false);
-			g_HidefCapture.End();
-			IDirect3DSurface8 *surface_src, *surface_dest;
-			g_HidefCapture.GetTexture()->GetSurfaceLevel(0, &surface_src);
-			tex->GetSurfaceLevel(0, &surface_dest);
-			hr = sv3.pDev->CopyRects(surface_src, NULL, 0, surface_dest, NULL);
-			if(hr==D3D_OK){
-				D3DLOCKED_RECT pLockedRect;
-				hr = tex->LockRect(0, &pLockedRect, NULL, D3DLOCK_READONLY);
-				if(hr==D3D_OK){
-					int x, y;
-					int byteperpixel = pLockedRect.Pitch/g_HidefBufferSize;
-#define BEGINLOOP \
-	for(y = 0; y<g_HidefBufferSize; ++y){ \
-		char *p1 = (char*)pLockedRect.pBits+pLockedRect.Pitch*y; \
-		char *p2 = (char*)(hidef_horz.GetScanLine(y)+g_HidefBufferSize*vx); \
-		for(x = 0; x<g_HidefBufferSize; ++x, p1 += byteperpixel, p2 += 4){
-#define ENDLOOP } }
-					switch(sv3.d3dpp.BackBufferFormat){
-					case D3DFMT_R8G8B8:
-					case D3DFMT_A8R8G8B8:
-					case D3DFMT_X8R8G8B8:
-						BEGINLOOP
-						*(PDWORD)p2 = (*(PDWORD)p1)&0x00ffffff;
-						ENDLOOP
-						break;
-					case D3DFMT_R5G6B5:
-						BEGINLOOP
-						p2[2] = ((*(PDWORD)p1)>>8)&0xf8;
-						p2[1] = ((*(PDWORD)p1)>>3)&0xfc;
-						p2[0] = ((*(PDWORD)p1)<<3)&0xf8;
-						ENDLOOP
-						break;
-					case D3DFMT_X1R5G5B5:
-					case D3DFMT_A1R5G5B5:
-						BEGINLOOP
-						p2[2] = ((*(PDWORD)p1)>>7)&0xf8;
-						p2[1] = ((*(PDWORD)p1)>>2)&0xf8;
-						p2[0] = ((*(PDWORD)p1)<<3)&0xf8;
-						ENDLOOP
-						break;
-					case D3DFMT_A4R4G4B4:
-						BEGINLOOP
-						p2[2] = ((*(PDWORD)p1)>>4)&0xf0;
-						p2[1] = (*(PDWORD)p1)&0xf0;
-						p2[0] = ((*(PDWORD)p1)<<4)&0xf0;
-						ENDLOOP
-						break;
-					}
-#undef BEGINLOOP
-#undef ENDLOOP
-					tex->UnlockRect(0);
-				}
-			}
-			RELEASE(surface_dest);
-			RELEASE(surface_src);
-		}
-		hidef_horz.BilinearStamp(&hidef_vert,
-			0, vy*g_HidefBufferSize, sv3.width, g_HidefBufferSize,
-			0, 0, hidef_horz.GetWidth(), hidef_horz.GetHeight());
-	}
-	hidef_vert.BilinearStamp(&g_ScreenShot,
-		0, 0, sv3.width, sv3.height,
-		0, 0, hidef_vert.GetWidth(), hidef_vert.GetHeight());
-	g_ScreenShot.Save(FlashIn("%08d.bmp", g_PictureCount), 24);
-	CountPicture();
-	g_Skin->ScreenShot();
-	g_HidefCaptureFlag = false;
-	g_HidefCapture.Free();
-	RELEASE(tex);
 }
 
 /*

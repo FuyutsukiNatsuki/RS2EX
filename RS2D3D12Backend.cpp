@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
-//	Modified for RS2EX on 2026-09-22, 2026-09-23, 2026-09-24, 2026-09-25.
+//	Modified for RS2EX on 2026-09-22, 2026-09-23, 2026-09-24, 2026-09-25, 2026-09-26.
 //
 //	See RS2D3D12Backend.h.
 
@@ -692,10 +692,9 @@ void CRS2D3D12Backend::PublishCompatibilityState(){
 	sv3.height = (int)m_Height;
 	sv3.fWindowed = m_Windowed ? TRUE : FALSE;
 
-	//	Showing the window is the Direct3D 8 backend's job today, done from
-	//	its device creation, so a windowed run under any other backend would
-	//	never appear at all.  It is not a device matter and does not belong to
-	//	either backend, but until it moves, both have to do it.
+	//	The Direct3D 8 backend showed the window from its device creation, and
+	//	this backend took the job over from it.  It is not a device matter,
+	//	but nothing else shows the window.
 	if(svw.hWnd){
 		ShowWindow(svw.hWnd, SW_SHOW);
 		UpdateWindow(svw.hWnd);
@@ -1317,10 +1316,10 @@ bool CRS2D3D12Backend::Reset(){
 	//	would leave every aspect-ratio and viewport calculation on the old one.
 	PublishCompatibilityState();
 
-	//	Direct3D 8 rebuilds the live-text font after every device reset, and
-	//	rebuilds it at 16 rather than the start-up 12 (inherited, see
-	//	CRS2D3D8Backend::Reset).  The same here keeps RS2GetTextHeight - and
-	//	so the edit box's caret - the same on both backends (v0.1.6).
+	//	Direct3D 8 rebuilt the live-text font after every device reset, and
+	//	rebuilt it at 16 rather than the start-up 12 (inherited behaviour).
+	//	The same here keeps RS2GetTextHeight - and so the edit box's caret -
+	//	what it was under Direct3D 8 (v0.1.6).
 	if(s_Active==this && GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12)
 		RS2CreateTextFont(16, 0xffffffff, false);
 

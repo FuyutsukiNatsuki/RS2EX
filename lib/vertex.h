@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 
 //	[RS2EX] LPVB8 and PRIMTYPE removed in v0.0.9.  The buffer is a
 //	CRS2GeometryResource and the primitive is an RS2PrimitiveType; neither
@@ -110,7 +110,7 @@ struct VTX_NX2{
 //
 //	Offsets come from offsetof rather than being written out, because a layout
 //	that silently disagrees with its struct is exactly the failure this boundary
-//	would otherwise hide.  The D3D8 backend checks the resulting stride against
+//	would otherwise hide.  The backend checks the resulting stride against
 //	the format it derives, so a mismatch is refused rather than misread.
 ////////////////////////////////////////////////////////////////////////////////
 

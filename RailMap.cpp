@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "RailMap.h"
 #include "CVertexDump.h"
@@ -23,8 +23,8 @@ struct RailMapTextData{
 	string m_Text;
 	int m_PosX, m_PosY;
 	int m_Width;
-	D3DCOLOR m_Color;
-	RailMapTextData(char *text, VEC2 pos, D3DCOLOR color){
+	RS2PackedColor m_Color;
+	RailMapTextData(char *text, VEC2 pos, RS2PackedColor color){
 		m_Text = text;
 		m_PosX = Round(pos.x);
 		m_PosY = Round(pos.y);
@@ -79,7 +79,7 @@ void InitRailMap(){
 /*
  *	2D マップ直線ダンプ
  */
-void DumpMapLine(VEC2 p1, D3DCOLOR c1, VEC2 p2, D3DCOLOR c2, bool shadow){
+void DumpMapLine(VEC2 p1, RS2PackedColor c1, VEC2 p2, RS2PackedColor c2, bool shadow){
 	if(!g_MapDrawNeeded) return;
 	g_LineDumpTL->Add(p1, c1, p2, c2);
 	if(shadow){
@@ -107,7 +107,7 @@ VEC2 TransformMapPos(VEC3 p){
 /*
  *	3D マップ直線ダンプ
  */
-void RailMapLine(VEC3 p1, D3DCOLOR c1, VEC3 p2, D3DCOLOR c2, bool shadow, bool bold){
+void RailMapLine(VEC3 p1, RS2PackedColor c1, VEC3 p2, RS2PackedColor c2, bool shadow, bool bold){
 	if(!g_MapDrawNeeded) return;
 	VEC2 sc1 = TransformMapPos(p1);
 	VEC2 sc2 = TransformMapPos(p2);
@@ -123,7 +123,7 @@ void RailMapLine(VEC3 p1, D3DCOLOR c1, VEC3 p2, D3DCOLOR c2, bool shadow, bool b
 	}
 }
 
-void RailMapText(VEC3 pos, char *text, D3DCOLOR color){
+void RailMapText(VEC3 pos, char *text, RS2PackedColor color){
 	if(!g_MapDrawNeeded) return;
 	RailMapTextData data(text, TransformMapPos(pos), color);
 	int iy = data.m_PosY;

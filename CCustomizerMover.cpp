@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19.
+//	Modified for RS2EX on 2026-09-19, 2026-09-26.
 #include "stdafx.h"
 #include "CCustomizerMover.h"
 #include "CSaveFile.h"
@@ -149,7 +149,7 @@ char *CStaticRotator::Read(
 	if(tmp = AsgnVector3D(eee = str, "RotationAxis", &m_RotationAxis)) str = tmp;
 	else m_RotationAxis = V3DIR;
 	if(!(str = AsgnFloat(eee = str, "RotationAngle", &m_RotationAngle))) throw CSynErr(eee);
-	m_RotationAngle = D3DXToRadian(m_RotationAngle);
+	m_RotationAngle = RS2ToRadian(m_RotationAngle);
 	if(!(str = ReadTimingInfo(str))) throw CSynErr(eee);
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 	InitMover(mpi);
@@ -214,11 +214,11 @@ char *CDynamicRotator::Read(
 	if(tmp = AsgnVector3D(eee = str, "RotationAxis", &m_RotationAxis)) str = tmp;
 	else m_RotationAxis = V3DIR;
 	if(!(str = AsgnFloat(eee = str, "RotationSpeed", &m_RotationSpeed))) throw CSynErr(eee);
-	m_RotationSpeed *= 2.0f*D3DX_PI/RS2EXTiming::SIMULATION_HZ;
+	m_RotationSpeed *= 2.0f*RS2_PI/RS2EXTiming::SIMULATION_HZ;
 	if(tmp = AsgnFloat(eee = str, "Acceleration", &m_Acceleration)){
 		str = tmp;
 		if(m_Acceleration<0.0f) m_Acceleration = m_RotationSpeed;
-		else m_Acceleration *= 2.0f*D3DX_PI
+		else m_Acceleration *= 2.0f*RS2_PI
 			/(RS2EXTiming::SIMULATION_HZ*RS2EXTiming::SIMULATION_HZ);
 	}else{
 		m_Acceleration = m_RotationSpeed;
@@ -226,7 +226,7 @@ char *CDynamicRotator::Read(
 	if(tmp = AsgnFloat(eee = str, "Deceleration", &m_Deceleration)){
 		str = tmp;
 		if(m_Deceleration<0.0f) m_Deceleration = m_Deceleration;
-		else m_Deceleration *= 2.0f*D3DX_PI
+		else m_Deceleration *= 2.0f*RS2_PI
 			/(RS2EXTiming::SIMULATION_HZ*RS2EXTiming::SIMULATION_HZ);
 	}else{
 		m_Deceleration = m_RotationSpeed;
@@ -255,7 +255,7 @@ void CDynamicRotator::SetPostureCustomizer(
 		}
 		pos.x += pos.y;
 	}
-	ValueCircular(&pos.x, 0.0f, 2.0f*D3DX_PI);
+	ValueCircular(&pos.x, 0.0f, 2.0f*RS2_PI);
 	mstate->SetPos(pos);
 	obj->RotAxis(m_RotationAxis, pos.x);
 	if(!m_ApplyFlag) m_ApplyFlag = 1;
@@ -330,7 +330,7 @@ char *CWindmill::Read(
 	if(tmp = AsgnVector3D(eee = str, "RotationAxis", &m_RotationAxis)) str = tmp;
 	else m_RotationAxis = V3DIR;
 	if(!(str = AsgnFloat(eee = str, "RotationSpeed", &m_RotationSpeed))) throw CSynErr(eee);
-	m_RotationSpeed *= 2.0f*D3DX_PI;
+	m_RotationSpeed *= 2.0f*RS2_PI;
 	if(!(str = AsgnInteger(eee = str, "Symmetric", &m_Symmetric))) throw CSynErr(eee);
 	if(m_Symmetric<1) m_Symmetric = 1;
 	m_MaxRotation = SYMMETRIC_ROTATION_MAX/m_Symmetric;
@@ -361,7 +361,7 @@ void CWindmill::SetPostureCustomizer(
 		}
 		float tmp = m_MaxRotation*(1.0f-expf(-fabsf(rot)/m_MaxRotation));
 		odir.x += rot<0.0f ? -tmp : tmp;
-		ValueCircular(&odir.x, 0.0f, 2.0f*D3DX_PI);
+		ValueCircular(&odir.x, 0.0f, 2.0f*RS2_PI);
 		obj->RotAxis(m_RotationAxis, odir.x);
 		mstate->SetDir(odir);
 	}else{
@@ -396,7 +396,7 @@ char *CAnalogClock::Read(
 void CAnalogClock::SetPostureCustomizer(
 	CObject *obj	//	オブジェクト
 ){
-	double theta = 2.0f*D3DX_PI;
+	double theta = 2.0f*RS2_PI;
 	double time = g_RSPV ? 0.0 : g_SaveFile->GetAbsTime();
 	switch(m_HandType){
 	case 0: theta *= 2.0*fmod(time, 1.0/2.0); break;

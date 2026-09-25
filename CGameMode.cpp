@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "HighTimer.h"
 #include "RS2Fixture.h"
@@ -767,7 +767,7 @@ void CGameMode::Spin(){
 				//	instead.  One run in four differed only in this.
 				if(RS2FixtureIsFrozen()) g_BlinkCounter = 0;
 				else g_BlinkCounter = (g_BlinkCounter+1)%RENDER_TARGET_FPS;
-				g_BlinkAlpha = 0.5f*(sinf(2.0f*D3DX_PI*g_BlinkCounter/RENDER_TARGET_FPS)+1.0f);
+				g_BlinkAlpha = 0.5f*(sinf(2.0f*RS2_PI*g_BlinkCounter/RENDER_TARGET_FPS)+1.0f);
 				g_ConfigMode->SetSpecularLight();
 				g_ManualControl = !!g_SimulationMode->GetManualControl() || g_NetworkInitialized;
 				g_IgnoreAcceleration = !!g_SimulationMode->GetIgnoreAcceleration();
