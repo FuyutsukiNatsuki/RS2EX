@@ -148,9 +148,13 @@ CFileMode::CFileMode(){
 	m_NetworkButton.Init(TILE_UNIT*21+TILE_HALF*4, TILE_UNIT*5,
 		TILE_UNIT*5, TILE_UNIT, lang(Download), &m_FileWindow);
 	//	[RS2EX] v0.2.0: the network sessions were removed; the button that
-	//	joined one to download its layout stays out of sight.
+	//	joined one to download its layout stays out of sight.  Show(false)
+	//	alone is not enough: CPushButton draws and takes clicks without
+	//	looking at the visible flag, and SwitchNetwork() enables it again.
+	//	Taken out of the window, it is neither drawn nor scanned.
 	m_NetworkButton.Show(false);
 	m_NetworkButton.Enable(false);
+	m_FileWindow.RemoveChild(&m_NetworkButton);
 	char *fcol[3] = {lang(FileName), lang(Date), lang(Description)};
 	m_FileListView.Init(TILE_UNIT, TILE_UNIT*6+TILE_HALF, WW-TILE_UNIT*2, 1,
 		&m_FileWindow, 3, fcol, DRAG_NONE, LISTVIEW_RENAMABLE, this, CMD_FILE);
