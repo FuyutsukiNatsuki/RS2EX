@@ -245,6 +245,7 @@
     <ClCompile Include="RS2D3D8RenderState.cpp" />
     <ClCompile Include="RS2D3D8Draw.cpp" />
     <ClCompile Include="RS2D3D8Text.cpp" />
+    <ClCompile Include="RS2D3D12Text.cpp" />
     <ClCompile Include="CSkinSelectMode.cpp" />
     <ClCompile Include="CVideoMode.cpp" />
     <ClCompile Include="C3DPluginMode.cpp" />

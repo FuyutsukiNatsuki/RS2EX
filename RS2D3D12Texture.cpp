@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	See RS2D3D12Texture.h.
 
@@ -11,6 +11,21 @@
 #include "RS2TextureResource.h"
 #include "RS2DDS.h"
 
+#include <math.h>
+
+//	The CPU side of a mutable texture (v0.1.6).  "cpu" is what the caller
+//	writes; "sent" is what the GPU texture holds, so the rectangle to upload
+//	is simply where the two differ.
+struct RS2D3D12MutableState
+{
+	unsigned int width, height;
+	std::vector<unsigned short> cpu;	//	A4R4G4B4, pitch width * 2
+	std::vector<unsigned short> sent;
+	bool locked;
+	unsigned int generation;		//	advanced by every Unlock
+	unsigned int sentGeneration;
+};
+
 struct RS2D3D12TexturePayload
 {
 	ID3D12Resource *texture;
@@ -19,6 +34,7 @@ struct RS2D3D12TexturePayload
 	CRS2D3D12Backend *owner;
 	RS2D3D12SrvSlot slot;
 	bool dds;
+	RS2D3D12MutableState *mutableState;	//	0 for file and resource textures
 };
 
 struct RS2D3D12PendingTextureUpload
@@ -39,6 +55,7 @@ static unsigned int s_PeakDDSTextures = 0;
 static RS2D3D12TexturePayload *s_Bound[2] = { 0, 0 };
 static RS2TextureFilter s_Filter[2] = { RS2_FILTER_POINT, RS2_FILTER_POINT };
 static RS2D3D12TextureRuntimeStats s_RuntimeStats;
+static RS2D3D12MutableStats s_MutableStats;
 
 static bool RS2D3D12TextureError(std::string *error, const char *what, HRESULT hr){
 	char text[256];
@@ -50,17 +67,25 @@ static bool RS2D3D12TextureError(std::string *error, const char *what, HRESULT h
 	return false;
 }
 
+static void RS2D3D12_ForgetSavedBinding(const RS2D3D12TexturePayload *payload);
+
 static void RS2D3D12DestroyTexturePayload(void *opaque){
 	RS2D3D12TexturePayload *payload = (RS2D3D12TexturePayload *)opaque;
 	if(!payload) return;
 
 	if(s_Bound[0]==payload) s_Bound[0] = 0;
 	if(s_Bound[1]==payload) s_Bound[1] = 0;
+	RS2D3D12_ForgetSavedBinding(payload);
 	if(payload->owner && RS2D3D12GetActiveBackend()==payload->owner){
 		payload->owner->RetireTexture(payload->texture, payload->slot);
 		payload->texture = 0;
 	}else RELEASE(payload->texture);
 	if(payload->dds && s_LiveDDSTextures) s_LiveDDSTextures--;
+	if(payload->mutableState){
+		if(payload->mutableState->locked) s_MutableStats.destroyedLocked++;
+		delete payload->mutableState;
+		if(s_MutableStats.live) s_MutableStats.live--;
+	}
 	delete payload;
 	if(s_LiveTextures) s_LiveTextures--;
 }
@@ -72,12 +97,14 @@ static const RS2TexturePayloadOps s_TextureOps = {
 };
 
 const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps(){ return &s_TextureOps; }
+const RS2D3D12MutableStats &RS2D3D12_GetMutableStats(){ return s_MutableStats; }
 unsigned int RS2D3D12_GetLiveTextureCount(){ return s_LiveTextures; }
 unsigned int RS2D3D12_GetPeakTextureCount(){ return s_PeakTextures; }
 unsigned int RS2D3D12_GetLiveDDSTextureCount(){ return s_LiveDDSTextures; }
 unsigned int RS2D3D12_GetPeakDDSTextureCount(){ return s_PeakDDSTextures; }
 bool RS2D3D12_BoundTextureIsDDS(){ return s_Bound[0] && s_Bound[0]->dds; }
 void RS2D3D12_ResetTextureRuntimeStats(){
+	ZeroMemory(&s_MutableStats, sizeof(s_MutableStats));
 	ZeroMemory(&s_RuntimeStats, sizeof(s_RuntimeStats));
 }
 const RS2D3D12TextureRuntimeStats &RS2D3D12_GetTextureRuntimeStats(){
@@ -317,6 +344,269 @@ bool RS2D3D12_CreateTexturePayloadFromResource(
 ){
 	return RS2D3D12_CreatePublicTexture(
 		payload, width, height, name, colourKey, mipArgument, true);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//	Mutable textures (v0.1.6)
+////////////////////////////////////////////////////////////////////////////////
+
+/*
+ *	The contract is Direct3D 8's, measured by -mutableaudit and -mutableprobe:
+ *	one level, A4R4G4B4 as the caller writes it, a tight pitch, a full-surface
+ *	Lock whose contents persist between Locks, a second Lock refused, and the
+ *	new contents visible to the next draw in the same frame - while a draw
+ *	recorded before an update keeps what it saw.
+ *
+ *	The GPU texture is RGBA8.  Nothing is uploaded at Unlock: the next draw
+ *	that has the texture bound records, just before itself, a copy of the
+ *	rectangle that differs from what the GPU holds.  Updates with no draw
+ *	between fold into one copy; an update after a draw is a new copy after
+ *	that draw.  The staging rows come from the frame scratch, which lives
+ *	until the frame's fence, so nothing the GPU may still read is rewritten
+ *	and no copy waits for the GPU.
+ */
+static void RS2D3D12_ReportOnce(bool *said, const char *what){
+	if(*said) return;
+	*said = true;
+	Debug("[RS2EX D3D12 Texture] %s (reported once)\n", what);
+}
+
+static bool RS2D3D12_LockMutable(void *opaque, RS2TextureLock *out){
+	static bool s_Said = false;
+	RS2D3D12TexturePayload *payload = (RS2D3D12TexturePayload *)opaque;
+	RS2D3D12MutableState *m = payload ? payload->mutableState : 0;
+
+	if(!out || !m) return false;
+	out->bits = 0;
+	out->pitch = 0;
+	if(m->locked){
+		//	Direct3D 8 refuses a second LockRect of a locked surface.
+		s_MutableStats.refusedLocks++;
+		RS2D3D12_ReportOnce(&s_Said, "Lock of a mutable texture that is already locked refused");
+		return false;
+	}
+	m->locked = true;
+	out->bits = &m->cpu[0];
+	out->pitch = (int)(m->width*2);
+	s_MutableStats.locks++;
+	return true;
+}
+
+static void RS2D3D12_UnlockMutable(void *opaque){
+	static bool s_Said = false;
+	RS2D3D12TexturePayload *payload = (RS2D3D12TexturePayload *)opaque;
+	RS2D3D12MutableState *m = payload ? payload->mutableState : 0;
+
+	if(!m) return;
+	if(!m->locked){
+		s_MutableStats.unlocksWithoutLock++;
+		RS2D3D12_ReportOnce(&s_Said, "Unlock of a mutable texture that is not locked ignored");
+		return;
+	}
+	m->locked = false;
+	if(m->generation!=m->sentGeneration) s_MutableStats.coalescedUnlocks++;
+	m->generation++;
+	s_MutableStats.unlocks++;
+}
+
+static const RS2TexturePayloadOps s_MutableOps = {
+	RS2D3D12DestroyTexturePayload,
+	RS2D3D12_LockMutable,
+	RS2D3D12_UnlockMutable
+};
+
+const RS2TexturePayloadOps *RS2D3D12_GetMutableTexturePayloadOps(){ return &s_MutableOps; }
+
+bool RS2D3D12_CreateMutableTexturePayload(
+	void **outPayload, int *width, int *height, int requestedWidth, int requestedHeight
+){
+	if(outPayload) *outPayload = 0;
+	if(width) *width = 0;
+	if(height) *height = 0;
+	if(!outPayload || !width || !height || requestedWidth<=0 || requestedHeight<=0) return false;
+
+	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
+
+	s_MutableStats.creates++;
+	if(!backend){
+		s_MutableStats.createFailures++;
+		return false;
+	}
+
+	//	The rounding RS2D3D8_CreateMutableTexture uses, expression for
+	//	expression, so both backends hand the caller the same size.
+	const int w = (int)powf(2, ceilf(logf((float)requestedWidth)/logf(2.0f)));
+	const int h = (int)powf(2, ceilf(logf((float)requestedHeight)/logf(2.0f)));
+
+	if(w<=0 || h<=0 || w>8192 || h>8192){
+		s_MutableStats.createFailures++;
+		return false;
+	}
+
+	//	Created zeroed through the ordinary upload, which leaves it readable
+	//	before any frame that could draw it is submitted.
+	CRS2DecodedImage image;
+	std::vector<unsigned char> zero((size_t)w*h*4, 0);
+	std::string error;
+	void *opaque = 0;
+
+	backend->CollectRetiredTextures();
+	if(!image.AppendMip((unsigned int)w, (unsigned int)h, zero)
+			|| !backend->GetTextureUpload()->CreateTexture(image, &opaque, &error)
+			|| !RS2D3D12_PublishTexture(backend, opaque, outPayload)){
+		s_MutableStats.createFailures++;
+		Debug("[RS2EX D3D12 Texture] mutable texture %d x %d failed: %s\n", w, h, error.c_str());
+		return false;
+	}
+
+	RS2D3D12TexturePayload *payload = (RS2D3D12TexturePayload *)*outPayload;
+	RS2D3D12MutableState *m = new RS2D3D12MutableState;
+
+	m->width = (unsigned int)w;
+	m->height = (unsigned int)h;
+	m->cpu.assign((size_t)w*h, 0);
+	m->sent.assign((size_t)w*h, 0);
+	m->locked = false;
+	m->generation = m->sentGeneration = 0;
+	payload->mutableState = m;
+	s_MutableStats.live++;
+	if(s_MutableStats.live>s_MutableStats.peak) s_MutableStats.peak = s_MutableStats.live;
+	*width = w;
+	*height = h;
+	return true;
+}
+
+//	The copy for one texture, recorded where the caller is in the command list.
+static void RS2D3D12_UploadMutable(
+	CRS2D3D12Backend *backend, ID3D12GraphicsCommandList *list, RS2D3D12TexturePayload *payload
+){
+	static bool s_SaidFull = false;
+	RS2D3D12MutableState *m = payload->mutableState;
+
+	if(!m || m->generation==m->sentGeneration || m->locked) return;
+
+	//	Where the caller's copy differs from the GPU's.
+	const unsigned int w = m->width, h = m->height;
+	unsigned int x0 = w, y0 = h, x1 = 0, y1 = 0, x, y;
+
+	for(y = 0; y<h; y++){
+		const unsigned short *now = &m->cpu[(size_t)y*w], *was = &m->sent[(size_t)y*w];
+
+		if(memcmp(now, was, (size_t)w*2)==0) continue;
+		for(x = 0; x<w && now[x]==was[x]; x++){}
+		if(x<x0) x0 = x;
+		for(x = w; x>0 && now[x-1]==was[x-1]; x--){}
+		if(x>x1) x1 = x;
+		if(y<y0) y0 = y;
+		y1 = y+1;
+	}
+	if(x0>=x1 || y0>=y1){
+		m->sentGeneration = m->generation;
+		s_MutableStats.unchangedUnlocks++;
+		return;
+	}
+
+	const unsigned int cw = x1-x0, ch = y1-y0;
+	const unsigned int rowBytes = cw*4;
+	const unsigned int pitch = (rowBytes+D3D12_TEXTURE_DATA_PITCH_ALIGNMENT-1)
+		&~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT-1);
+	CRS2D3D12Upload *scratch = backend->GetUpload();
+	void *cpu = 0;
+	D3D12_GPU_VIRTUAL_ADDRESS gpu = 0;
+
+	if(!scratch->Allocate(pitch*ch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT, &cpu, &gpu)){
+		//	Left pending: the next draw that binds it tries again.
+		s_MutableStats.refusedUploads++;
+		RS2D3D12_ReportOnce(&s_SaidFull, "mutable texture upload refused: frame scratch is full");
+		return;
+	}
+
+	//	A4R4G4B4 to RGBA8: each 4-bit channel times 17, straight alpha.
+	for(y = 0; y<ch; y++){
+		const unsigned short *src = &m->cpu[(size_t)(y0+y)*w+x0];
+		unsigned char *dst = (unsigned char *)cpu+(size_t)y*pitch;
+
+		for(x = 0; x<cw; x++){
+			const unsigned int t = src[x];
+
+			dst[x*4+0] = (unsigned char)(((t>>8)&15)*17);
+			dst[x*4+1] = (unsigned char)(((t>>4)&15)*17);
+			dst[x*4+2] = (unsigned char)((t&15)*17);
+			dst[x*4+3] = (unsigned char)(((t>>12)&15)*17);
+		}
+		memcpy(&m->sent[(size_t)(y0+y)*w+x0], src, (size_t)cw*2);
+	}
+
+	D3D12_RESOURCE_BARRIER barrier;
+
+	ZeroMemory(&barrier, sizeof(barrier));
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Transition.pResource = payload->texture;
+	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+	list->ResourceBarrier(1, &barrier);
+
+	D3D12_TEXTURE_COPY_LOCATION destination, source;
+
+	ZeroMemory(&destination, sizeof(destination));
+	ZeroMemory(&source, sizeof(source));
+	destination.pResource = payload->texture;
+	destination.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+	destination.SubresourceIndex = 0;
+	source.pResource = scratch->GetResource();
+	source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+	source.PlacedFootprint.Offset = scratch->GetOffset(gpu);
+	source.PlacedFootprint.Footprint.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	source.PlacedFootprint.Footprint.Width = cw;
+	source.PlacedFootprint.Footprint.Height = ch;
+	source.PlacedFootprint.Footprint.Depth = 1;
+	source.PlacedFootprint.Footprint.RowPitch = pitch;
+	list->CopyTextureRegion(&destination, x0, y0, 0, &source, NULL);
+
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+	list->ResourceBarrier(1, &barrier);
+
+	m->sentGeneration = m->generation;
+	s_MutableStats.uploads++;
+	s_MutableStats.uploadBytes += (unsigned long long)rowBytes*ch;
+	if(rowBytes*ch>s_MutableStats.largestUpload) s_MutableStats.largestUpload = rowBytes*ch;
+}
+
+void RS2D3D12_PrepareBoundTextures(CRS2D3D12Backend *backend, ID3D12GraphicsCommandList *list){
+	unsigned int stage;
+
+	if(!backend || !list) return;
+	for(stage = 0; stage<2; stage++){
+		RS2D3D12TexturePayload *payload = s_Bound[stage];
+
+		if(payload && payload->mutableState && payload->owner==backend
+				&& backend->GetDescriptors()->IsLive(payload->slot))
+			RS2D3D12_UploadMutable(backend, list, payload);
+	}
+}
+
+static RS2D3D12TexturePayload *s_SavedBound[2];
+static RS2TextureFilter s_SavedFilter[2];
+
+static void RS2D3D12_ForgetSavedBinding(const RS2D3D12TexturePayload *payload){
+	if(s_SavedBound[0]==payload) s_SavedBound[0] = 0;
+	if(s_SavedBound[1]==payload) s_SavedBound[1] = 0;
+}
+
+void RS2D3D12_PushTextureBinding(){
+	s_SavedBound[0] = s_Bound[0];
+	s_SavedBound[1] = s_Bound[1];
+	s_SavedFilter[0] = s_Filter[0];
+	s_SavedFilter[1] = s_Filter[1];
+}
+
+void RS2D3D12_PopTextureBinding(){
+	s_Bound[0] = s_SavedBound[0];
+	s_Bound[1] = s_SavedBound[1];
+	s_Filter[0] = s_SavedFilter[0];
+	s_Filter[1] = s_SavedFilter[1];
 }
 
 CRS2D3D12TextureUpload::CRS2D3D12TextureUpload()
@@ -661,6 +951,7 @@ bool CRS2D3D12TextureUpload::CreateTexture(
 	payload->finalState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 	payload->owner = 0;
 	payload->dds = false;
+	payload->mutableState = 0;
 	s_LiveTextures++;
 	if(s_LiveTextures>s_PeakTextures) s_PeakTextures = s_LiveTextures;
 

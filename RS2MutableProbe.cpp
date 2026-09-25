@@ -24,6 +24,8 @@
 
 static const int RS2_MP_FRAMES = 60;
 static const DWORD RS2_MP_HOLD_MS = 8000;
+static const int RS2_MP_LIFETIME_FRAMES = 10;
+static const int RS2_MP_LIFETIME_TEXTURES = 16;
 static const unsigned int RS2_MP_CLEAR = 0x00102030;
 static const int RS2_MP_BG[3] = { 16, 32, 48 };
 
@@ -124,6 +126,7 @@ bool RS2MutableProbeRun(){
 
 	const unsigned int textureBaseline = d3d12 ? RS2D3D12_GetLiveTextureCount() : 0;
 	const unsigned int descriptorBaseline = d3d12 ? backend->GetDescriptors()->GetLive() : 0;
+	const RS2D3D12MutableStats mutableBaseline = RS2D3D12_GetMutableStats();
 
 	//	---------------------------------------------------------- contract texture
 	CRS2TextureResource *contract = RS2CreateMutableTexture(64, 64);
@@ -151,6 +154,7 @@ bool RS2MutableProbeRun(){
 			const bool twice = contract->Lock(&again);
 
 			Debug("RS2MUTABLEPROBE|doubleLock|result=%d\n", twice ? 1 : 0);
+			RS2MPStep("second Lock refused", !twice, &ok);
 			if(twice) contract->Unlock();
 			for(y = 0; y<64; y++){
 				unsigned short *row = (unsigned short *)((unsigned char *)lock.bits+lock.pitch*y);
@@ -185,6 +189,7 @@ bool RS2MutableProbeRun(){
 
 	strings->SetFont(font);
 	Debug("RS2MUTABLEPROBE|textHeight|%d\n", RS2GetTextHeight());
+	RS2MPStep("RS2GetTextHeight is the start-up height", RS2GetTextHeight()==FONT_HEIGHT, &ok);
 
 	//	---------------------------------------------------------- expectations
 	//	Contract texture at (16, 16), 4 pixels per texel.
@@ -229,6 +234,52 @@ bool RS2MutableProbeRun(){
 
 	Debug("RS2MUTABLEPROBE|cell|strings|300|180|320|60\n");
 	Debug("RS2MUTABLEPROBE|cell|livetext|300|380|320|60\n");
+
+	//	---------------------------------------------------------- lifetime
+	//	Mutable textures created, written, drawn and destroyed inside a frame
+	//	that is still being recorded, frame after frame.  The frames below
+	//	clear over them, so the final picture does not show them.
+	int lifetimeFrame;
+	if(d3d12){
+		backend->WaitForGpu();
+		backend->CollectRetiredTextures();
+	}
+	const unsigned int liveBeforeLoop = RS2D3D12_GetMutableStats().live;
+	const unsigned int texturesBeforeLoop = d3d12 ? RS2D3D12_GetLiveTextureCount() : 0;
+	const unsigned int descriptorsBeforeLoop = d3d12 ? backend->GetDescriptors()->GetLive() : 0;
+
+	for(lifetimeFrame = 0; lifetimeFrame<RS2_MP_LIFETIME_FRAMES; lifetimeFrame++){
+		if(!GetRS2Renderer().BeginRenderPass(RS2_MP_CLEAR, true)) break;
+		RS2SetLighting(false);
+		RS2SetDepthTest(false);
+		RS2SetDepthWrite(false);
+		RS2SetBlend(RS2_BLEND_ALPHA);
+		RS2SetBaseTextureCombine();
+		RS2SetTextureFilter(0, RS2_FILTER_POINT);
+		for(i = 0; i<RS2_MP_LIFETIME_TEXTURES; i++){
+			CRS2TextureResource *t = RS2CreateMutableTexture(16+i, 16);
+
+			if(!t) continue;
+			RS2MPWrite(t, 0, 0, 16, 16, RS2MPTexel(15, i&15, lifetimeFrame&15, 8));
+			RS2MPDrawRegion(t, 0, 0, 16, 16, 16+i*20, 440, 16, 16);
+			RS2DestroyTexture(t);
+		}
+		GetRS2Renderer().EndRenderPass();
+		GetRS2Renderer().Present();
+	}
+	if(d3d12){
+		const RS2D3D12MutableStats &now = RS2D3D12_GetMutableStats();
+
+		backend->WaitForGpu();
+		backend->CollectRetiredTextures();
+		Debug("RS2MUTABLEPROBE|lifetime|frames=%d|created=%u|live=%u->%u\n", lifetimeFrame,
+			now.creates-mutableBaseline.creates, liveBeforeLoop, now.live);
+		RS2MPStep("lifetime loop", lifetimeFrame==RS2_MP_LIFETIME_FRAMES
+			&& now.createFailures==mutableBaseline.createFailures
+			&& now.live==liveBeforeLoop
+			&& RS2D3D12_GetLiveTextureCount()==texturesBeforeLoop
+			&& backend->GetDescriptors()->GetLive()==descriptorsBeforeLoop, &ok);
+	}
 
 	//	---------------------------------------------------------- frames
 	const unsigned int drawBaseline = d3d12 ? RS2D3D12_GetDrawCount() : 0;
@@ -317,6 +368,40 @@ bool RS2MutableProbeRun(){
 			RS2D3D12_GetLiveTextureCount()==textureBaseline
 			&& backend->GetDescriptors()->GetLive()==descriptorBaseline, &ok);
 		RS2MPStep("debug layer clean", errors==0 && warnings==0, &ok);
+
+		//	Per frame: four regions of the ordering texture change and are
+		//	drawn, the partial one no longer changes, and two lines of live
+		//	text replace each other in one texture.
+		const RS2D3D12MutableStats &m = RS2D3D12_GetMutableStats();
+		const unsigned int uploads = m.uploads-mutableBaseline.uploads;
+
+		RS2MPStep("mutable textures back to the baseline", m.live==mutableBaseline.live, &ok);
+		RS2MPStep("locks balanced (one destroyed locked); misuse counted",
+			m.locks-mutableBaseline.locks==m.unlocks-mutableBaseline.unlocks
+				+(m.destroyedLocked-mutableBaseline.destroyedLocked)
+			&& m.refusedLocks-mutableBaseline.refusedLocks==1
+			&& m.unlocksWithoutLock-mutableBaseline.unlocksWithoutLock==1
+			&& m.destroyedLocked-mutableBaseline.destroyedLocked==1, &ok);
+		RS2MPStep("one upload per changed region and draw",
+			uploads>=(unsigned int)(6*RS2_MP_FRAMES)
+			&& m.coalescedUnlocks-mutableBaseline.coalescedUnlocks>=(unsigned int)RS2_MP_FRAMES
+			&& m.unchangedUnlocks>mutableBaseline.unchangedUnlocks
+			&& m.refusedUploads==mutableBaseline.refusedUploads, &ok);
+		Debug("RS2MUTABLEPROBE|mutable|creates=%u|failures=%u|live=%u|peak=%u\n",
+			m.creates-mutableBaseline.creates, m.createFailures-mutableBaseline.createFailures,
+			m.live, m.peak);
+		Debug("RS2MUTABLEPROBE|mutable|locks=%u|unlocks=%u|refusedLocks=%u\n",
+			m.locks-mutableBaseline.locks, m.unlocks-mutableBaseline.unlocks,
+			m.refusedLocks-mutableBaseline.refusedLocks);
+		Debug("RS2MUTABLEPROBE|mutable|unlocksWithoutLock=%u|destroyedLocked=%u\n",
+			m.unlocksWithoutLock-mutableBaseline.unlocksWithoutLock,
+			m.destroyedLocked-mutableBaseline.destroyedLocked);
+		Debug("RS2MUTABLEPROBE|mutable|uploads=%u|coalesced=%u|unchanged=%u|refused=%u\n",
+			uploads, m.coalescedUnlocks-mutableBaseline.coalescedUnlocks,
+			m.unchangedUnlocks-mutableBaseline.unchangedUnlocks,
+			m.refusedUploads-mutableBaseline.refusedUploads);
+		Debug("RS2MUTABLEPROBE|mutable|bytes=%u|largest=%u\n",
+			(unsigned int)(m.uploadBytes-mutableBaseline.uploadBytes), m.largestUpload);
 		Debug("RS2MUTABLEPROBE|draws=%u|refused=%u|pso=%u->%u\n", submitted, refused,
 			pipelinesAfterFirst, backend->GetPipelineStateCount());
 		Debug("RS2MUTABLEPROBE|textures=%u->%u|descriptors=%u->%u\n", textureBaseline,

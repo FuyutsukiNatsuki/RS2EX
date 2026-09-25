@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-25.
 //
 //	Scratch GPU memory that lives exactly one frame.
 //
@@ -82,6 +83,11 @@ public:
 
 	unsigned int GetPeak() const{ return m_Peak; }
 	unsigned int GetSize() const{ return m_Size; }
+
+	//	For a copy that reads from this block (v0.1.6 mutable textures): the
+	//	buffer, and the offset of an address Allocate() handed out.
+	ID3D12Resource *GetResource() const{ return m_Buffer; }
+	UINT64 GetOffset(D3D12_GPU_VIRTUAL_ADDRESS gpu) const{ return gpu-m_Gpu; }
 };
 
 #endif	//	RS2D3D12UPLOAD_H_INCLUDED

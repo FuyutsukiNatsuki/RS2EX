@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-23, 2026-09-24, 2026-09-25.
 //
 //	Direct3D 12 sampled-texture allocation and upload lifetime.
 //
@@ -103,6 +103,35 @@ struct RS2D3D12TextureRuntimeStats
 };
 void RS2D3D12_ResetTextureRuntimeStats();
 const RS2D3D12TextureRuntimeStats &RS2D3D12_GetTextureRuntimeStats();
+
+//	Mutable textures (v0.1.6): the string texture's A4R4G4B4 atlas and the
+//	live-text line.  The caller writes a CPU copy between Lock and Unlock; the
+//	changed rectangle reaches the GPU texture immediately before the next draw
+//	that has the texture bound, recorded in that draw's command list.
+struct RS2D3D12MutableStats
+{
+	unsigned int creates, createFailures, live, peak;
+	unsigned int locks, unlocks;
+	unsigned int refusedLocks;		//	Lock while already locked: refused, as on Direct3D 8
+	unsigned int unlocksWithoutLock;	//	ignored
+	unsigned int destroyedLocked;
+	unsigned int uploads;			//	copies recorded
+	unsigned int coalescedUnlocks;		//	Unlocks folded into a later copy (no draw between)
+	unsigned int unchangedUnlocks;		//	nothing differed from what the GPU holds
+	unsigned int refusedUploads;		//	frame scratch full: left pending
+	unsigned long long uploadBytes;		//	RGBA8 bytes copied
+	unsigned int largestUpload;		//	bytes, one copy
+};
+const RS2D3D12MutableStats &RS2D3D12_GetMutableStats();
+
+//	Record the pending upload of any mutable texture bound to stage 0 or 1.
+//	Called for every draw, before it is recorded.
+void RS2D3D12_PrepareBoundTextures(CRS2D3D12Backend *backend, ID3D12GraphicsCommandList *list);
+
+//	Save / restore the stage bindings and filters around a draw the renderer
+//	makes on its own behalf (the live-text line).  One level deep.
+void RS2D3D12_PushTextureBinding();
+void RS2D3D12_PopTextureBinding();
 
 bool RS2D3D12_GetBoundTexture(
 	CRS2D3D12Backend *backend, RS2D3D12SrvSlot *slot, RS2TextureFilter *filter);

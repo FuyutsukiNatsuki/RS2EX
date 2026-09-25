@@ -114,6 +114,13 @@ const RS2D3D12StencilStats &RS2D3D12_GetStencilStats();
  */
 void RS2D3D12_ApplyInitialRenderState();
 
+//	A screen-space draw the renderer makes for itself (v0.1.6 live text): the
+//	caller's depth, cull, blend, alpha-test, stencil and stage settings are
+//	saved and replaced with a string-texture draw's - no depth, no culling,
+//	alpha blend, stage 0 only - then put back.  One level deep.
+void RS2D3D12_PushOverlayState();
+void RS2D3D12_PopOverlayState();
+
 /*
  *	Draw vertices that exist only for the duration of the call.
  *

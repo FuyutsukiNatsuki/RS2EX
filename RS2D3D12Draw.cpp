@@ -223,6 +223,58 @@ void RS2D3D12_DisableFog(){
 
 const RS2D3D12StencilStats &RS2D3D12_GetStencilStats(){ return s_StencilStats; }
 
+static struct RS2D3D12OverlaySaved
+{
+	bool depthTest, depthWrite, alphaTest, stencilTest, combine1;
+	RS2CullMode cullMode;
+	RS2BlendMode blendMode;
+	bool uvTransform[2];
+	RS2D3D12UVSource uvSource[2];
+} s_OverlaySaved;
+
+void RS2D3D12_PushOverlayState(){
+	RS2D3D12OverlaySaved &saved = s_OverlaySaved;
+
+	saved.depthTest = s_DepthTest;
+	saved.depthWrite = s_DepthWrite;
+	saved.alphaTest = s_AlphaTest;
+	saved.stencilTest = s_StencilTest;
+	saved.combine1 = s_Combine1;
+	saved.cullMode = s_CullMode;
+	saved.blendMode = s_BlendMode;
+	saved.uvTransform[0] = s_UVTransform[0];
+	saved.uvTransform[1] = s_UVTransform[1];
+	saved.uvSource[0] = s_UVSource[0];
+	saved.uvSource[1] = s_UVSource[1];
+
+	s_DepthTest = false;
+	s_DepthWrite = false;
+	s_AlphaTest = false;
+	s_StencilTest = false;
+	s_Combine1 = false;
+	s_CullMode = RS2_CULL_NONE;
+	s_BlendMode = RS2_BLEND_ALPHA;
+	s_UVTransform[0] = s_UVTransform[1] = false;
+	s_UVSource[0] = RS2D3D12_UV_TEXCOORD0;
+	s_UVSource[1] = RS2D3D12_UV_TEXCOORD1;
+}
+
+void RS2D3D12_PopOverlayState(){
+	const RS2D3D12OverlaySaved &saved = s_OverlaySaved;
+
+	s_DepthTest = saved.depthTest;
+	s_DepthWrite = saved.depthWrite;
+	s_AlphaTest = saved.alphaTest;
+	s_StencilTest = saved.stencilTest;
+	s_Combine1 = saved.combine1;
+	s_CullMode = saved.cullMode;
+	s_BlendMode = saved.blendMode;
+	s_UVTransform[0] = saved.uvTransform[0];
+	s_UVTransform[1] = saved.uvTransform[1];
+	s_UVSource[0] = saved.uvSource[0];
+	s_UVSource[1] = saved.uvSource[1];
+}
+
 void RS2D3D12_ApplyInitialRenderState(){
 	//	The same values RS2D3D8_ApplyInitialRenderState leaves behind, so the
 	//	engine starts from the same place whichever backend is running.
@@ -641,6 +693,10 @@ static bool RS2D3D12_BindPipeline(
 	}
 
 	ID3D12GraphicsCommandList *list = backend->GetCommandList();
+
+	//	A mutable texture updated since its last copy gets the copy here, in
+	//	front of this draw and after every draw recorded before it (v0.1.6).
+	RS2D3D12_PrepareBoundTextures(backend, list);
 
 	list->SetGraphicsRootSignature(backend->GetPipeline()->GetRootSignature());
 	list->SetPipelineState(state);

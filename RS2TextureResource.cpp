@@ -165,13 +165,23 @@ CRS2TextureResource *RS2CreateTextureFromResource(
 }
 
 CRS2TextureResource *RS2CreateMutableTexture(int w, int h){
-	//	[RS2EX] Direct3D 12 has no texture creation in v0.1.0, and the
-	//	Direct3D 8 helper below would use a device this backend does not
-	//	own.  Failing is the honest answer; the caller already handles a
-	//	texture that would not load.
-	if(GetRS2Renderer().GetBackendType()!=RS2_RENDERER_D3D8){
-		RS2D3D12Unsupported("RS2CreateMutableTexture");
-		return 0;
+	//	[RS2EX] v0.1.6: Direct3D 12 keeps an A4R4G4B4 CPU copy that Lock hands
+	//	out, and uploads what changed before the next draw that reads it.
+	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12){
+		void *payload = 0;
+		int width = 0, height = 0;
+
+		if(!RS2D3D12_CreateMutableTexturePayload(&payload, &width, &height, w, h)){
+			RS2MutableAuditCreated(0, w, h);
+			return 0;
+		}
+
+		CRS2TextureResource *resource = new CRS2TextureResource;
+
+		resource->AdoptPayloadFromBackend(RS2_RENDERER_D3D12,
+			payload, width, height, RS2D3D12_GetMutableTexturePayloadOps());
+		RS2MutableAuditCreated(resource, w, h);
+		return resource;
 	}
 
 	void *payload = 0;

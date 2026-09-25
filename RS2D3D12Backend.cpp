@@ -9,6 +9,8 @@
 #include "RS2D3D12Draw.h"
 #include "RS2D3D12Unsupported.h"
 #include "RS2Renderer.h"
+#include "RS2Text.h"
+#include "RS2TextBackend.h"
 
 //	The same inputs the Direct3D 8 backend consults, so both backends
 //	answer "windowed or not" the same way.
@@ -751,8 +753,12 @@ bool CRS2D3D12Backend::Initialize(int width, int height){
 	//	this backend directly, without a renderer, so do not dispatch the
 	//	neutral transform setters through its default D3D8 selection there.
 	if(GetRS2Renderer().IsReady()
-			&& GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12)
+			&& GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12){
 		InitMetrics();
+		//	Direct3D 8 creates the live-text font here, at the height the rest
+		//	of the UI uses (v0.1.6).
+		RS2CreateTextFont(FONT_HEIGHT, 0xffffffff, false);
+	}
 
 	Debug("[RS2EX D3D12] ready: %d frame contexts, %s\n",
 		RS2D3D12_FRAME_COUNT, GetName());
@@ -812,6 +818,9 @@ void CRS2D3D12Backend::RetireTexture(
  */
 void CRS2D3D12Backend::Shutdown(){
 	const bool sceneAudit = m_Device && CheckArguments("-dx12sceneaudit")!=FALSE;
+	//	The live-text texture is retired through this backend, so it goes
+	//	while this is still the active one.
+	if(s_Active==this) RS2D3D12_DestroyTextFont();
 	if(s_Active==this) s_Active = 0;
 	RS2D3D12_ResetTextureBinding();
 
@@ -1294,6 +1303,13 @@ bool CRS2D3D12Backend::Reset(){
 	//	The engine reads the size from sv3, so a resize that did not update it
 	//	would leave every aspect-ratio and viewport calculation on the old one.
 	PublishCompatibilityState();
+
+	//	Direct3D 8 rebuilds the live-text font after every device reset, and
+	//	rebuilds it at 16 rather than the start-up 12 (inherited, see
+	//	CRS2D3D8Backend::Reset).  The same here keeps RS2GetTextHeight - and
+	//	so the edit box's caret - the same on both backends (v0.1.6).
+	if(s_Active==this && GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12)
+		RS2CreateTextFont(16, 0xffffffff, false);
 
 	Debug("[RS2EX D3D12] resized to %u x %u\n", m_Width, m_Height);
 	return true;

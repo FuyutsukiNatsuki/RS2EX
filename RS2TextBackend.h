@@ -1,7 +1,9 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-25.
 //
-//	The Direct3D 8 implementations behind the Text boundary.
+//	The Direct3D 8 and (v0.1.6) Direct3D 12 implementations behind the Text
+//	boundary.
 //
 //	Internal to the renderer.  Game code includes RS2Text.h and never this:
 //	the whole point of the boundary is that it does not know which of these
@@ -21,5 +23,11 @@ void RS2D3D8_CreateTextFont(int size, RS2PackedColor color, bool bold);
 void RS2D3D8_DestroyTextFont();
 void RS2D3D8_DrawText(int x, int y, RS2PackedColor color, const char *text);
 int RS2D3D8_GetTextHeight();
+
+//	GDI into a mutable texture, drawn as a screen-space quad (RS2D3D12Text.cpp).
+void RS2D3D12_CreateTextFont(int size, RS2PackedColor color, bool bold);
+void RS2D3D12_DestroyTextFont();
+void RS2D3D12_DrawText(int x, int y, RS2PackedColor color, const char *text);
+int RS2D3D12_GetTextHeight();
 
 #endif	//	RS2TEXTBACKEND_H_INCLUDED

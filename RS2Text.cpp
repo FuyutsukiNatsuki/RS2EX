@@ -8,10 +8,10 @@
 //	implementation and nothing else - no logic, no state, no reordering - so
 //	that the Direct3D 8 path is exactly what it was before the routing existed.
 //
-//	The Direct3D 12 side is not implemented in v0.1.0.  It says so, once per
-//	call site, and returns safely.  What it must never do is fall through to
-//	the Direct3D 8 implementation: that would reach a device this backend does
-//	not own, and it is the failure the whole release is built to prevent.
+//	The Direct3D 12 side (v0.1.6) is RS2D3D12Text.cpp.  A backend that is
+//	neither says so, once per call site, and returns safely: what it must never
+//	do is fall through to the Direct3D 8 implementation, which would reach a
+//	device that backend does not own.
 
 #include "stdafx.h"
 #include "RS2Renderer.h"
@@ -23,12 +23,16 @@ void RS2CreateTextFont(int size, RS2PackedColor color, bool bold){
 	RS2MutableAuditFont(size, bold);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_CreateTextFont(size, color, bold);
+	else if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12)
+		RS2D3D12_CreateTextFont(size, color, bold);
 	else RS2D3D12Unsupported("RS2CreateTextFont");
 }
 
 void RS2DestroyTextFont(){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_DestroyTextFont();
+	else if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12)
+		RS2D3D12_DestroyTextFont();
 	else RS2D3D12Unsupported("RS2DestroyTextFont");
 }
 
@@ -36,12 +40,21 @@ void RS2DrawText(int x, int y, RS2PackedColor color, const char *text){
 	RS2MutableAuditText(x, y, text);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_DrawText(x, y, color, text);
+	else if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12)
+		RS2D3D12_DrawText(x, y, color, text);
 	else RS2D3D12Unsupported("RS2DrawText");
 }
 
 int RS2GetTextHeight(){
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8){
 		const int height = RS2D3D8_GetTextHeight();
+
+		RS2MutableAuditTextHeight(height);
+		return height;
+	}
+
+	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D12){
+		const int height = RS2D3D12_GetTextHeight();
 
 		RS2MutableAuditTextHeight(height);
 		return height;
