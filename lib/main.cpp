@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-23, 2026-09-24.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-23, 2026-09-24, 2026-09-25.
 //	Copyright (c) 2002 Midikyou
 
 #include "udx.h"
@@ -9,6 +9,7 @@
 #include "..\RS2LightingProbe.h"
 #include "..\RS2StageProbe.h"
 #include "..\RS2D3D12Stage1Smoke.h"
+#include "..\RS2ShadowProbe.h"
 
 /*
  *	コンパイル・オプション
@@ -34,6 +35,7 @@
  *	-lightingprobe:RS2EX: draw the material / lighting probe and exit.
  *	-stageprobe:RS2EX: draw the texture-stage / environment / UV probe and exit.
  *	-dx12stage1smoke:RS2EX: stage 1 / environment / UV through the boundary; exit.
+ *	-shadowprobe:RS2EX: draw the stencil-shadow probe and exit.
  *	/3ds	:3Dサウンドを使用しない。
  *	/fx		:サウンドにエフェクトを使用しない。
  */
@@ -135,6 +137,10 @@ BOOL CApp::Init(HINSTANCE hInst){
 	}
 	if(RS2D3D12Stage1SmokeRequested()){
 		RS2D3D12Stage1SmokeRun();
+		return FALSE;
+	}
+	if(RS2ShadowProbeRequested()){
+		RS2ShadowProbeRun();
 		return FALSE;
 	}
 	if(!InitDirectInput()) return FALSE;

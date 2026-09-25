@@ -363,6 +363,9 @@
     <ClCompile Include="RS2ShadowAudit.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
+    <ClCompile Include="RS2ShadowProbe.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
     <ClCompile Include="RS2StageProbe.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
@@ -1103,6 +1106,9 @@
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2ShadowAudit.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
+    <ClInclude Include="RS2ShadowProbe.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2StageProbe.h">
