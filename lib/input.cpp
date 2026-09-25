@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-26.
 
 #include "headers.h"
 #include "debug.h"
@@ -6,6 +7,7 @@
 #include "graphic.h"
 #include "input.h"
 #include "wave_stream.h"
+#include "..\RS2Fixture.h"
 
 unsigned int __stdcall InputPollingThread(void* lpThreadParameter);
 void InputPollOnce();
@@ -322,8 +324,12 @@ void ScanKeyboard(){
 POINT GetCursorPosClient(){
 	POINT cur;
 	GetCursorPos(&cur);
-	//	ウインドウモード時は座標系を変換
-	if(sv3.fWindowed) ScreenToClient(svw.hWnd, &cur);
+	//	[RS2EX] v0.2.0: always client coordinates.  Exclusive fullscreen put
+	//	the window at the screen origin, so screen and client coordinates were
+	//	the same there; borderless fullscreen (the only fullscreen since
+	//	v0.1.x) is a window on whichever monitor it is on, and on a monitor
+	//	whose origin is not 0,0 the two differ.
+	ScreenToClient(svw.hWnd, &cur);
 	return cur;
 }
 
@@ -352,6 +358,16 @@ void ScanMouse(){
 
 	svi.wheel = svi.wheelPoll;
 	svi.wheelPoll = 0;
+
+	//	[RS2EX] v0.2.0: the fixture takes no mouse input at all - not the
+	//	movement (CCursor::ScanInput), and not the buttons or the wheel
+	//	either.  A capture runs with the window in front and holding the
+	//	cursor, and one stray wheel turn or click from whoever is at the
+	//	machine moved the fixture camera to 5000 m and selected a train.
+	if(RS2FixtureIsEnabled()){
+		memset(svi.btn, 0, sizeof(svi.btn));
+		svi.wheel = 0;
+	}
 }
 
 /*
@@ -506,8 +522,8 @@ LONG GetWheel(){
 void SetCursor(int x, int y){
 	POINT cur = {x, y};
 
-	//	ウインドウモード時は座標系を変換
-	if(sv3.fWindowed) ClientToScreen(svw.hWnd, &cur);
+	//	[RS2EX] v0.2.0: always client coordinates - see GetCursorPosClient().
+	ClientToScreen(svw.hWnd, &cur);
 
 	SetCursorPos(cur.x, cur.y);
 }

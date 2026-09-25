@@ -234,6 +234,7 @@
     <ClCompile Include="RS2SaveIdentity.cpp" />
     <ClCompile Include="RS2MeshImport.cpp" />
     <ClCompile Include="RS2Math.cpp" />
+    <ClCompile Include="RS2Display.cpp" />
     <ClCompile Include="RS2XFileImporter.cpp" />
     <ClCompile Include="RS2StageProbe.cpp" />
     <ClCompile Include="RS2TextureSource.cpp" />
@@ -502,6 +503,7 @@
     <ClInclude Include="RS2SaveIdentity.h" />
     <ClInclude Include="RS2MeshImport.h" />
     <ClInclude Include="RS2Math.h" />
+    <ClInclude Include="RS2Display.h" />
     <ClInclude Include="RS2NetworkDisabled.h" />
     <ClInclude Include="RS2StageProbe.h" />
     <ClInclude Include="RS2TextureSource.h" />

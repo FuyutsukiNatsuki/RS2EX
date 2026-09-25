@@ -295,6 +295,9 @@ void CGameMode::MainLoop(){
 	}
 	InitCapture();
 	g_ConfigMode->CheckHardware();
+	//	[RS2EX] v0.2.0: the configuration windows were centred before the
+	//	display size was known.
+	g_ConfigMode->CenterWindows();
 	switch(g_RSPV){
 	case RSPV_RAIL:
 		g_RailPluginList->FindAvailable()->SetPreview();

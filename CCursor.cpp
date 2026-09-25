@@ -1,6 +1,7 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "RS2Fixture.h"
+#include "RS2Display.h"
 #include "CCursor.h"
 #include "CSkinPlugin.h"
 
@@ -126,6 +127,16 @@ void CCursor::ScanInput(
 	bool forcelock	//	ã≠êßÉçÉbÉN
 ){
 	ScanInputDevice();
+
+	//	[RS2EX] v0.2.0: the clip rectangle is set once, at activation, from
+	//	the display size.  If that size changes the clip has to follow it, or
+	//	the system cursor is held to the old area.
+	static unsigned int generation = 0;
+
+	if(generation!=RS2GetDisplayGeneration()){
+		generation = RS2GetDisplayGeneration();
+		if(!sv3.fWindowed || svw.fActive) Clip();
+	}
 	g_Cursor.FixCursor();
 
 	int cx = g_DispWidth/2, cy = g_DispHeight/2;

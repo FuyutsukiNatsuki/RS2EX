@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #ifndef CCONFIGMODE_H_INCLUDED
 #define CCONFIGMODE_H_INCLUDED
 
@@ -10,7 +10,8 @@
 #include "CWindowDivInfo.h"
 #include "CInterfaceMode.h"
 
-const int RES_MODE_NUM = 4;			//	解像度タイプ数
+const int RES_MODE_NUM = 8;			//	解像度タイプ数
+const int RES_MODE_43_NUM = 4;		//	[RS2EX] うち 4:3（残りは 16:9）
 const int MIPMAP_NUM = 4;			//	ミップマップ区分数
 const int PISND_NUM = 4;			//	プラグインサウンド区分数
 const int STEREO_METHOD_NUM = 2;	//	ステレオ手法数
@@ -32,6 +33,8 @@ private:
 	CCheckBox m_FullScreen;				//	フルスクリーン
 	CStaticCtrl m_ResLabel;				//	解像度
 	CRadioButton m_Resolution[RES_MODE_NUM];	//	解像度チェック
+	CGroupBox m_WideResGroup;			//	[RS2EX] 解像度 (16:9)
+	CStaticCtrl m_WideResRestart;		//	[RS2EX] 要再起動
 	CStaticCtrl m_MipMapLabel;			//	ミップマップ
 	CCheckBox m_MipMap[MIPMAP_NUM];		//	ミップマップチェック
 
@@ -78,6 +81,7 @@ public:
 	void RenderWindowDiv();
 	bool Load();
 	bool Save();
+	void CenterWindows();
 	int GetHideTopPanel(){ return m_HideTopPanel.GetCheck(); }
 	int GetHideRightPanel(){ return m_HideRightPanel.GetCheck(); }
 	int GetWindowShadow(){ return m_WindowShadow.GetCheck(); }

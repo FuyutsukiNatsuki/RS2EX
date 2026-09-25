@@ -3,6 +3,7 @@
 #include "CWindowCtrl.h"
 #include "CSkinPlugin.h"
 #include "CConfigMode.h"
+#include "RS2Display.h"
 
 //	内部定数
 const int WND_RESIZE_GRAB = 4;	//	窓リサイズつまみ幅
@@ -12,6 +13,7 @@ const int WND_RESIZE_GRAB = 4;	//	窓リサイズつまみ幅
  */
 CWindowCtrl::CWindowCtrl(){
 	m_CloseButton = NULL;
+	m_DisplayGeneration = 0;
 }
 
 /*
@@ -33,6 +35,7 @@ void CWindowCtrl::Init(
 ){
 	CInterface::Init(x, y, w, h, t, p);
 	m_State = 0;
+	m_DisplayGeneration = RS2GetDisplayGeneration();
 	m_MinWidth = m_MinHeight = m_MaxWidth = m_MaxHeight = 0;
 	m_Color = 0xffffffff;
 	if(close){
@@ -277,11 +280,36 @@ CLICKFOCUS:
 }
 
 /*
+ *	[RS2EX] v0.2.0: keep the title bar where the cursor can reach it.
+ *
+ *	Windows are placed once, from the display size at the time.  The size is
+ *	decided at start-up, but if it changes afterwards a window placed against
+ *	the old right or bottom edge can end up where the cursor - clamped to the
+ *	display - cannot grab it.  Only a title bar that is out of reach is moved,
+ *	and only as far as needed: a window the user dragged partly off screen is
+ *	otherwise left where it is.
+ */
+void CWindowCtrl::KeepReachable(){
+	m_DisplayGeneration = RS2GetDisplayGeneration();
+	const int GRAB = TILE_UNIT*2;
+	int px, py, nx, ny;
+	GetAbsPos(&px, &py);
+	nx = px, ny = py;
+	if(nx>g_DispWidth-GRAB) nx = g_DispWidth-GRAB;
+	if(nx+m_Width<GRAB) nx = GRAB-m_Width;
+	if(ny>g_DispHeight-TILE_UNIT) ny = g_DispHeight-TILE_UNIT;
+	if(ny<0) ny = 0;
+	m_PosX += nx-px;
+	m_PosY += ny-py;
+}
+
+/*
  *	レンダリング
  */
 void CWindowCtrl::Render(){
 	CInterface::RenderBrother();
 	if(!m_Visible) return;
+	if(m_DisplayGeneration!=RS2GetDisplayGeneration()) KeepReachable();
 	int px, py;
 	GetAbsPos(&px, &py);
 	g_Skin->SetInterfaceTexture();

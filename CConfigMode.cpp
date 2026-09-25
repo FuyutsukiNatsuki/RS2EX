@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CSkinPlugin.h"
@@ -10,8 +10,17 @@
 
 //	内部定数
 const int WW = 512, WH = 384;	//	窓サイズ
-const int RES_MODE_WIDTH[RES_MODE_NUM] = {640, 800, 1024, 1280};	//	解像度幅
-const int RES_MODE_HEIGHT[RES_MODE_NUM] = {480, 600, 768, 960};		//	解像度高
+//	[RS2EX] v0.2.0: 16:9 の 4 つを追加（設定画面 2 の別グループ）
+const int RES_MODE_WIDTH[RES_MODE_NUM] = {640, 800, 1024, 1280, 1280, 1920, 2560, 3840};	//	解像度幅
+const int RES_MODE_HEIGHT[RES_MODE_NUM] = {480, 600, 768, 960, 720, 1080, 1440, 2160};		//	解像度高
+
+//	[RS2EX] v0.2.0: the configured resolution - the window's requested
+//	initial client size - kept apart from g_DispWidth / g_DispHeight, which
+//	are the live display size (RS2Display.h).  Borderless fullscreen and a
+//	window Windows would not make this large both give a display that is not
+//	this size, and saving the settings must not write that back as the
+//	user's choice.
+static int s_ConfigWidth = 640, s_ConfigHeight = 480;
 
 //	外部グローバル
 extern char *g_PluginViewArg;
@@ -68,7 +77,7 @@ CConfigMode::CConfigMode(){
 		lang(FullScreen), &m_DeviceGroup);
 	m_ResLabel.Init(TILE_UNIT, TILE_UNIT*3+TILE_QUAD, half-TILE_UNIT*2, TILE_UNIT,
 		lang(Resolution), &m_DeviceGroup, 0, 1);
-	for(i = 0; i<RES_MODE_NUM; i++) m_Resolution[i].Init(
+	for(i = 0; i<RES_MODE_43_NUM; i++) m_Resolution[i].Init(
 		TILE_UNIT+(i%2)*(half-TILE_UNIT*1)/2, TILE_UNIT*(i/2+4)+TILE_QUAD,
 		(half-TILE_UNIT*3)/2, TILE_UNIT,
 		FlashIn("%d * %d", RES_MODE_WIDTH[i], RES_MODE_HEIGHT[i]),
@@ -147,6 +156,22 @@ CConfigMode::CConfigMode(){
 		half-TILE_UNIT*6, TILE_UNIT, FlashIn("%s [m]", lang(StereoscopyInterval)), &m_StereoGroup, 0, 1);
 	m_StereoIntervalEdit.Init(half-TILE_UNIT*5, TILE_UNIT*5+TILE_QUAD,
 		TILE_UNIT*4, TILE_UNIT, "1.00", &m_StereoGroup, 8);
+
+	//	[RS2EX] v0.2.0: the 16:9 resolutions.  Window 1 has no room left, so
+	//	they get their own group here; they are the same radio group as the
+	//	4:3 ones in window 1, so exactly one of the eight is checked.
+	m_WideResGroup.Init(TILE_UNIT, TILE_UNIT*10,
+		half, TILE_UNIT*5, FlashIn("%s (16:9)", lang(Resolution)), &m_ConfigWindow2);
+	m_WideResRestart.Init(TILE_UNIT, TILE_UNIT+TILE_QUAD, half-TILE_UNIT*2, TILE_UNIT,
+		lang(NeedRestart), &m_WideResGroup, 0, 1);
+	for(i = RES_MODE_43_NUM; i<RES_MODE_NUM; i++){
+		int k = i-RES_MODE_43_NUM;
+		m_Resolution[i].Init(
+			TILE_UNIT+(k%2)*(half-TILE_UNIT*1)/2, TILE_UNIT*(k/2+2)+TILE_QUAD,
+			(half-TILE_UNIT*3)/2, TILE_UNIT,
+			FlashIn("%d * %d", RES_MODE_WIDTH[i], RES_MODE_HEIGHT[i]),
+			&m_WideResGroup, &m_Resolution[i-1]);
+	}
 
 	m_ActiveWindow = NULL;
 }
@@ -346,6 +371,11 @@ SET:
 	m_WindowShadow.SetCheck(windowshadow);
 	m_FullScreen.SetCheck(fullscreen);
 	m_Resolution[0].ClearGroupCheck();
+	//	[RS2EX] v0.2.0: the configured resolution is kept as it was read, and
+	//	g_DispWidth / g_DispHeight start from it only as the size to ask the
+	//	window for.  The renderer replaces them with the real size.
+	s_ConfigWidth = res[0];
+	s_ConfigHeight = res[1];
 	if(g_PluginViewArg){
 		g_DispWidth = 640;
 		g_DispHeight = 480;
@@ -353,8 +383,8 @@ SET:
 		g_DispWidth = res[0];
 		g_DispHeight = res[1];
 	}
-	for(i = 0; i<RES_MODE_NUM; i++) if(g_DispWidth==RES_MODE_WIDTH[i]
-		&& g_DispHeight==RES_MODE_HEIGHT[i]) m_Resolution[i].SetCheck();
+	for(i = 0; i<RES_MODE_NUM; i++) if(s_ConfigWidth==RES_MODE_WIDTH[i]
+		&& s_ConfigHeight==RES_MODE_HEIGHT[i]) m_Resolution[i].SetCheck();
 	g_FullScreen = !!fullscreen;
 	m_MipMap[0].SetCheck(g_RailMipMap);
 	m_MipMap[1].SetCheck(g_TrainMipMap);
@@ -381,9 +411,20 @@ SET:
 	m_StereoEnabled.SetCheck(stereoenabled);
 	m_StereoMethod[stereomethod].SetCheck();
 	m_StereoIntervalEdit.SetText(FlashIn("%.2f", stereointerval));
+	CenterWindows();
+	return true;
+}
+
+/*
+ *	[RS2EX] v0.2.0: 窓を画面中央へ
+ *
+ *	Load() runs before there is a renderer, so it centres the windows on the
+ *	configured size.  CGameMode::MainLoop calls this again once the real
+ *	display size is known - borderless fullscreen is the monitor's size.
+ */
+void CConfigMode::CenterWindows(){
 	m_ConfigWindow1.SetPos((g_DispWidth-WW)/2-TILE_UNIT, (g_DispHeight-WH)/2);
 	m_ConfigWindow2.SetPos((g_DispWidth-WW)/2-TILE_UNIT*2, (g_DispHeight-WH)/2+TILE_UNIT);
-	return true;
 }
 
 /*
@@ -391,9 +432,11 @@ SET:
  */
 bool CConfigMode::Save(){
 	int tmp;
+	//	[RS2EX] v0.2.0: the choice takes effect at the next start, so it goes
+	//	to the configured resolution and not to the live display size.
 	if((tmp = m_Resolution->GetNumber())>=0){
-		g_DispWidth = RES_MODE_WIDTH[tmp];
-		g_DispHeight = RES_MODE_HEIGHT[tmp];
+		s_ConfigWidth = RES_MODE_WIDTH[tmp];
+		s_ConfigHeight = RES_MODE_HEIGHT[tmp];
 	}
 	void SetCurrentPluginID();
 	SetCurrentPluginID();
@@ -413,7 +456,7 @@ bool CConfigMode::Save(){
 	fprintf(file, "\t}\n");
 	fprintf(file, "\tDevice{\n");
 	fprintf(file, "\t\tFullScreen = %s;\n", YESNO[m_FullScreen.GetCheck()]);
-	fprintf(file, "\t\tResolution = %d, %d;\n", g_DispWidth, g_DispHeight);
+	fprintf(file, "\t\tResolution = %d, %d;\n", s_ConfigWidth, s_ConfigHeight);
 	fprintf(file, "\t\tRailMipMap = %s;\n", YESNO[m_MipMap[0].GetCheck()]);
 	fprintf(file, "\t\tTrainMipMap = %s;\n", YESNO[m_MipMap[1].GetCheck()]);
 	fprintf(file, "\t\tStructMipMap = %s;\n", YESNO[m_MipMap[2].GetCheck()]);

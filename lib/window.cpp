@@ -1,4 +1,5 @@
 //	Copyright (c) 2002 Midikyou
+//	Modified for RS2EX on 2026-09-26.
 
 #include <windows.h>
 #include <windowsx.h>
@@ -88,8 +89,41 @@ void AdjustWindow(){
 		GetWindowExStyle(svw.hWnd));
 	int dw = d.right-d.left, dh = d.bottom-d.top;
 	int cw = r.right-r.left, ch = r.bottom-r.top;
+	int dx = 0, dy = 0;
+
+	//	[RS2EX] v0.2.0: fit the window into its monitor's work area, keeping
+	//	the client area's aspect.  2.15 centred it on the desktop at whatever
+	//	size was asked for.  A size larger than the monitor then had its title
+	//	bar above the top of the screen, and Windows cut the window down to
+	//	its own limit one axis at a time - 3840 x 2160 on a 1920 x 1080
+	//	monitor became a 3840 x 1069 client, 3.6:1.  The display follows the
+	//	client area (RS2Display.h), so scaling both sides by the same factor
+	//	keeps a 16:9 choice 16:9.
+	MONITORINFO mi;
+
+	ZeroMemory(&mi, sizeof(mi));
+	mi.cbSize = sizeof(mi);
+	if(GetMonitorInfo(MonitorFromWindow(svw.hWnd, MONITOR_DEFAULTTOPRIMARY), &mi)){
+		dx = mi.rcWork.left, dy = mi.rcWork.top;
+		dw = mi.rcWork.right-mi.rcWork.left;
+		dh = mi.rcWork.bottom-mi.rcWork.top;
+	}
+	if((cw>dw || ch>dh) && svw.winW>0 && svw.winH>0){
+		const int fw = cw-svw.winW, fh = ch-svw.winH;
+		double sx = (double)(dw-fw)/svw.winW, sy = (double)(dh-fh)/svw.winH;
+		double s = sx<sy ? sx : sy;
+		int w = (int)(svw.winW*s), h = (int)(svw.winH*s);
+		if(w<1) w = 1;
+		if(h<1) h = 1;
+		Debug("[RS2EX] window %d x %d does not fit the work area %d x %d: %d x %d\n",
+			svw.winW, svw.winH, dw, dh, w, h);
+		svw.winW = w;
+		svw.winH = h;
+		cw = w+fw;
+		ch = h+fh;
+	}
 	SetWindowPos(
-		svw.hWnd, NULL, (dw-cw)/2, (dh-ch)/2, cw, ch,
+		svw.hWnd, NULL, dx+(dw-cw)/2, dy+(dh-ch)/2, cw, ch,
 		SWP_NOZORDER|SWP_NOACTIVATE);
 }
 

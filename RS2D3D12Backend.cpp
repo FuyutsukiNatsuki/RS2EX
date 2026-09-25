@@ -9,6 +9,7 @@
 #include "RS2D3D12Draw.h"
 #include "RS2D3D12Unsupported.h"
 #include "RS2Renderer.h"
+#include "RS2Display.h"
 #include "RS2Text.h"
 #include "RS2TextBackend.h"
 
@@ -45,13 +46,15 @@ CRS2D3D12Backend *RS2D3D12GetActiveBackend(){ return s_Active; }
  *	Make the existing main window cover its monitor without taking exclusive
  *	ownership of the display.
  *
- *	The legacy mesh importer creates its own tiny windowed Direct3D 8 device.
- *	On the release test machine that device fails with D3DERR_NOTAVAILABLE
- *	while a Direct3D 12 swap chain owns the adapter exclusively, leaving a real
- *	scene with no imported meshes.  Borderless fullscreen has the same visible
- *	contract, keeps the importer available, and is also explicit about who
- *	shows and sizes the HWND - an exclusive Direct3D 8 device used to do that
- *	for the application.
+ *	v0.1.x chose borderless because the legacy mesh importer's own Direct3D 8
+ *	device failed with D3DERR_NOTAVAILABLE while a Direct3D 12 swap chain
+ *	owned the adapter exclusively.  That importer is gone (v0.2.0), and the
+ *	back buffer no longer stays at the configured resolution to be stretched
+ *	over the monitor: CreateSwapChain sizes it to the client area this makes,
+ *	which is the monitor's resolution.  Borderless stays because exclusive
+ *	fullscreen is not part of v0.2.0 (plan section 16.10), and because it is
+ *	explicit about who shows and sizes the HWND - an exclusive Direct3D 8
+ *	device used to do that for the application.
  */
 static bool RS2D3D12_PrepareBorderlessWindow(HWND window){
 	HMONITOR monitor = MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST);
@@ -364,6 +367,31 @@ bool CRS2D3D12Backend::CreateSwapChain(
 	//	fullscreen request, using a monitor-sized borderless HWND instead.
 	m_Windowed = (!g_FullScreen || g_PluginViewArg || CheckArguments("-win"))!=0;
 	if(!m_Windowed && !RS2D3D12_PrepareBorderlessWindow(window)) return false;
+
+	//	[RS2EX] v0.2.0: the back buffer is the client area, not the size that
+	//	was asked for.  Borderless, the client area is the whole monitor.
+	//	Windowed, it is the configured resolution unless Windows would not
+	//	make a window that large, in which case it is what Windows gave.
+	//	Either way one back-buffer pixel is one screen pixel, so nothing is
+	//	stretched, and the UI and cursor lay themselves out on the same size.
+	//	svw is updated too: it is what the per-frame resize check compares
+	//	against, and a borderless window never receives the WM_SIZE handling
+	//	that would otherwise set it.
+	RECT client;
+
+	if(GetClientRect(window, &client)
+			&& client.right>client.left && client.bottom>client.top){
+		const unsigned int cw = (unsigned int)(client.right-client.left);
+		const unsigned int ch = (unsigned int)(client.bottom-client.top);
+
+		if(cw!=m_Width || ch!=m_Height)
+			Debug("[RS2EX D3D12] %u x %u requested; the window's client area is %u x %u\n",
+				m_Width, m_Height, cw, ch);
+		m_Width = cw;
+		m_Height = ch;
+		svw.winW = (int)cw;
+		svw.winH = (int)ch;
+	}
 
 	DXGI_SWAP_CHAIN_DESC1 desc;
 
@@ -691,6 +719,10 @@ void CRS2D3D12Backend::PublishCompatibilityState(){
 	sv3.width = (int)m_Width;
 	sv3.height = (int)m_Height;
 	sv3.fWindowed = m_Windowed ? TRUE : FALSE;
+
+	//	[RS2EX] v0.2.0: and the display size the UI, the cursor and every
+	//	g_DispWidth reader lay out against.  See RS2Display.h.
+	RS2PublishDisplaySize((int)m_Width, (int)m_Height);
 
 	//	The Direct3D 8 backend showed the window from its device creation, and
 	//	this backend took the job over from it.  It is not a device matter,

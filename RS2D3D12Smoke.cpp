@@ -1,11 +1,12 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-21.
-//	Modified for RS2EX on 2026-09-22, 2026-09-23.
+//	Modified for RS2EX on 2026-09-22, 2026-09-23, 2026-09-26.
 //
 //	See RS2D3D12Smoke.h.
 
 #include "stdafx.h"
 #include "RS2D3D12Smoke.h"
+#include "RS2Display.h"
 #include "RS2D3D12Backend.h"
 #include "RS2DecodedImage.h"
 #include "RS2TextureSource.h"
@@ -237,6 +238,13 @@ static bool RS2D3D12_SmokeLifecycleFrames(HWND window){
 	backend.GetViewportSize(&w, &h);
 	RS2D3D12_SmokeStep("resize to 800 x 600", resized && w==800 && h==600);
 
+	//	v0.2.0: the display size the UI lays out against follows the back
+	//	buffer (RS2Display.h), and a change is counted.
+	const unsigned int generation = RS2GetDisplayGeneration();
+
+	RS2D3D12_SmokeStep("display size follows the resize",
+		g_DispWidth==800 && g_DispHeight==600 && generation>0);
+
 	//	Minimised: a client area of zero, which DXGI will not accept.  The
 	//	frames still have to be survivable.
 	const int keepW = svw.winW, keepH = svw.winH;
@@ -264,6 +272,9 @@ static bool RS2D3D12_SmokeLifecycleFrames(HWND window){
 	RS2D3D12_SmokeFrames(backend, 60, &restored, NULL);
 	backend.GetViewportSize(&w, &h);
 	RS2D3D12_SmokeStep("restore to 640 x 480", restored && w==640 && h==480);
+	RS2D3D12_SmokeStep("display size follows the restore",
+		g_DispWidth==640 && g_DispHeight==480
+		&& RS2GetDisplayGeneration()==generation+1);
 
 	backend.WaitForGpu();
 	RS2D3D12_SmokeStep("wait after presenting", true);

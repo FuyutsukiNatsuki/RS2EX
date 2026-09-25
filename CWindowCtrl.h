@@ -28,6 +28,8 @@ protected:
 	RS2PackedColor m_Color;				//	ウィンドウ色
 	CMiniButton *m_CloseButton;		//	クローズボタン
 	CWindowResizer *m_Resizer;		//	リサイザ
+	unsigned int m_DisplayGeneration;	//	[RS2EX] 位置を確かめた表示サイズ
+	void KeepReachable();
 public:
 	CWindowCtrl();
 	virtual ~CWindowCtrl();
