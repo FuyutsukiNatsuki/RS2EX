@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
 //
@@ -17,6 +18,7 @@
 #define RS2LEGACYXMESHIMPORTER_H_INCLUDED
 
 #include "RS2MeshData.h"
+#include "RS2MeshImport.h"
 
 /*
  *	X file reader
@@ -38,62 +40,8 @@ public:
 	void Close();
 };
 
-/*
- *	What one imported material carries into CMesh.
- *
- *	The material is an RS2Material from v0.0.7 on.  The texture file name is
- *	still a name rather than a reference, because acquiring it is CMesh's
- *	decision - the importer does not know the cache or the mip policy.
- */
-struct RS2ImportedMaterial
-{
-	RS2Material material;
-	const char *textureFileName;	//	owned by the import result, may be NULL
-};
-
-/*
- *	Result of one import.
- *
- *	Owns everything it returns.  Free() releases the material metadata; the
- *	geometry is owned by the CRS2MeshData the caller took.
- */
-class CRS2MeshImportResult
-{
-private:
-	RS2ImportedMaterial *m_Materials;
-	char **m_TextureNames;
-	unsigned int m_MaterialCount;
-
-	CRS2MeshImportResult(const CRS2MeshImportResult &);
-	CRS2MeshImportResult &operator=(const CRS2MeshImportResult &);
-
-public:
-	CRS2MeshData geometry;
-
-	/*
-	 *	Bounding box of the mesh *before* optimisation.
-	 *
-	 *	Deliberately not derived from the geometry above.  2.15 computed bounds
-	 *	before D3DXMESHOPT_COMPACT ran, and COMPACT drops vertices no face
-	 *	references - measured: one bundled mesh, Landscape.x, actually loses an
-	 *	extreme vertex that way.  Recomputing afterwards would silently tighten
-	 *	its bounds and change culling, so the original value is carried out.
-	 */
-	VEC3 boundsMin;
-	VEC3 boundsMax;
-
-	CRS2MeshImportResult();
-	~CRS2MeshImportResult();
-
-	void Free();
-
-	bool AllocMaterials(unsigned int count);
-	void SetMaterial(
-		unsigned int i, const RS2Material &mat, const char *textureFileName);
-
-	unsigned int GetMaterialCount() const{ return m_MaterialCount; }
-	const RS2ImportedMaterial &GetMaterial(unsigned int i) const{ return m_Materials[i]; }
-};
+//	[RS2EX] v0.2.0: RS2ImportedMaterial and CRS2MeshImportResult moved to
+//	RS2MeshImport.h.
 
 /*
  *	Import a .x mesh.

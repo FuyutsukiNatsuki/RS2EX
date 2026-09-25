@@ -1,5 +1,5 @@
 //	Copyright (c) 2002 Midikyou
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 
 #include "..\stdafx.h"
 
@@ -15,6 +15,7 @@
 #endif
 
 #include "..\RS2LegacyXMeshImporter.h"
+#include "..\RS2MeshImport.h"
 #include "..\RS2MaterialBinding.h"
 #include "..\CModelPlugin.h"
 #include "..\CEnvPlugin.h"
@@ -77,7 +78,7 @@ BOOL CMesh::Load(
 	 *	Nothing is committed to this object until that has succeeded.
 	 */
 	CRS2MeshImportResult import;
-	if(!RS2ImportLegacyXMesh(fRes, strName, &import)) return FALSE;
+	if(!RS2ImportMeshFile(fRes, strName, &import)) return FALSE;
 
 	m_strName = strName;
 	m_dwNumMat = import.GetMaterialCount();

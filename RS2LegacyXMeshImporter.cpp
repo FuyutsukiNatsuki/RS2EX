@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
 //
@@ -88,42 +89,7 @@ void CXFile::Close(){
 //	Import result
 ////////////////////////////////////////////////////////////////////////////////
 
-CRS2MeshImportResult::CRS2MeshImportResult()
-	: m_Materials(0), m_TextureNames(0), m_MaterialCount(0)
-{
-	boundsMin = VEC3(0, 0, 0);
-	boundsMax = VEC3(0, 0, 0);
-}
-
-CRS2MeshImportResult::~CRS2MeshImportResult(){
-	Free();
-}
-
-void CRS2MeshImportResult::Free(){
-	if(m_TextureNames){
-		unsigned int i;
-		for(i = 0; i<m_MaterialCount; i++) DELETE_A(m_TextureNames[i]);
-	}
-	DELETE_A(m_TextureNames);
-	DELETE_A(m_Materials);
-	m_MaterialCount = 0;
-	geometry.Free();
-}
-
-bool CRS2MeshImportResult::AllocMaterials(unsigned int count){
-	if(!count) return false;
-
-	m_Materials = new RS2ImportedMaterial[count];
-	m_TextureNames = new char *[count];
-	m_MaterialCount = count;
-
-	unsigned int i;
-	for(i = 0; i<count; i++){
-		m_TextureNames[i] = 0;
-		m_Materials[i].textureFileName = 0;
-	}
-	return true;
-}
+//	[RS2EX] v0.2.0: CRS2MeshImportResult moved to RS2MeshImport.cpp.
 
 /*
  *	Convert one material as D3DX reports it.
@@ -145,21 +111,6 @@ static RS2Material RS2FromD3DMaterial(const D3DMATERIAL8 &src){
 		src.Emissive.r, src.Emissive.g, src.Emissive.b, src.Emissive.a);
 	dst.Power = src.Power;
 	return dst;
-}
-
-void CRS2MeshImportResult::SetMaterial(
-	unsigned int i, const RS2Material &mat, const char *textureFileName
-){
-	if(i>=m_MaterialCount) return;
-
-	m_Materials[i].material = mat;
-
-	if(textureFileName){
-		const size_t n = strlen(textureFileName)+1;
-		m_TextureNames[i] = new char[n];
-		memcpy(m_TextureNames[i], textureFileName, n);
-	}
-	m_Materials[i].textureFileName = m_TextureNames[i];
 }
 
 ////////////////////////////////////////////////////////////////////////////////

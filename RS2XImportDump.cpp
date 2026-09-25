@@ -24,6 +24,7 @@
 #include "stdafx.h"
 #include "RS2XImportDump.h"
 #include "RS2LegacyXMeshImporter.h"
+#include "RS2MeshImport.h"
 
 #include <stdio.h>
 
@@ -128,7 +129,7 @@ bool RS2XImportDumpRun(){
 		CRS2MeshImportResult import;
 
 		Debug("RS2XIMPORTDUMP|import|%s\n", path.c_str());
-		const bool ok = RS2ImportLegacyXMesh(FALSE, path.c_str(), &import) && import.geometry.IsValid();
+		const bool ok = RS2ImportMeshFile(FALSE, path.c_str(), &import) && import.geometry.IsValid();
 
 		RS2XDU32(f, (unsigned int)path.size());
 		fwrite(path.c_str(), path.size(), 1, f);
