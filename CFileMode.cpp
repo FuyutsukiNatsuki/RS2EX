@@ -1,10 +1,11 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "md5.h"
 #include "Script.h"
 #include "Network.h"
 #include "CSimpleDialog.h"
 #include "CSaveFile.h"
+#include "RS2SaveIdentity.h"
 #include "CSkinPlugin.h"
 #include "CSimulationMode.h"
 #include "CFileMode.h"
@@ -51,6 +52,8 @@ bool CLayoutInfo::PreLoadSF(
 		string datafiletype;
 		if(!(str = AsgnIdentifier(eee = str, "DatafileType", &datafiletype))) throw CSynErr(eee);
 		if(datafiletype!=LAYOUT_DIRNAME) throw CSynErr(eee, lang(InvalidDatafileType));
+		//	[RS2EX] v0.2.0 identity keys, when present.
+		if(!(str = RS2ReadSaveIdentityKeys(eee = str, NULL))) throw CSynErr(eee, lang(SaveFormatCorrupt));
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
 		if(!(str = BeginBlock(eee = str, "LayoutInfo"))) throw CSynErr(eee);
@@ -343,9 +346,10 @@ char *CFileMode::LoadInterfaceSetting(
 	m_AutoLoadCheck.SetCheck(autoload);
 	if(!g_RSPV){
 		if(autoload && lastfile.size()){
-			g_SaveFile = new CSaveFile(false);
-			if(!g_SaveFile->Load(lastfile.c_str(),
-				LAYOUT_DIRNAME, false, true, NULL, NULL, false, NULL)){
+			//	[RS2EX] v0.2.0: classified first.  A file that is not this
+			//	build's format is not loaded here - the interface is not up yet
+			//	to ask - but offered once it is (ProcessStartupFile).
+			if(!OpenClassifiedFile(lastfile.c_str(), true)){
 				DELETE_V(g_SaveFile);
 				g_SaveFile = new CSaveFile(true);
 			}
@@ -413,15 +417,12 @@ void CFileMode::ModalFuncInterface(){
 					g_Skin->Error();
 					break;;
 				}
-				ResetUndo();
-				DELETE_V(g_SaveFile);
-				DELETE_A(g_NetworkFileCopy);
-				g_SaveFile = new CSaveFile(false);
-				g_SaveFile->Load(m_NewFileName.c_str(),
-					LAYOUT_DIRNAME, true, true, NULL, NULL, false, NULL);
-				SetNeutral();
+				//	[RS2EX] v0.2.0: classified first; a file that is not this
+				//	build's format is loaded only after its own confirmation.
+				if(OpenClassifiedFile(m_NewFileName.c_str(), false)) SetNeutral();
 				break;
 			case 30:
+			case 35:	//	[RS2EX] overwriting the older-format file it was loaded from
 				if(!g_SaveFile->Save(
 					m_NewFileName.c_str(), LAYOUT_DIRNAME, true, true)) ListFile();
 				break;
@@ -586,7 +587,8 @@ void CFileMode::ScanInputInterface(){
 		if(m_NewFileName.size()){
 			if(_mbsicmp((PUCHAR)m_NewFileName.c_str(), (PUCHAR)g_SaveFile->GetFileName()))
 				SaveFile((char *)m_NewFileName.c_str());
-			else if(!g_SaveFile->Save(
+			else if(ConfirmLegacyOverwrite(m_NewFileName.c_str())){
+			}else if(!g_SaveFile->Save(
 				m_NewFileName.c_str(), LAYOUT_DIRNAME, true, true)) ListFile();
 		}else{
 			goto SAVEAS;
@@ -759,6 +761,148 @@ void CFileMode::SwitchNetwork(bool enabled, bool host)
 /*
  *	ファイルを開く
  */
+////////////////////////////////////////////////////////////////////////////////
+//	[RS2EX] v0.2.0 save identity
+////////////////////////////////////////////////////////////////////////////////
+
+//	A file waiting for the interface: offered (or reported) on the first frame.
+static string s_StartupFile;
+static RS2SaveIdentity s_StartupIdentity;
+static bool s_StartupPending = false;
+
+/*
+ *	"Load it anyway" for a file that is not this build's format.
+ */
+class CLegacyFileOpener: public CMenuCommand{
+private:
+	string m_FileName;
+public:
+	CLegacyFileOpener(const char *fname){ m_FileName = fname; }
+	void Exec(){
+		g_FileMode->LoadLegacyFile(m_FileName.c_str());
+		CGameMode::SetNeutral();
+	}
+};
+
+/*
+ *	Classify a layout and act on the class.
+ *
+ *	fname		: file in the Layout directory
+ *	atStartup	: the interface is not running yet (no dialog can be shown)
+ *
+ *	returns	: true when a layout was loaded (as ours, or at the user's risk)
+ */
+bool CFileMode::OpenClassifiedFile(const char *fname, bool atStartup){
+	RS2SaveIdentity id;
+
+	RS2ClassifySaveFile(LAYOUT_DIRNAME, fname, &id);
+	Debug("RS2SAVEID|%s|class=%s|%s\n", fname, RS2SaveClassName(id.saveClass),
+		RS2DescribeSaveIdentity(id).c_str());
+
+	if(RS2SaveLoadsNormally(id.saveClass)){
+		if(!atStartup) ResetUndo();
+		DELETE_V(g_SaveFile);
+		DELETE_A(g_NetworkFileCopy);
+		g_SaveFile = new CSaveFile(false);
+		return g_SaveFile->Load(fname, LAYOUT_DIRNAME, !atStartup, true, NULL, NULL, false, NULL);
+	}
+	if(RS2SaveNeedsConsent(id.saveClass) && RS2SaveAutoAcceptLegacy()){
+		Debug("RS2SAVEID|%s|accepted without asking (automated run)\n", fname);
+		LoadLegacyFile(fname, atStartup);
+		return true;
+	}
+	if(atStartup){
+		s_StartupFile = fname;
+		s_StartupIdentity = id;
+		s_StartupPending = true;
+		return false;
+	}
+
+	string title = FlashIn("%s  [%s]", fname, RS2DescribeSaveIdentity(id).c_str());
+
+	if(RS2SaveNeedsConsent(id.saveClass)){
+		CYesNoDialog *dlg = new CYesNoDialog(
+			RS2SaveClassMessage(id.saveClass), (char *)title.c_str(), false);
+		dlg->SetYesCommand(new CLegacyFileOpener(fname));
+		EnqueueCommonDialog(dlg);
+	}else{
+		EnqueueCommonDialog(new CSimpleDialog(
+			RS2SaveClassMessage(id.saveClass), (char *)title.c_str()));
+		g_Skin->Error();
+	}
+	return false;
+}
+
+/*
+ *	Load a file that is not this build's format, at the user's explicit
+ *	choice.  It stays marked: saving it under its own name asks first.
+ */
+void CFileMode::LoadLegacyFile(const char *fname, bool atStartup){
+	Debug("RS2SAVEID|%s|legacy load\n", fname);
+	if(!atStartup) ResetUndo();
+	DELETE_V(g_SaveFile);
+	DELETE_A(g_NetworkFileCopy);
+	g_SaveFile = new CSaveFile(false);
+	if(g_SaveFile->Load(fname, LAYOUT_DIRNAME, !atStartup, true, NULL, NULL, false, NULL)){
+		g_SaveFile->SetLegacyLoad(true);
+	}else{
+		DELETE_V(g_SaveFile);
+		g_SaveFile = new CSaveFile(true);
+	}
+	if(!atStartup){
+		UpdateFileName();
+		UpdateFileNote();
+	}
+}
+
+/*
+ *	Saving a legacy-loaded layout under the name it came from overwrites the
+ *	older-format file: ask.  returns true when the question was put (the save
+ *	happens from the dialog, modal state 35).
+ */
+bool CFileMode::ConfirmLegacyOverwrite(const char *fname){
+	if(!g_SaveFile->IsLegacyLoad()) return false;
+	if(_mbsicmp((PUCHAR)fname, (PUCHAR)g_SaveFile->GetFileName())) return false;
+	m_ModalState = 35;
+	m_NewFileName = fname;
+	g_ModalDialog = m_YesNoDialog = new CYesNoDialog(
+		lang(SaveFormatOverwriteCfm), (char *)fname, false);
+	return true;
+}
+
+/*
+ *	First frame: offer the start-up file that was not loaded, and run
+ *	-savefixturecheck.  Called by every mode's SpinGame; does nothing after
+ *	the first time.
+ */
+void CFileMode::ProcessStartupFile(){
+	static bool s_Done = false;
+
+	if(s_Done || g_ModalDialog) return;
+	s_Done = true;
+
+	if(RS2SaveFixtureCheckRequested()){
+		RS2SaveFixtureCheckRun();
+		SendWM_CLOSE();
+		return;
+	}
+	if(!s_StartupPending) return;
+	s_StartupPending = false;
+
+	string title = FlashIn("%s  [%s]", s_StartupFile.c_str(), RS2DescribeSaveIdentity(s_StartupIdentity).c_str());
+
+	if(RS2SaveNeedsConsent(s_StartupIdentity.saveClass)){
+		CYesNoDialog *dlg = new CYesNoDialog(
+			RS2SaveClassMessage(s_StartupIdentity.saveClass), (char *)title.c_str(), false);
+		dlg->SetYesCommand(new CLegacyFileOpener(s_StartupFile.c_str()));
+		EnqueueCommonDialog(dlg);
+	}else{
+		EnqueueCommonDialog(new CSimpleDialog(
+			RS2SaveClassMessage(s_StartupIdentity.saveClass), (char *)title.c_str()));
+		g_Skin->Error();
+	}
+}
+
 void CFileMode::OpenFile(
 	char *fname	//	ファイル名
 ){
@@ -774,6 +918,7 @@ void CFileMode::OpenFile(
 void CFileMode::SaveFile(
 	char *fname	//	ファイル名
 ){
+	if(ConfirmLegacyOverwrite(fname)) return;	//	[RS2EX] v0.2.0
 	switch(g_SaveFile->Save(fname, LAYOUT_DIRNAME, false, true)){
 	case 0:
 		ListFile();

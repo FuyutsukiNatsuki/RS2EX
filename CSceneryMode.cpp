@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "RS2Renderer.h"
 #include "HighTimer.h"
@@ -62,6 +62,8 @@ void CSceneryMode::EnterGame(){
  *	モードループ
  */
 void CSceneryMode::SpinGame(){
+	//	[RS2EX] v0.2.0: the start-up file check, once, on the first frame.
+	CFileMode::ProcessStartupFile();
 	RS2SetDepthFunc(RS2_COMPARE_LESS_EQUAL);
 	g_ConfigMode->SetTexFilter();
 	//	[RS2EX] The world used to advance once per rendered frame, which tied

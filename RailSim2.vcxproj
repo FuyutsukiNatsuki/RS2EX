@@ -235,6 +235,7 @@
     <ClCompile Include="RS2MutableProbe.cpp" />
     <ClCompile Include="RS2XImportDump.cpp" />
     <ClCompile Include="RS2ModuleAudit.cpp" />
+    <ClCompile Include="RS2SaveIdentity.cpp" />
     <ClCompile Include="RS2StageProbe.cpp" />
     <ClCompile Include="RS2TextureSource.cpp" />
     <ClCompile Include="RS2DDS.cpp" />
@@ -508,6 +509,7 @@
     <ClInclude Include="RS2MutableProbe.h" />
     <ClInclude Include="RS2XImportDump.h" />
     <ClInclude Include="RS2ModuleAudit.h" />
+    <ClInclude Include="RS2SaveIdentity.h" />
     <ClInclude Include="RS2StageProbe.h" />
     <ClInclude Include="RS2TextureSource.h" />
     <ClInclude Include="RS2DDS.h" />

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifdef PROC_LANG
 
 PROC_LANG(Accesories)
@@ -268,6 +269,13 @@ PROC_LANG(RS1Plugin)
 PROC_LANG(SameSrcAndDest)
 PROC_LANG(Sat)
 PROC_LANG(SaveAs)
+PROC_LANG(SaveFormatCorrupt)
+PROC_LANG(SaveFormatEmpty)
+PROC_LANG(SaveFormatLegacyCfm)
+PROC_LANG(SaveFormatNewer)
+PROC_LANG(SaveFormatOlderCfm)
+PROC_LANG(SaveFormatOverwriteCfm)
+PROC_LANG(SaveFormatUnknown)
 PROC_LANG(SavedInEveryFile)
 PROC_LANG(SaveNew)
 PROC_LANG(SaveSettingNew)

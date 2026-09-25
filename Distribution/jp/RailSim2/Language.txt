@@ -1,6 +1,7 @@
 /*
  *	RailSim II Language Datafile
  */
+//	Modified for RS2EX on 2026-09-26.
 
 DatafileHeader{
 	RailSimVersion = 2.15;
@@ -280,6 +281,13 @@ Resource{
 	SameSrcAndDest = "接続元と接続先が同じです。";
 	Sat = "土";
 	SaveAs = "別名で保存";
+	SaveFormatCorrupt = "保存ファイルのヘッダが壊れているため開けません";
+	SaveFormatEmpty = "空のファイルのため開けません";
+	SaveFormatLegacyCfm = "旧形式（RailSim II / RS2EX v0.1.x以前）です。互換性は保証されません。読み込みますか？";
+	SaveFormatNewer = "新しいRS2EXの保存形式のため、このバージョンでは開けません";
+	SaveFormatOlderCfm = "古いRS2EXの保存形式です。互換性は保証されません。読み込みますか？";
+	SaveFormatOverwriteCfm = "旧形式のファイルをv0.2形式で上書きします。旧版では開けなくなります。よろしいですか？";
+	SaveFormatUnknown = "RailSim II / RS2EXの保存ファイルとして認識できません";
 	SavedInEveryFile = "※ これらの設定はファイルごとに保存されます。";
 	SaveNew = "新規保存";
 	SaveSettingNew = "設定新規保存";

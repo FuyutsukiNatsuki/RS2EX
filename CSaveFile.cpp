@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "md5.h"
 #include "RailMap.h"
@@ -55,6 +55,12 @@ CSaveFile::CSaveFile(
 	bool preset	//	プリセット編成・シーン準備
 ){
 	m_NetworkSyncCount = 0;
+	//	[RS2EX] A new layout is this build's; a loaded one is replaced in Load.
+	m_Identity.saveClass = RS2_SAVE_CURRENT;
+	m_Identity.schema = RS2_SAVE_SCHEMA_CURRENT;
+	m_Identity.product = RS2_SAVE_PRODUCT;
+	m_Identity.producer = RS2_SAVE_PRODUCER;
+	m_LegacyLoad = false;
 	m_Year = m_Month = m_Day = m_Hour = m_Minute
 		= m_Second = m_Frame = m_DayOfWeek = m_SumDays = 0;
 	for(; m_Month<3; m_Month++) m_SumDays += GetDaysPerMonth(0, m_Month);
@@ -761,6 +767,16 @@ bool CSaveFile::Load(
 		string datafiletype;
 		if(!(str = AsgnIdentifier(eee = str, "DatafileType", &datafiletype))) throw CSynErr(eee);
 		if(datafiletype!=LAYOUT_DIRNAME) throw CSynErr(eee, lang(InvalidDatafileType));
+		//	[RS2EX] v0.2.0 identity.  Callers classify before loading; this is the
+		//	second line: a newer or foreign RS2EX format is never parsed as ours.
+		m_Identity.Clear();
+		m_Identity.railSimVersion = m_Version;
+		if(!(str = RS2ReadSaveIdentityKeys(eee = str, &m_Identity))) throw CSynErr(eee, lang(SaveFormatCorrupt));
+		if(m_Identity.product.empty()) m_Identity.saveClass = RS2_SAVE_LEGACY;
+		else if(m_Identity.product!=RS2_SAVE_PRODUCT) throw CSynErr(eee, lang(SaveFormatUnknown));
+		else if(m_Identity.schema>RS2_SAVE_SCHEMA_CURRENT) throw CSynErr(eee, lang(SaveFormatNewer));
+		else if(m_Identity.schema<RS2_SAVE_SCHEMA_CURRENT) m_Identity.saveClass = RS2_SAVE_OLDER_RS2EX;
+		else m_Identity.saveClass = RS2_SAVE_CURRENT;
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
 		if(!(str = BeginBlock(eee = str, "LayoutInfo"))) throw CSynErr(eee);
@@ -956,10 +972,20 @@ int CSaveFile::Save(
 	}
 	if(upname) m_FileName = fname;
 	m_Version = RAILSIM_VERSION;
+	//	[RS2EX] Written in this build's format from here on: the file (under
+	//	whatever name) is ours now.  Undo copies (upname false) change nothing.
+	if(upname){
+		m_Identity.saveClass = RS2_SAVE_CURRENT;
+		m_Identity.schema = RS2_SAVE_SCHEMA_CURRENT;
+		m_Identity.product = RS2_SAVE_PRODUCT;
+		m_Identity.producer = RS2_SAVE_PRODUCER;
+		m_LegacyLoad = false;
+	}
 
 	fprintf(df, "DatafileHeader{\n");
 	fprintf(df, "\tRailSimVersion = %.2f;\n", RAILSIM_VERSION);
 	fprintf(df, "\tDatafileType = %s;\n", LAYOUT_DIRNAME);
+	RS2WriteSaveIdentityKeys(df);	//	[RS2EX] v0.2.0
 	fprintf(df, "}\n\n");
 
 	SYSTEMTIME systime;

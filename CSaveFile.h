@@ -1,8 +1,9 @@
-//	Modified for RS2EX on 2026-09-19, 2026-09-20.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-26.
 #ifndef CSAVEFILE_H_INCLUDED
 #define CSAVEFILE_H_INCLUDED
 
 #include "RS2EXTiming.h"
+#include "RS2SaveIdentity.h"
 
 class MD5;
 class CListView;
@@ -42,6 +43,12 @@ private:
 	CTrainGroup *m_GroupList;	//	編成
 	CScene *m_SceneList;		//	シーン
 	int m_NetworkSyncCount;		//	ネットワーク同期カウンタ
+
+	//	[RS2EX] v0.2.0: what the loaded file said about itself, and whether it
+	//	was loaded only by the user's explicit choice (an older or foreign
+	//	format).  Saving such a file under its own name asks first.
+	RS2SaveIdentity m_Identity;
+	bool m_LegacyLoad;
 public:
 	CSaveFile(bool);
 	~CSaveFile();
@@ -90,6 +97,10 @@ public:
 	char *GetTimeText();
 	bool Load(const char *, const char *, bool, bool, char **, int *, bool, char *);
 	int Save(const char *, const char *, bool, bool);
+
+	const RS2SaveIdentity &GetIdentity() const{ return m_Identity; }
+	bool IsLegacyLoad() const{ return m_LegacyLoad; }
+	void SetLegacyLoad(bool legacy){ m_LegacyLoad = legacy; }
 };
 
 //	外部グローバル

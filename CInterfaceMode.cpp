@@ -1,5 +1,6 @@
-//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
+#include "CFileMode.h"
 #include "HighTimer.h"
 #include "Capture.h"
 #include "Network.h"
@@ -106,6 +107,8 @@ void CInterfaceMode::EnterGame(){
  *	モードループ
  */
 void CInterfaceMode::SpinGame(){
+	//	[RS2EX] v0.2.0: the start-up file check, once, on the first frame.
+	CFileMode::ProcessStartupFile();
 //	static double a = 0.0, s = 0.95;
 //	double b = HighTimer();
 	//	[RS2EX] Same fixed-tick treatment as CSceneryMode::SpinGame().  The RSN

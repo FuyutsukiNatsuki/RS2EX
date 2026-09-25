@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CFILEMODE_H_INCLUDED
 #define CFILEMODE_H_INCLUDED
 
@@ -101,6 +102,12 @@ public:
 	void PushUndo();
 	void LoadUndo();
 	void LoadRedo();
+
+	//	[RS2EX] v0.2.0 save identity.
+	bool OpenClassifiedFile(const char *fname, bool atStartup);
+	void LoadLegacyFile(const char *fname, bool atStartup = false);
+	bool ConfirmLegacyOverwrite(const char *fname);
+	static void ProcessStartupFile();
 };
 
 //	外部グローバル
