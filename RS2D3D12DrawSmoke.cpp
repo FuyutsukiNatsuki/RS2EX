@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
-//	Modified for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-23, 2026-09-25.
 //
 //	The first visible Direct3D 12 draw, through the public boundary.
 //
@@ -424,7 +424,11 @@ static bool RS2D3D12AlphaSmokeRun(){
 
 	const unsigned int textureBaseline = RS2D3D12_GetLiveTextureCount();
 	const unsigned int descriptorBaseline = backend->GetDescriptors()->GetLive();
-	if(textureBaseline || descriptorBaseline){
+	//	v0.1.6: the backend owns one texture from start-up, the live-text
+	//	line (a mutable texture, like Direct3D 8's ID3DXFont).  Anything
+	//	else alive here is still a leak from before this smoke.
+	const unsigned int owned = RS2D3D12_GetMutableStats().live;
+	if(textureBaseline!=owned || descriptorBaseline!=owned){
 		Debug("RS2D3D12ALPHA|nonempty start: textures=%u descriptors=%u\n",
 			textureBaseline, descriptorBaseline);
 		DeleteFileA(path);

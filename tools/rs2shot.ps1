@@ -270,7 +270,9 @@ finally {
         #   WM_CLOSE, so the program shuts down through its own path.
         $handle = if ($windowHandle -ne 0) { $windowHandle } else { $proc.MainWindowHandle }
         $null = $api::PostMessage($handle, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)
-        $deadline = (Get-Date).AddSeconds(20)
+        #   A Debug build releasing a shadowed layout can take longer than
+        #   20 s, and a forced kill loses the shutdown audit lines.
+        $deadline = (Get-Date).AddSeconds(60)
         while ((Get-Date) -lt $deadline -and -not $proc.HasExited) {
             Start-Sleep -Milliseconds 400
             $proc.Refresh()

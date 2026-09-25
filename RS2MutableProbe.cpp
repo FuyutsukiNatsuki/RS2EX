@@ -127,6 +127,7 @@ bool RS2MutableProbeRun(){
 	const unsigned int textureBaseline = d3d12 ? RS2D3D12_GetLiveTextureCount() : 0;
 	const unsigned int descriptorBaseline = d3d12 ? backend->GetDescriptors()->GetLive() : 0;
 	const RS2D3D12MutableStats mutableBaseline = RS2D3D12_GetMutableStats();
+	const unsigned int pendingBaseline = d3d12 ? backend->GetTextureUpload()->GetPendingCount() : 0;
 
 	//	---------------------------------------------------------- contract texture
 	CRS2TextureResource *contract = RS2CreateMutableTexture(64, 64);
@@ -398,9 +399,10 @@ bool RS2MutableProbeRun(){
 		RS2MPStep("draws submitted, none refused", submitted>0 && refused==0, &ok);
 		RS2MPStep("pipelines stable after the first frame",
 			backend->GetPipelineStateCount()==pipelinesAfterFirst, &ok);
-		RS2MPStep("texture / descriptor baselines",
+		RS2MPStep("texture / descriptor / pending-upload baselines",
 			RS2D3D12_GetLiveTextureCount()==textureBaseline
-			&& backend->GetDescriptors()->GetLive()==descriptorBaseline, &ok);
+			&& backend->GetDescriptors()->GetLive()==descriptorBaseline
+			&& backend->GetTextureUpload()->GetPendingCount()==pendingBaseline, &ok);
 		RS2MPStep("debug layer clean", errors==0 && warnings==0, &ok);
 
 		//	Per frame: four regions of the ordering texture change and are
@@ -440,6 +442,8 @@ bool RS2MutableProbeRun(){
 			pipelinesAfterFirst, backend->GetPipelineStateCount());
 		Debug("RS2MUTABLEPROBE|textures=%u->%u|descriptors=%u->%u\n", textureBaseline,
 			RS2D3D12_GetLiveTextureCount(), descriptorBaseline, backend->GetDescriptors()->GetLive());
+		Debug("RS2MUTABLEPROBE|pendingUploads=%u->%u\n", pendingBaseline,
+			backend->GetTextureUpload()->GetPendingCount());
 		Debug("RS2MUTABLEPROBE|debug=%u|errors=%u|warnings=%u\n",
 			backend->HasDebugLayer() ? 1u : 0u, errors, warnings);
 	}
