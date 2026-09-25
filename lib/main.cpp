@@ -10,6 +10,7 @@
 #include "..\RS2StageProbe.h"
 #include "..\RS2D3D12Stage1Smoke.h"
 #include "..\RS2ShadowProbe.h"
+#include "..\RS2MutableProbe.h"
 
 /*
  *	コンパイル・オプション
@@ -36,6 +37,8 @@
  *	-stageprobe:RS2EX: draw the texture-stage / environment / UV probe and exit.
  *	-dx12stage1smoke:RS2EX: stage 1 / environment / UV through the boundary; exit.
  *	-shadowprobe:RS2EX: draw the stencil-shadow probe and exit.
+ *	-mutableprobe:RS2EX: draw the mutable-texture / text probe and exit
+ *		 (-dx12mutablesmoke: the same on Direct3D 12).
  *	/3ds	:3Dサウンドを使用しない。
  *	/fx		:サウンドにエフェクトを使用しない。
  */
@@ -141,6 +144,10 @@ BOOL CApp::Init(HINSTANCE hInst){
 	}
 	if(RS2ShadowProbeRequested()){
 		RS2ShadowProbeRun();
+		return FALSE;
+	}
+	if(RS2MutableProbeRequested()){
+		RS2MutableProbeRun();
 		return FALSE;
 	}
 	if(!InitDirectInput()) return FALSE;

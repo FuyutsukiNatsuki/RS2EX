@@ -11,6 +11,7 @@
 #include "RS2LightingAudit.h"
 #include "RS2StageAudit.h"
 #include "RS2ShadowAudit.h"
+#include "RS2MutableAudit.h"
 
 /*
  *	The renderer instance
@@ -131,6 +132,7 @@ void CRS2Renderer::Shutdown(){
 	RS2LightingAuditDump();
 	RS2StageAuditDump();
 	RS2ShadowAuditDump();
+	RS2MutableAuditDump();
 
 	m_Backend->Shutdown();
 	delete m_Backend;
@@ -190,6 +192,7 @@ void CRS2Renderer::Present(){
 
 	m_Backend->Present();
 	RS2ShadowAuditPresent();
+	RS2MutableAuditPresent();
 }
 
 bool CRS2Renderer::Reset(){

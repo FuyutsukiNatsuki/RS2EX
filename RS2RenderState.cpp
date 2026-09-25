@@ -22,6 +22,7 @@
 #include "RS2LightingAudit.h"
 #include "RS2StageAudit.h"
 #include "RS2ShadowAudit.h"
+#include "RS2MutableAudit.h"
 
 void RS2SetDepthTest(bool enable){
 	RS2ShadowAuditSet(RS2_SA_DEPTH_TEST, enable ? 1 : 0);
@@ -52,6 +53,7 @@ void RS2ClearDepth(){
 }
 
 void RS2SetBlend(RS2BlendMode mode){
+	RS2MutableAuditBlend(mode);
 	RS2ShadowAuditSet(RS2_SA_BLEND, (unsigned int)mode);
 	RS2StageAuditBlend(mode);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
@@ -60,6 +62,7 @@ void RS2SetBlend(RS2BlendMode mode){
 }
 
 void RS2SetAlphaTest(bool enable){
+	RS2MutableAuditAlphaTest(enable);
 	RS2StageAuditAlphaTest(enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetAlphaTest(enable);
@@ -159,6 +162,7 @@ void RS2SetStencilPassOp(RS2StencilOp op){
 }
 
 void RS2SetLighting(bool enable){
+	RS2MutableAuditLighting(enable);
 	RS2LightingAuditLighting(enable);
 	RS2StageAuditLighting(enable);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
@@ -202,6 +206,7 @@ void RS2DisableFog(){
 }
 
 void RS2SetTextureFilter(unsigned int stage, RS2TextureFilter filter){
+	RS2MutableAuditFilter(stage, filter);
 	RS2StageAuditFilter(stage, filter);
 	if(GetRS2Renderer().GetBackendType()==RS2_RENDERER_D3D8)
 		RS2D3D8_SetTextureFilter(stage, filter);

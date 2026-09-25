@@ -1,6 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
-//	Modified for RS2EX on 2026-09-22, 2026-09-24.
+//	Modified for RS2EX on 2026-09-22, 2026-09-24, 2026-09-25.
 //
 //	This file owns neutral lifetime and identity.  It never interprets a payload:
 //	the backend that created one supplies the operations that destroy or lock it.
@@ -12,6 +12,7 @@
 #include "RS2D3D8Resources.h"
 #include "RS2D3D12TextureBackend.h"
 #include "RS2StageAudit.h"
+#include "RS2MutableAudit.h"
 
 //	Remember where a texture came from, for -stageaudit only.
 static CRS2TextureResource *RS2AuditCreated(
@@ -87,10 +88,15 @@ bool CRS2TextureResource::Lock(RS2TextureLock *out){
 	out->pitch = 0;
 
 	if(!m_Payload || !m_Ops || !m_Ops->lock) return false;
-	return m_Ops->lock(m_Payload, out);
+
+	const bool ok = m_Ops->lock(m_Payload, out);
+
+	RS2MutableAuditLocked(this, ok, out->bits, out->pitch);
+	return ok;
 }
 
 void CRS2TextureResource::Unlock(){
+	RS2MutableAuditUnlocking(this);
 	if(m_Payload && m_Ops && m_Ops->unlock) m_Ops->unlock(m_Payload);
 }
 
@@ -172,14 +178,22 @@ CRS2TextureResource *RS2CreateMutableTexture(int w, int h){
 	int width = 0, height = 0;
 
 	if(!RS2D3D8_CreateMutableTexturePayload(
-		&payload, &width, &height, w, h)) return 0;
-	return RS2AdoptD3D8Texture(payload, width, height);
+		&payload, &width, &height, w, h)){
+		RS2MutableAuditCreated(0, w, h);
+		return 0;
+	}
+
+	CRS2TextureResource *resource = RS2AdoptD3D8Texture(payload, width, height);
+
+	RS2MutableAuditCreated(resource, w, h);
+	return resource;
 }
 
 void RS2DestroyTexture(CRS2TextureResource *resource){
 	if(!resource) return;
 
 	RS2StageAuditTextureDestroyed(resource);
+	RS2MutableAuditDestroyed(resource);
 	delete resource;
 }
 

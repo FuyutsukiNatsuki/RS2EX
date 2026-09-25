@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-25.
 //
 //	The pool, format and mip choices below are inherited from the UDX library
 //	(Copyright (c) 2002 Midikyou) - lib/vertex.cpp, lib/texture.h, lib/texture.cpp
@@ -7,6 +8,7 @@
 //	is observable, either as content compatibility or as memory use.
 
 #include "stdafx.h"
+#include "RS2MutableAudit.h"
 #include "RS2D3D8Resources.h"
 #include "RS2TextureResource.h"
 #include "RS2TextureAudit.h"
@@ -250,6 +252,16 @@ HRESULT RS2D3D8_CreateMutableTexture(LPTEX8 *ppOut, int w, int h){
 
 	if(SUCCEEDED(hr)) s_LiveTextures++;
 	else *ppOut = NULL;
+
+	if(RS2MutableAuditEnabled() && SUCCEEDED(hr) && *ppOut){
+		D3DSURFACE_DESC desc;
+
+		ZeroMemory(&desc, sizeof(desc));
+		(*ppOut)->GetLevelDesc(0, &desc);
+		Debug("RS2MUTABLEAUDIT|d3d8|requested=%dx%d|surface=%ux%u|format=%d|pool=%d|usage=%lu"
+			"|levels=%lu\n", w, h, desc.Width, desc.Height, (int)desc.Format, (int)desc.Pool,
+			(unsigned long)desc.Usage, (unsigned long)(*ppOut)->GetLevelCount());
+	}
 
 	if(RS2TextureAuditEnabled()){
 		D3DSURFACE_DESC actual;

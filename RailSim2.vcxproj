@@ -231,6 +231,8 @@
     <ClCompile Include="RS2StageAudit.cpp" />
     <ClCompile Include="RS2ShadowAudit.cpp" />
     <ClCompile Include="RS2ShadowProbe.cpp" />
+    <ClCompile Include="RS2MutableAudit.cpp" />
+    <ClCompile Include="RS2MutableProbe.cpp" />
     <ClCompile Include="RS2StageProbe.cpp" />
     <ClCompile Include="RS2TextureSource.cpp" />
     <ClCompile Include="RS2DDS.cpp" />
@@ -499,6 +501,8 @@
     <ClInclude Include="RS2StageAudit.h" />
     <ClInclude Include="RS2ShadowAudit.h" />
     <ClInclude Include="RS2ShadowProbe.h" />
+    <ClInclude Include="RS2MutableAudit.h" />
+    <ClInclude Include="RS2MutableProbe.h" />
     <ClInclude Include="RS2StageProbe.h" />
     <ClInclude Include="RS2TextureSource.h" />
     <ClInclude Include="RS2DDS.h" />
