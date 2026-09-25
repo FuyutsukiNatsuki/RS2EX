@@ -187,6 +187,7 @@ void RS2D3D12_DrawText(int x, int y, RS2PackedColor color, const char *text){
 	RS2BindTexture(1, RS2TextureRef());
 	RS2SetTextureFilter(0, RS2_FILTER_POINT);
 	RS2DrawImmediate(RS2LayoutTLX(), RS2_PRIMITIVE_TRIANGLE_FAN, vertices, 4);
+	RS2D3D12_CountLiveTextDraw();
 	RS2D3D12_PopTextureBinding();
 	RS2D3D12_PopOverlayState();
 }

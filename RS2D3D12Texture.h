@@ -121,8 +121,11 @@ struct RS2D3D12MutableStats
 	unsigned int refusedUploads;		//	frame scratch full: left pending
 	unsigned long long uploadBytes;		//	RGBA8 bytes copied
 	unsigned int largestUpload;		//	bytes, one copy
+	unsigned int draws;			//	draws with a mutable texture bound
+	unsigned int liveTextDraws;		//	RS2DrawText lines drawn
 };
 const RS2D3D12MutableStats &RS2D3D12_GetMutableStats();
+void RS2D3D12_CountLiveTextDraw();
 
 //	Record the pending upload of any mutable texture bound to stage 0 or 1.
 //	Called for every draw, before it is recorded.

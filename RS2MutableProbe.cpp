@@ -234,6 +234,7 @@ bool RS2MutableProbeRun(){
 
 	Debug("RS2MUTABLEPROBE|cell|strings|300|180|320|60\n");
 	Debug("RS2MUTABLEPROBE|cell|livetext|300|380|320|60\n");
+	Debug("RS2MUTABLEPROBE|cell|editbox|12|380|270|56\n");
 
 	//	---------------------------------------------------------- lifetime
 	//	Mutable textures created, written, drawn and destroyed inside a frame
@@ -334,6 +335,39 @@ bool RS2MutableProbeRun(){
 		strings->RenderLeft(300, 200, 0xffffff00, 0xff000000, "\x95\xb6\x8e\x9a\x97\xf1 Shift-JIS");
 		RS2DrawText(300, 380, 0xffffffff, "Live text RS2DrawText 0123456789");
 		RS2DrawText(300, 400, 0xff80ff80, "\x95\xd2\x8f\x57\x92\x86 edit box");
+
+		//	CEditBox::Render's layout, both branches, without a skin: every
+		//	position comes from RS2GetTextHeight() exactly as there.  The
+		//	composing line draws three strings through one live-text line.
+		{
+			const int th = RS2GetTextHeight(), ex = 20, ey = 384, cy = 414;
+			D3DCOLOR base[4] = { 0xff304860, 0xff304860, 0xff182430, 0xff182430 };
+			D3DCOLOR selected[4] = { 0xff806020, 0xff806020, 0xff403010, 0xff403010 };
+			const char *typed = "Edit ABC 123";
+			const int pos = 4, len = (int)strlen(typed);
+
+			RS2BindTexture(0, RS2TextureRef());
+			Grad2DRect(ex-2, ey, ex+(len+1)*th/2+2, ey+th, base);
+			Grad2DRect(ex+6*th/2, ey, ex+9*th/2, ey+th, selected);
+			RS2DrawText(ex, ey, 0xffffffff, typed);
+			Draw2DLine(ex+pos*th/2, ey+th-2, ex+pos*th/2+th/2, ey+th-2, 0xffffff00);
+			Draw2DLine(ex+pos*th/2, ey+th-1, ex+pos*th/2+th/2, ey+th-1, 0xffffff00);
+
+			//	"abc", a composition of two clauses (4 + 2 bytes, the first one
+			//	the target), then "def"; the caret is after "abc".
+			const char *before = "abc", *composing = "\x93\xfa\x96\x7b\x8c\xea", *after = "def";
+			const int cpos = 3, clen = 6;
+
+			RS2BindTexture(0, RS2TextureRef());
+			Grad2DRect(ex-2, cy, ex+(cpos+clen+3+1)*th/2+2, cy+th, base);
+			Draw2DLine(ex+cpos*th/2+1, cy+th-2, ex+(cpos+4)*th/2-1, cy+th-2, 0xff00ffff);
+			Draw2DLine(ex+cpos*th/2+1, cy+th-1, ex+(cpos+4)*th/2-1, cy+th-1, 0xff00ffff);
+			Draw2DLine(ex+(cpos+4)*th/2+1, cy+th-2, ex+(cpos+clen)*th/2-1, cy+th-2, 0xff808080);
+			Draw2DLine(ex+(cpos+4)*th/2+1, cy+th-1, ex+(cpos+clen)*th/2-1, cy+th-1, 0xff808080);
+			RS2DrawText(ex, cy, 0xffffffff, before);
+			RS2DrawText(ex+cpos*th/2, cy, 0xffffff00, composing);
+			RS2DrawText(ex+(cpos+clen)*th/2, cy, 0xffffffff, after);
+		}
 
 		GetRS2Renderer().EndRenderPass();
 		GetRS2Renderer().Present();

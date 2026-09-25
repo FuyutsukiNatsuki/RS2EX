@@ -98,6 +98,7 @@ static const RS2TexturePayloadOps s_TextureOps = {
 
 const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps(){ return &s_TextureOps; }
 const RS2D3D12MutableStats &RS2D3D12_GetMutableStats(){ return s_MutableStats; }
+void RS2D3D12_CountLiveTextDraw(){ s_MutableStats.liveTextDraws++; }
 unsigned int RS2D3D12_GetLiveTextureCount(){ return s_LiveTextures; }
 unsigned int RS2D3D12_GetPeakTextureCount(){ return s_PeakTextures; }
 unsigned int RS2D3D12_GetLiveDDSTextureCount(){ return s_LiveDDSTextures; }
@@ -578,6 +579,7 @@ void RS2D3D12_PrepareBoundTextures(CRS2D3D12Backend *backend, ID3D12GraphicsComm
 	unsigned int stage;
 
 	if(!backend || !list) return;
+	if(s_Bound[0] && s_Bound[0]->mutableState) s_MutableStats.draws++;
 	for(stage = 0; stage<2; stage++){
 		RS2D3D12TexturePayload *payload = s_Bound[stage];
 

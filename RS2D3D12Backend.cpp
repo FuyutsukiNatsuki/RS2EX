@@ -893,6 +893,19 @@ void CRS2D3D12Backend::Shutdown(){
 			m_Descriptors.GetLive(),m_Descriptors.GetPeak(),m_Descriptors.GetCapacity(),
 			(unsigned long long)m_TextureUpload.GetSubmittedBytes(),
 			m_TextureUpload.GetPendingCount());
+		{
+			//	v0.1.6: the string texture and the live-text line.
+			const RS2D3D12MutableStats &mu = RS2D3D12_GetMutableStats();
+
+			Debug("RS2D3D12SCENE|mutable creates=%u failed=%u live=%u peak=%u locks=%u unlocks=%u\n",
+				mu.creates,mu.createFailures,mu.live,mu.peak,mu.locks,mu.unlocks);
+			Debug("RS2D3D12SCENE|mutable refusedLocks=%u unlocksWithoutLock=%u destroyedLocked=%u\n",
+				mu.refusedLocks,mu.unlocksWithoutLock,mu.destroyedLocked);
+			Debug("RS2D3D12SCENE|mutable uploads=%u coalesced=%u unchanged=%u refused=%u bytes=%llu largest=%u\n",
+				mu.uploads,mu.coalescedUnlocks,mu.unchangedUnlocks,mu.refusedUploads,
+				mu.uploadBytes,mu.largestUpload);
+			Debug("RS2D3D12SCENE|mutable draws=%u liveText=%u\n",mu.draws,mu.liveTextDraws);
+		}
 		Debug("RS2D3D12SCENE|draws=%u textured=%u refused=%u pso=%u unsupported=%u errors=%u warnings=%u\n",
 			RS2D3D12_GetDrawCount(),RS2D3D12_GetTexturedDrawCount(),
 			RS2D3D12_GetRefusedDrawCount(),m_Pipeline.GetStateCount(),
