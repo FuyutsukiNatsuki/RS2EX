@@ -95,12 +95,37 @@ def parse(data):
     return root
 
 
+IDENTITY = (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+
+
+def meshes_of(root):
+    """Every Mesh with the matrices of the Frames above it, innermost first,
+    in depth-first file order - the order D3DX8 merges them in."""
+    out = []
+
+    def walk(obj, chain):
+        local = chain
+        ft = obj.child('FrameTransformMatrix') if obj.kind == 'Frame' else None
+        if ft is not None:
+            local = (tuple(float(x) for x in ft.values[:16]),) + chain
+        for c in obj.children:
+            if c.kind == 'Mesh':
+                out.append((c, local))
+            elif c.kind == 'Frame':
+                walk(c, local)
+    walk(root, ())
+    return out
+
+
 def mesh_of(root):
     """Interpret the single top-level Mesh."""
     m = [c for c in root.children if c.kind == 'Mesh']
     if len(m) != 1:
         raise ValueError('%d top-level Mesh objects' % len(m))
-    m = m[0]
+    return interpret(m[0])
+
+
+def interpret(m):
     v = m.values
     nv = int(v[0])
     pos = [tuple(float(x) for x in v[1 + 3 * i:4 + 3 * i]) for i in range(nv)]

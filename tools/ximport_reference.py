@@ -95,32 +95,71 @@ def unescape(s):
     return s.replace(b'\\\\', b'\\')
 
 
-def build(path, opts):
-    src = xfile_text.load(path)
-    P = [tuple(toward_zero(x) for x in p) for p in src['positions']]
+def mat_mul(a, b):
+    """Row-major 4x4, float32 arithmetic: a * b."""
+    out = []
+    for r in range(4):
+        for c in range(4):
+            acc = 0.0
+            for k in range(4):
+                acc = fadd(acc, fmul(a[r * 4 + k], b[k * 4 + c]))
+            out.append(acc)
+    return tuple(out)
+
+
+def transform_point(p, m):
+    x, y, z = p
+    return (fadd(fadd(fadd(fmul(x, m[0]), fmul(y, m[4])), fmul(z, m[8])), m[12]),
+            fadd(fadd(fadd(fmul(x, m[1]), fmul(y, m[5])), fmul(z, m[9])), m[13]),
+            fadd(fadd(fadd(fmul(x, m[2]), fmul(y, m[6])), fmul(z, m[10])), m[14]))
+
+
+def transform_normal(n, m):
+    x, y, z = n
+    return (fadd(fadd(fmul(x, m[0]), fmul(y, m[4])), fmul(z, m[8])),
+            fadd(fadd(fmul(x, m[1]), fmul(y, m[5])), fmul(z, m[9])),
+            fadd(fadd(fmul(x, m[2]), fmul(y, m[6])), fmul(z, m[10])))
+
+
+DEFAULT_MATERIAL = {'diffuse': (0.5, 0.5, 0.5, 0.0), 'ambient': (0.0, 0.0, 0.0, 0.0),
+                    'specular': (0.5, 0.5, 0.5, 0.0), 'emissive': (0.0, 0.0, 0.0, 0.0),
+                    'power': 0.0, 'texture': None}
+
+
+def load_mesh(src, chain, opts):
+    """D3DXLoadMeshFromX's per-mesh step: parse, transform by the Frames
+    above (innermost first), split vertices by normal, triangulate."""
+    matrix = None
+    for m in chain:
+        mm = tuple(f32(x) for x in m)
+        matrix = mm if matrix is None else mat_mul(matrix, mm)
+    # Positions: correctly rounded, transformed by the Frames in float, and
+    # only then moved one ulp toward zero - D3DX8 does that to every position
+    # it outputs, with or without a Frame.
+    P = [tuple(f32(x) for x in p) for p in src['positions']]
+    if matrix is not None:
+        P = [transform_point(p, matrix) for p in P]
+    P = [tuple(toward_zero(x) for x in p) for p in P]
     F = src['faces']
     NF = src['normalFaces']
-    N = [normalize(tuple(opts.nparse(x) for x in n), opts.normal) for n in src['normals']] if src['normals'] else None
+    N = None
+    if src['normals']:
+        N = []
+        for n in src['normals']:
+            v = tuple(opts.nparse(x) for x in n)
+            if matrix is not None:
+                v = transform_normal(v, matrix)
+            N.append(normalize(v, opts.normal))
     UV = [tuple(f32(x) for x in uv) for uv in src['uv']] if src['uv'] else None
     COL = None
     if src['colors']:
         COL = [0] * len(P)
         for idx, r, g, b, a in src['colors']:
             COL[idx] = pack_color((r, g, b, a), opts.color)
-    has_n, has_uv, has_c = N is not None, UV is not None, COL is not None
-    stride = 12 + (12 if has_n else 0) + (4 if has_c else 0) + (8 if has_uv else 0)
-    layout = {'stride': stride, 'position': 0, 'normal': 12 if has_n else -1,
-              'diffuse': (24 if has_n else 12) if has_c else -1,
-              'texcoords': [(stride - 8, 2)] if has_uv else []}
+    has_n = N is not None
     fm_src = src['faceMaterials'] or [0] * len(F)
     if len(fm_src) < len(F):
         fm_src = fm_src + [fm_src[-1]] * (len(F) - len(fm_src))
-    # 1. Load: one vertex per position until a corner brings a different
-    #    normal.  The original vertex is reused when the corner has the same
-    #    normal index or the same normalised value; a split copy only when the
-    #    value is the same.  Values compare as floats, so a zero normal (NaN
-    #    after normalising) never matches a copy.  Copies are appended in face
-    #    order.
     # A zero-length normal normalises to NaN inside D3DX (written out as 0),
     # so by value it matches nothing - not even another zero normal.
     zero = lambda n: n == (0.0, 0.0, 0.0)
@@ -158,11 +197,11 @@ def build(path, opts):
                 copies.setdefault(pi, []).append(hit)
             cv.append(hit)
         corner_vertex.append(cv)
-    # Bounds: over the loaded vertices, all but the last one
-    # (D3DX8's D3DXComputeBoundingBox skips the last vertex).
-    bsrc = [P[pi] for pi in lv_pos][:-1] if len(lv_pos) > 1 else [P[pi] for pi in lv_pos]
-    # 2. Triangles: fan, file order; a triangle whose three loaded vertices
-    #    are not distinct is dropped.
+    loaded = []
+    for lv, pi in enumerate(lv_pos):
+        loaded.append({'pos': P[pi], 'normal': lv_normal[lv] if has_n else None,
+                       'diffuse': COL[pi] if COL is not None else None,
+                       'uv': UV[pi] if UV is not None else None})
     tri = []
     for fi, f in enumerate(F):
         cv = corner_vertex[fi]
@@ -170,21 +209,58 @@ def build(path, opts):
             t = (cv[0], cv[k], cv[k + 1])
             if len(set(t)) < 3:
                 continue
-            tri.append((fm_src[fi], fi, (0, k, k + 1), t))
-    # 3. Optimise: stable sort by material (ATTRSORT); a loaded vertex used by
-    #    two materials becomes one vertex per material; unused vertices go.
+            tri.append((fm_src[fi], t))
+    mats = []
+    for m in src['materials']:
+        mats.append({'diffuse': tuple(opts.mparse(x) for x in m['faceColor']), 'ambient': (0.0, 0.0, 0.0, 1.0),
+                     'specular': tuple(opts.mparse(x) for x in m['specular']) + (1.0,),
+                     'emissive': tuple(opts.mparse(x) for x in m['emissive']) + (1.0,),
+                     'power': opts.mparse(m['power']),
+                     'texture': unescape(m['texture']).decode('cp932') if m['texture'] is not None else None})
+    if not mats:
+        mats = [dict(DEFAULT_MATERIAL)]
+    return loaded, tri, mats
+
+
+def build(path, opts):
+    root = xfile_text.parse(open(path, 'rb').read())
+    found = xfile_text.meshes_of(root)
+    if not found:
+        raise ValueError('no Mesh')
+    loaded, tri, mats = [], [], []
+    for mesh, chain in found:
+        lv, t, m = load_mesh(xfile_text.interpret(mesh), chain, opts)
+        base, mbase = len(loaded), len(mats)
+        loaded += lv
+        tri += [(mat + mbase, tuple(i + base for i in c)) for mat, c in t]
+        mats += m
+    has_n = any(v['normal'] is not None for v in loaded)
+    has_c = any(v['diffuse'] is not None for v in loaded)
+    has_uv = any(v['uv'] is not None for v in loaded)
+    stride = 12 + (12 if has_n else 0) + (4 if has_c else 0) + (8 if has_uv else 0)
+    layout = {'stride': stride, 'position': 0, 'normal': 12 if has_n else -1,
+              'diffuse': (24 if has_n else 12) if has_c else -1,
+              'texcoords': [(stride - 8, 2)] if has_uv else []}
+    # Bounds: over the loaded vertices, all but the last one
+    # (D3DX8's D3DXComputeBoundingBox skips the last vertex).
+    bsrc = [v['pos'] for v in loaded]
+    if len(bsrc) > 1:
+        bsrc = bsrc[:-1]
+    # Optimise: stable sort by material (ATTRSORT); a loaded vertex used by
+    # two materials becomes one vertex per material; unused vertices go.
     tri.sort(key=lambda t: t[0])
     vmap, verts, faces, fmat = {}, [], [], []
-    for mat, fi, corners, t in tri:
+    for mat, t in tri:
         idx = []
-        for lv, j in zip(t, corners):
+        for lv in t:
             key = (lv, mat)
             if key not in vmap:
-                pi = lv_pos[lv]
+                v = loaded[lv]
                 vmap[key] = len(verts)
-                verts.append({'pos': P[pi], 'normal': lv_normal[lv] if has_n else None,
-                              'diffuse': COL[pi] if has_c else None,
-                              'uv': [UV[pi]] if has_uv else []})
+                verts.append({'pos': v['pos'],
+                              'normal': (v['normal'] or (0.0, 0.0, 0.0)) if has_n else None,
+                              'diffuse': (v['diffuse'] if v['diffuse'] is not None else 0xffffffff) if has_c else None,
+                              'uv': [v['uv'] or (0.0, 0.0)] if has_uv else []})
             idx.append(vmap[key])
         faces.append(tuple(idx))
         fmat.append(mat)
@@ -193,14 +269,6 @@ def build(path, opts):
         if not subsets or subsets[-1][0] != m:
             subsets.append([m, i * 3, 0])
         subsets[-1][2] += 1
-    mats = []
-    for m in src['materials']:
-        d = tuple(opts.mparse(x) for x in m['faceColor'])
-        mats.append({'diffuse': d, 'ambient': (0.0, 0.0, 0.0, 1.0),
-                     'specular': tuple(opts.mparse(x) for x in m['specular']) + (1.0,),
-                     'emissive': tuple(opts.mparse(x) for x in m['emissive']) + (1.0,),
-                     'power': opts.mparse(m['power']),
-                     'texture': unescape(m['texture']).decode('cp932') if m['texture'] is not None else None})
     bmin = tuple(min(p[i] for p in bsrc) for i in range(3))
     bmax = tuple(max(p[i] for p in bsrc) for i in range(3))
     return {'ok': True, 'boundsMin': bmin, 'boundsMax': bmax, 'layout': layout, 'vertices': verts,

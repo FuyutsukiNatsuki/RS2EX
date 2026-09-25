@@ -126,6 +126,8 @@ bool RS2XImportDumpRun(){
 	for(i = 0; i<files.size(); i++){
 		const std::string &path = files[i];
 		CRS2MeshImportResult import;
+
+		Debug("RS2XIMPORTDUMP|import|%s\n", path.c_str());
 		const bool ok = RS2ImportLegacyXMesh(FALSE, path.c_str(), &import) && import.geometry.IsValid();
 
 		RS2XDU32(f, (unsigned int)path.size());
@@ -184,6 +186,7 @@ bool RS2XImportDumpRun(){
 				RS2XDI32(f, -1);
 			}
 		}
+		fflush(f);
 		vertices += g.GetVertexCount();
 		faces += g.GetFaceCount();
 	}
