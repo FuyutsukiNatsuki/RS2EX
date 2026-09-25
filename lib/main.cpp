@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-23, 2026-09-24, 2026-09-25.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-23, 2026-09-24, 2026-09-25, 2026-09-26.
 //	Copyright (c) 2002 Midikyou
 
 #include "udx.h"
@@ -11,6 +11,8 @@
 #include "..\RS2D3D12Stage1Smoke.h"
 #include "..\RS2ShadowProbe.h"
 #include "..\RS2MutableProbe.h"
+#include "..\RS2XImportDump.h"
+#include "..\RS2ModuleAudit.h"
 
 /*
  *	コンパイル・オプション
@@ -150,6 +152,12 @@ BOOL CApp::Init(HINSTANCE hInst){
 		RS2MutableProbeRun();
 		return FALSE;
 	}
+	//	[RS2EX] -ximportdump writes what the .x importer returns for every
+	//	model under the run tree (v0.2.0 WP0: the importer oracle).
+	if(RS2XImportDumpRequested()){
+		RS2XImportDumpRun();
+		return FALSE;
+	}
 	if(!InitDirectInput()) return FALSE;
 
 #ifndef NO_SOUNDS
@@ -177,6 +185,8 @@ BOOL CApp::Init(HINSTANCE hInst){
  *	解放処理
  */
 CApp::~CApp(){
+	//	[RS2EX] -moduleaudit: which DLLs this run loaded (v0.2.0).
+	RS2ModuleAuditDump();
 	//	DirectX関連の解放
 #ifndef NO_COMM
 	FreeDirectPlay();
