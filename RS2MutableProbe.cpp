@@ -127,6 +127,8 @@ bool RS2MutableProbeRun(){
 	const unsigned int textureBaseline = d3d12 ? RS2D3D12_GetLiveTextureCount() : 0;
 	const unsigned int descriptorBaseline = d3d12 ? backend->GetDescriptors()->GetLive() : 0;
 	const RS2D3D12MutableStats mutableBaseline = RS2D3D12_GetMutableStats();
+	//	Uploads that finished but were not collected yet are not pending work.
+	if(d3d12) backend->GetTextureUpload()->WaitForAll();
 	const unsigned int pendingBaseline = d3d12 ? backend->GetTextureUpload()->GetPendingCount() : 0;
 
 	//	---------------------------------------------------------- contract texture
@@ -388,6 +390,7 @@ bool RS2MutableProbeRun(){
 	if(d3d12){
 		backend->WaitForGpu();
 		backend->CollectRetiredTextures();
+		backend->GetTextureUpload()->WaitForAll();
 
 		const unsigned int submitted = RS2D3D12_GetDrawCount()-drawBaseline;
 		const unsigned int refused = RS2D3D12_GetRefusedDrawCount()-refusedBaseline;
