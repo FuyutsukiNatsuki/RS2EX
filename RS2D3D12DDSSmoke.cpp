@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-23.
+//	Modified for RS2EX on 2026-09-25.
 //
 //	See RS2D3D12DDSSmoke.h.
 //
@@ -436,8 +437,11 @@ bool RS2D3D12DDSSmokeRun(){
 
 		const int lleft = RS2DDSColumn(3)-32;
 
-		//	Pixel 31 samples at texel 3.4375: 56.25% red, 43.75% blue.
-		for(int i = 0; i<3; i++) mix[i] = (int)(red[i]*0.5625f + blue[i]*0.4375f + 0.5f);
+		//	Pixel 31 samples at texel 3.375: 62.5% red, 37.5% blue.  Direct3D 8
+		//	puts the pixel centre on the integer coordinate, so pixel 31 reads
+		//	u = 31 / 64; this was 3.4375 until v0.1.5, computed for the
+		//	half-pixel-off screen mapping the backend then had.
+		for(int i = 0; i<3; i++) mix[i] = (int)(red[i]*0.625f + blue[i]*0.375f + 0.5f);
 		RS2DDSExpect("linear-inside-red", lleft+8, RS2DDSRow(2), red, 0);
 		RS2DDSExpect("linear-seam-mix", lleft+31, RS2DDSRow(2), mix, 3);
 		RS2DDSExpect("linear-inside-blue", lleft+56, RS2DDSRow(2), blue, 0);
