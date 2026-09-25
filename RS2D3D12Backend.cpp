@@ -13,6 +13,8 @@
 //	The same inputs the Direct3D 8 backend consults, so both backends
 //	answer "windowed or not" the same way.
 extern bool g_FullScreen;
+//	[RS2EX] Read by the engine to decide whether stencil shadows can run.
+extern bool g_StencilEnabled;
 
 //	Scratch memory per frame context.
 //
@@ -21,7 +23,14 @@ extern bool g_FullScreen;
 //	which is 2.3 MB, and a frame can flush more than one.  Eight megabytes
 //	leaves room for that plus constants and fan expansion.  The peak actually
 //	used is logged at shutdown, because the right number here is a measurement.
-#define RS2D3D12_UPLOAD_BYTES	(8*1024*1024)
+//
+//	v0.1.5: 32 MB.  Stencil shadows send their volumes through
+//	RS2DrawImmediate, about 1.07 million vertices a frame in the accepted
+//	shadow-enabled fixture, and the measured peak there was 13,578 KB against
+//	828 KB without shadows.  Still fixed and reused, still refusing rather than
+//	wrapping when it runs out (user decision, 2026-09-25); a growable allocator
+//	is reconsidered only if real content comes near this.
+#define RS2D3D12_UPLOAD_BYTES	(32*1024*1024)
 
 extern char *g_PluginViewArg;
 
@@ -291,8 +300,16 @@ DXGI_FORMAT CRS2D3D12Backend::ChooseDepthFormat(){
 
 	int i;
 
+	//	-dx12nostencil (developer): skip the stencil formats, to exercise the
+	//	path a device without D24S8 takes - no stencil claimed, the engine's
+	//	own warning and shadow disable, no fallback.
+	const bool noStencil = CheckArguments("-dx12nostencil")!=FALSE;
+
 	for(i = 0; i<(int)(sizeof(candidates)/sizeof(candidates[0])); i++){
 		D3D12_FEATURE_DATA_FORMAT_SUPPORT support;
+
+		if(noStencil && (candidates[i]==DXGI_FORMAT_D24_UNORM_S8_UINT
+				|| candidates[i]==DXGI_FORMAT_D32_FLOAT_S8X24_UINT)) continue;
 
 		ZeroMemory(&support, sizeof(support));
 		support.Format = candidates[i];
@@ -453,6 +470,10 @@ bool CRS2D3D12Backend::CreateRenderTargets(){
  *	One buffer serves both frame contexts: only one is being written at a time.
  */
 bool CRS2D3D12Backend::CreateDepthBuffer(){
+	//	Not claimed until the buffer below exists: a failed or stencil-less
+	//	depth buffer leaves the engine's own warning-and-disable path in place.
+	g_StencilEnabled = false;
+
 	m_DepthFormat = ChooseDepthFormat();
 	if(m_DepthFormat==DXGI_FORMAT_UNKNOWN) return false;
 
@@ -517,6 +538,17 @@ bool CRS2D3D12Backend::CreateDepthBuffer(){
 
 	Debug("[RS2EX D3D12] depth buffer %u x %u, stencil %s\n",
 		m_Width, m_Height, m_HasStencil ? "yes" : "no");
+
+	/*
+	 *	[RS2EX] v0.1.5: publish stencil to the engine, as the Direct3D 8
+	 *	backend does when it finds D24S8.  Only for D24S8 itself - the format
+	 *	every pipeline state is built for - so a fallback format never claims
+	 *	a capability the pipelines could not honour.  The stencil state, the
+	 *	shadow's auxiliary state and the -shadowprobe gate were in place
+	 *	before this line was added (v0.1.5 WP1-WP4).
+	 */
+	g_StencilEnabled = m_HasStencil && m_DepthFormat==DXGI_FORMAT_D24_UNORM_S8_UINT;
+	Debug("[RS2EX D3D12] stencil shadows %s\n", g_StencilEnabled ? "available" : "unavailable");
 	return true;
 }
 
@@ -539,7 +571,7 @@ void CRS2D3D12Backend::ReleaseSizeDependentResources(){
  *	The pipeline and the per-frame scratch memory.
  */
 bool CRS2D3D12Backend::CreatePipeline(){
-	if(!m_Pipeline.Create(m_Device)) return false;
+	if(!m_Pipeline.Create(m_Device, m_DepthFormat)) return false;
 
 	unsigned int i;
 
@@ -941,6 +973,7 @@ void CRS2D3D12Backend::Shutdown(){
 	m_RtvStride = 0;
 	m_DepthFormat = DXGI_FORMAT_UNKNOWN;
 	m_HasStencil = false;
+	g_StencilEnabled = false;
 }
 
 /*

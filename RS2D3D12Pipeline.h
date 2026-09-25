@@ -128,6 +128,7 @@ class CRS2D3D12Pipeline
 {
 private:
 	ID3D12Device *m_Device;
+	DXGI_FORMAT m_DepthFormat;	//	the depth buffer every state is built for
 	ID3D12RootSignature *m_RootSignature;
 
 	//	[position semantic][vertex has a colour][textured][vertex has a normal].
@@ -158,7 +159,7 @@ public:
 	CRS2D3D12Pipeline();
 	~CRS2D3D12Pipeline();
 
-	bool Create(ID3D12Device *device);
+	bool Create(ID3D12Device *device, DXGI_FORMAT depthFormat);
 	void Destroy();
 
 	ID3D12RootSignature *GetRootSignature() const{ return m_RootSignature; }

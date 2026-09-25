@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-22.
+//	Modified for RS2EX on 2026-09-25.
 //
 //	See RS2D3D12Upload.h.
 
@@ -115,8 +116,9 @@ bool CRS2D3D12Upload::Allocate(
 		//	the next draw and the one after that.
 		if(!m_Overflowed){
 			m_Overflowed = true;
-			Debug("[RS2EX D3D12] frame scratch exhausted: wanted %u more than %u\n",
-				bytes, m_Size-offset);
+			Debug("[RS2EX D3D12] frame scratch exhausted: used %u + required %u"
+				" > capacity %u (peak %u); draws refused for the rest of the frame\n",
+				m_Used, bytes, m_Size, m_Used>m_Peak ? m_Used : m_Peak);
 		}
 		return false;
 	}

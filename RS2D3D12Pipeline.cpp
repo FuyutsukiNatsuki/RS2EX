@@ -283,6 +283,7 @@ static ID3DBlob *RS2D3D12_Compile(
 
 CRS2D3D12Pipeline::CRS2D3D12Pipeline()
 	: m_Device(0),
+	  m_DepthFormat(DXGI_FORMAT_D24_UNORM_S8_UINT),
 	  m_RootSignature(0),
 	  m_Count(0),
 	  m_StencilCount(0),
@@ -324,10 +325,12 @@ bool CRS2D3D12Pipeline::CompileShaders(){
 }
 
 bool CRS2D3D12Pipeline::Create(
-	ID3D12Device *device	//	device to build against
+	ID3D12Device *device,		//	device to build against
+	DXGI_FORMAT depthFormat		//	the backend's depth buffer
 ){
 	Destroy();
 	m_Device = device;
+	m_DepthFormat = depthFormat;
 
 	// b0 is a root CBV; t0 and s0 are one-descriptor tables supplied by WP4.
 	//	b0 root CBV; t0 / s0 Stage 0; t1 / s1 Stage 1 (v0.1.4).  One-descriptor
@@ -653,7 +656,9 @@ ID3D12PipelineState *CRS2D3D12Pipeline::Build(
 	desc.PrimitiveTopologyType = (D3D12_PRIMITIVE_TOPOLOGY_TYPE)key.topology;
 	desc.NumRenderTargets = 1;
 	desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	//	The format the backend actually chose - D24S8 wherever it exists, which
+	//	is also the only format stencil shadows are published for.
+	desc.DSVFormat = m_DepthFormat;
 	desc.SampleDesc.Count = 1;
 	desc.SampleMask = UINT_MAX;
 
