@@ -140,7 +140,16 @@ void VideoCapture(
 	CSceneryMode *scenerymode	//	シーナリモード
 ){
 	if(GetKey(DIK_F12)==S_PUSH){
-		if(g_RSPV || !CheckCtrl()){
+		//	[RS2EX] v0.2.0: Direct3D 12 cannot read the picture back yet
+		//	(capture refresh is v0.4.0 scope), and with the Direct3D 8
+		//	renderer gone there is no backend that can.  A GDI copy of a
+		//	flip-model window is black, and the high-quality path does
+		//	nothing, so say so instead of writing black files or nothing at
+		//	all.  Stopping a video that is somehow running still works.
+		if(!GetRS2Renderer().SupportsReadback() && !(g_VideoState && CheckCtrl() && CheckShift())){
+			Debug("[RS2EX] capture is not available on this renderer (no readback)\n");
+			g_Skin->Error();
+		}else if(g_RSPV || !CheckCtrl()){
 			chdir(g_BaseDir);
 			chdir("Picture");
 			g_HidefQuality = g_VideoMode->GetPictureQuality();
@@ -253,6 +262,12 @@ void CountVideoAVI(){
  */
 void StartVideoCapture(){
 	if(g_VideoState) return;
+	//	[RS2EX] v0.2.0: no readback, no video - see VideoCapture().
+	if(!GetRS2Renderer().SupportsReadback()){
+		Debug("[RS2EX] video capture is not available on this renderer (no readback)\n");
+		g_Skin->Error();
+		return;
+	}
 	g_DownsampleMode = g_VideoMode->GetDownsample();
 	int exp_ds = 1<<g_DownsampleMode;
 	if(g_DispWidth%exp_ds || g_DispHeight%exp_ds)
