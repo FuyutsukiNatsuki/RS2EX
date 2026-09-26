@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CPixelbit.h"
 
@@ -119,7 +120,9 @@ BOOL SelectFile(
 ){
 	OPENFILENAME ofn;
 	memset(&ofn, 0, sizeof(OPENFILENAME));
-	memset(file, 0, sizeof(file));
+	//	[RS2EX] v0.3.0: the buffer is len bytes; sizeof(file) is the size of the
+	//	pointer (4 bytes on x86, 8 on x64).
+	if(len>0) memset(file, 0, len);
 	ofn.lStructSize = sizeof(OPENFILENAME);
 	ofn.hwndOwner = hWnd;
 	ofn.lpstrFilter = filt;
@@ -183,7 +186,7 @@ bool CheckFileExt(
 	char *fname,	//	ファイル名
 	char *ext		//	拡張子 (ピリオド含む)
 ){
-	int len1 = strlen(fname), len2 = strlen(ext);
+	int len1 = RS2SizeToInt(strlen(fname)), len2 = RS2SizeToInt(strlen(ext));
 	return len1>len2 && !strcmpi(&fname[len1-len2], ext);
 }
 
@@ -194,7 +197,7 @@ string FixFileExt(
 	char *fname,	//	ファイル名
 	char *ext		//	拡張子 (ピリオドまず)
 ){
-	int len = strlen(fname), next = strlen(ext);
+	int len = RS2SizeToInt(strlen(fname)), next = RS2SizeToInt(strlen(ext));
 	if(*CharPrev(fname, fname+len)=='.') return string(fname)+ext;
 	if(len<next+1) return string(fname)+string(".")+ext;
 	if(_strcmpi(fname+len-next, ext)) return string(fname)+string(".")+ext;
@@ -269,7 +272,7 @@ string ExpandDoubleQuote(
 			ret.insert(i, 1, '\'');
 		}
 		const char *cs = ret.c_str();
-		i = CharNext(cs+i)-cs;
+		i = RS2DiffToInt(CharNext(cs+i)-cs);
 	}
 	return ret;
 }
@@ -288,7 +291,7 @@ string RestoreDoubleQuote(
 			ret.erase(i+1, 1);
 		}
 		const char *cs = ret.c_str();
-		i = CharNext(cs+i)-cs;
+		i = RS2DiffToInt(CharNext(cs+i)-cs);
 	}
 	return ret;
 }

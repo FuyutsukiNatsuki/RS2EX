@@ -2,7 +2,6 @@
 #include "stdafx.h"
 #include "md5.h"
 #include "Script.h"
-#include "Network.h"
 #include "CSimpleDialog.h"
 #include "CSaveFile.h"
 #include "RS2SaveIdentity.h"
@@ -227,7 +226,7 @@ void CFileMode::WindowResized(
  */
 CPopMenu *CFileMode::Dispatch(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	if(type==CMD_FILE){
 		class CFileOpener: public CMenuCommand{
@@ -623,7 +622,7 @@ SAVEAS:
 		if(sel<=0){
 			g_Skin->Error();
 		}else{
-			m_DeletingMemberID = m_NetworkListView.GetElement(sel)->GetData();
+			m_DeletingMemberID = (DPNID)m_NetworkListView.GetElement(sel)->GetData();
 			m_DeleteMemberButton.SetPush(false);
 			m_ModalState = 90;
 			g_ModalDialog = m_YesNoDialog = new CYesNoDialog(
@@ -667,12 +666,12 @@ SAVEAS:
  *	ファイルリスト作成
  */
 void CFileMode::ListFile(){
-	long filelist;
+	intptr_t filelist;	//	[RS2EX] v0.3.0: the CRT search handle is pointer-sized
 	_finddata_t data;
 	m_FileListView.DeleteAllItems();
 	m_LayoutInfoList.clear();
 	if(chdir(g_BaseDir) || chdir(LAYOUT_DIRNAME)) return;
-	if((filelist = _findfirst("*.rs2", &data))>=0){
+	if((filelist = _findfirst("*.rs2", &data))!=-1){
 		do{
 			FILE *file;
 			if(data.attrib&_A_SUBDIR) continue;

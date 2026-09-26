@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CDragContainer.h"
 
@@ -29,7 +30,7 @@ void CDragContainer::EndDrag(){
  *	データ挿入
  */
 void CDragContainer::Insert(
-	DWORD data	//	データ
+	RS2OpaqueData data	//	データ
 ){
 	ms_Drag->InsertData(data);
 }
@@ -57,7 +58,7 @@ CDragContainer::CDragContainer(
  *	データ挿入
  */
 void CDragContainer::InsertData(
-	DWORD data	//	データ
+	RS2OpaqueData data	//	データ
 ){
 	m_Data.insert(m_Data.end(), data);
 }

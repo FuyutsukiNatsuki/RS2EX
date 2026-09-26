@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CLINESELECTMODE_H_INCLUDED
 #define CLINESELECTMODE_H_INCLUDED
 
@@ -12,7 +13,7 @@ private:
 public:
 	CLineSelectMode();
 	~CLineSelectMode(){}
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	char *PluginDirName(){ return "Line"; }
 	CPluginList *GetPluginList();
 	void Enter3DPlugin();

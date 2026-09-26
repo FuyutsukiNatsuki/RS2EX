@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 // MD5.CC - source code for the C++/object oriented translation and 
 //          modification of MD5.
 
@@ -122,7 +123,7 @@ void MD5::update(FILE *file){
   unsigned char buffer[1024];
   int len;
 
-  while (len=fread(buffer, 1, 1024, file))
+  while (len=(unsigned int)fread(buffer, 1, 1024, file))	/* [RS2EX] at most 1024 */
     update(buffer, len);
 
   fclose (file);

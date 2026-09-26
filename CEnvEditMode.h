@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CENVEDITMODE_H_INCLUDED
 #define CENVEDITMODE_H_INCLUDED
 
@@ -13,8 +14,8 @@ public:
 	CEnvEditMode();
 	~CEnvEditMode(){}
 	void WindowResized(int, int, CWindowCtrl *);
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
-	void DoubleClick(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
+	void DoubleClick(CMDTYPE, RS2OpaqueData);
 	bool DrawBackground();
 	char *PluginDirName(){ return "Env"; }
 	CPluginList *GetPluginList();

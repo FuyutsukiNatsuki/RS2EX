@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CListView.h"
 #include "CDiaInst.h"
@@ -54,7 +55,7 @@ void CDiaListBase::ListElement(
 	for(; ipde!=m_DiaList.end(); ipde++){
 		CListElement *le = lv->InsertItem(-1, (char *)(*ipde)->GetListCaption().c_str());
 		(*ipde)->m_ListElement = le;
-		le->SetData((DWORD)(*ipde));
+		le->SetData((RS2OpaqueData)(*ipde));
 	}
 	if(sel<0){
 		if(!m_UseDefault){

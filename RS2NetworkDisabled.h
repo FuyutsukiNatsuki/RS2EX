@@ -6,14 +6,12 @@
 //
 //	RailSim II 2.15 ran its network sessions on DirectPlay 8 (lib/comm.cpp).
 //	DirectPlay's headers and libraries exist only in the DirectX 8 SDK, and a
-//	failed InitDirectPlay stopped the program from starting.  v0.2.0 removes
+//	failed InitDirectPlay stopped the program from starting.  v0.2.0 removed
 //	DirectPlay, the start-up initialisation and the file-menu entries that
-//	created or joined a session.
-//
-//	What stays is the inherited session logic in Network.cpp, which the rest
-//	of the game consults through g_NetworkInitialized: it is compiled against
-//	these stand-ins for the DirectPlay calls, every one of which fails, so no
-//	session can ever start and g_NetworkInitialized stays false.
+//	created or joined a session.  v0.3.0 removed the inherited session logic
+//	(Network.cpp / Network.h) as well: see RS2NetworkDisabled.cpp for what the
+//	remaining callers now link against.  No session can ever start, and
+//	g_NetworkInitialized stays false.
 
 #ifndef RS2NETWORKDISABLED_H_INCLUDED
 #define RS2NETWORKDISABLED_H_INCLUDED
@@ -33,5 +31,40 @@ inline BOOL SendToAll(const PVOID, DWORD){ return FALSE; }
 inline BOOL SendTo(DPNID, const PVOID, DWORD){ return FALSE; }
 inline DPNID GetLocalPlayerID(){ return 0; }
 inline BOOL IsHost(){ return FALSE; }
+
+//	What Network.h declared for the file mode, the interface modes and the
+//	save file (v0.3.0: moved here with Network.h deleted).
+class CListView;
+
+enum RSNTransferState{
+	RSN_TRANS_NONE = 0,
+	RSN_TRANS_LAYOUT = 10,
+	RSN_TRANS_FORCE_DWORD = 0x7fffffff,
+};
+
+int RSNCreateSession(int, int, const char *);
+int RSNJoinSession(const char *, int, bool, const char *);
+void RSNDeleteMember(DPNID id);
+bool RSNCloseSession();
+void RSNEndTransferData();
+RSNTransferState GetNetworkTransferState();
+bool IsNetworkTransferComplete();
+bool CheckLayoutDigest(const unsigned char *);
+inline bool CheckPortArea(int port){ return 0<=port && port<65536; }
+void ExceedNetworkSyncLimit(int);
+void ListNetworkMember(CListView *);
+
+extern bool g_NetworkCloseRequest;
+extern bool g_NetworkInitialized;
+extern int g_NetworkSyncLimitReceived;
+extern int g_NetworkSyncLimitSent;
+extern int g_NetworkHostPort;
+extern int g_NetworkLocalPort;
+extern int g_NetworkSyncInterval;
+extern char *g_NetworkFileCopy;
+extern int g_NetworkFileCopySize;
+extern int g_NetworkTransferSize;
+extern int g_NetworkTransferRestSize;
+extern char *g_NetworkTransferData;
 
 #endif	//	RS2NETWORKDISABLED_H_INCLUDED

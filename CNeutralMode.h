@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CNEUTRALMODE_H_INCLUDED
 #define CNEUTRALMODE_H_INCLUDED
 
@@ -19,8 +20,8 @@ public:
 	CNeutralMode();
 	~CNeutralMode(){}
 	void WindowResized(int, int, CWindowCtrl *);
-	CPopMenu *Dispatch(CMDTYPE, DWORD){ return NULL; }
-	void DoubleClick(CMDTYPE, DWORD){}
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData){ return NULL; }
+	void DoubleClick(CMDTYPE, RS2OpaqueData){}
 	CModelInst *GetFocusInst(){ return m_FocusInfo.GetModelInst(); }
 	bool CameraCtrlExp(){ return true; }
 	void DeleteModelInst(CModelInst *);

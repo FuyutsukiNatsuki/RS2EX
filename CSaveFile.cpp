@@ -2,7 +2,6 @@
 #include "stdafx.h"
 #include "md5.h"
 #include "RailMap.h"
-#include "Network.h"
 #include "CJobTimer.h"
 #include "CListView.h"
 #include "CSimpleDialog.h"
@@ -195,7 +194,7 @@ void CSaveFile::ListGroup(
 		CListElement *le = lv->InsertItem(-1, ptr->GetName());
 		le->SetString(1, FlashIn("%d", ptr->GetTrainNum()));
 		le->SetString(2, train_set_string[ptr->IsSet()]);
-		le->SetData((DWORD)ptr);
+		le->SetData((RS2OpaqueData)ptr);
 		ptr->SetListElement(le);
 		if(ptr==g_TrainGroup) lv->SetSelectionMark(i, 0);
 		i++;
@@ -218,7 +217,7 @@ void CSaveFile::ListGroupDia(
 		CListElement *le = lv->InsertItem(-1, ptr->GetName());
 		le->SetString(1, FlashIn("%d", ptr->GetTrainNum()));
 		le->SetString(2, g_DiaDefaultString[dinst->IsDefault(ptr)]);
-		le->SetData((DWORD)ptr);
+		le->SetData((RS2OpaqueData)ptr);
 		ptr->SetListElement(le);
 		if(ptr==g_TrainGroup) lv->SetSelectionMark(i, 0);
 		i++;
@@ -405,7 +404,7 @@ void CSaveFile::ListScene(
 	while(ptr){
 		CListElement *le = lv->InsertItem(-1, ptr->GetName());
 		le->SetString(1, ptr->GetSurface()->GetName());
-		le->SetData((DWORD)ptr);
+		le->SetData((RS2OpaqueData)ptr);
 		ptr->SetListElement(le);
 		if(ptr==g_Scene) lv->SetSelectionMark(i, 0);
 		i++;
@@ -736,7 +735,7 @@ bool CSaveFile::Load(
 	CScene *currentscene;
 	char *buf;
 	if(auxdata){
-		int copysize = strlen(auxdata);
+		int copysize = RS2SizeToInt(strlen(auxdata));
 		buf = new char[copysize+1];
 		memcpy(buf, auxdata, copysize);
 		buf[copysize] = 0;
@@ -745,7 +744,7 @@ bool CSaveFile::Load(
 	}
 	char *str = buf, *eee, *tmp;
 	if(copy){
-		int tmp = strlen(buf);
+		int tmp = RS2SizeToInt(strlen(buf));
 		*copy = new char[tmp+1];
 		*copysize = tmp;
 		memcpy(*copy, buf, tmp);
@@ -753,7 +752,7 @@ bool CSaveFile::Load(
 	}
 	if(checkhash){
 		MD5 hash;
-		int tmp = strlen(buf);
+		int tmp = RS2SizeToInt(strlen(buf));
 		hash.update((unsigned char *)buf, tmp);
 		hash.finalize();
 		CheckLayoutDigest(hash.raw_digest());

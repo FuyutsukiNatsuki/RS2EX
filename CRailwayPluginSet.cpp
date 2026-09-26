@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CPopMenu.h"
@@ -229,10 +230,10 @@ void CRailwayPluginSet::Apply(){
  *	Ý’èƒŠƒXƒg“Çž
  */
 void LoadRailwayPluginSetList(){
-	long filelist;
+	intptr_t filelist;	//	[RS2EX] v0.3.0: the CRT search handle is pointer-sized
 	_finddata_t data;
 	if(chdir(g_BaseDir) || chdir(RPS_DIRNAME)) return;
-	if((filelist = _findfirst("*.txt", &data))>=0){
+	if((filelist = _findfirst("*.txt", &data))!=-1){
 		do{
 			FILE *file;
 			if(data.attrib&_A_SUBDIR) continue;

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CLineBuildCurve.h"
 #include "CRailBuilder.h"
@@ -67,7 +68,7 @@ void CLineBuildCurve::FinishTrace(
 		(m_PolePlugin ? m_PolePlugin->IsMultiTrack() : false)){
 		float tmp = m_LinePlugin->GetPolePos();
 		int i, n, pts = m_PolePlugin ? m_PolePlugin->GetTrackNum() : 1;
-		if(pts>g_LastPole.size()) pts = g_LastPole.size();
+		if(pts>RS2SizeToInt(g_LastPole.size())) pts = RS2SizeToInt(g_LastPole.size());
 		int ct = g_MultiTrackDummy ? 0 : CRailBuilder::GetCurrentTrack();
 		if(g_LastPole[ct].IsValid()){
 			VEC3 lp1 = cpos1+m_LinePlugin->m_TrolleyAlt*up1+m_LinePlugin->m_Height*V3UP;

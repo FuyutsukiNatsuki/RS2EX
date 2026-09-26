@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CMultiStatic.h"
 #include "CSkinPlugin.h"
@@ -69,7 +69,7 @@ void CMultiStatic::SetText(
  */
 void CMultiStatic::SetScroll(){
 	m_Lines = (m_Height-MULTISTATIC_MARGIN*2)/m_LineHeight;
-	m_ScrollV.SetRange(m_LineText.size() ? m_LineText.size() : 1);
+	m_ScrollV.SetRange(m_LineText.size() ? RS2SizeToInt(m_LineText.size()) : 1);
 	m_ScrollV.SetPage(m_Lines);
 }
 

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CDIADIALOG_H_INCLUDED
 #define CDIADIALOG_H_INCLUDED
 
@@ -47,7 +48,7 @@ public:
 	void InitFoot();
 	void WindowResized(int, int, CWindowCtrl *);
 	virtual void ResizeDiaDialogBase(int, int) = 0;
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	void Enter(CDiaInstBase *);
 	void SetTrainGroup(CTrainGroup *);
 	void SetDiaElementBase(CDiaElementBase *);

@@ -166,7 +166,7 @@ BOOL InitJoyStick(){
 		}
 
 		//	可動範囲の指定
-		hr = svi.pJoy[i]->EnumObjects(EnumAxisCallback, (VOID *)i, DIDFT_AXIS);
+		hr = svi.pJoy[i]->EnumObjects(EnumAxisCallback, (VOID *)(INT_PTR)i, DIDFT_AXIS);	//	[RS2EX] the context is the joystick number
 
 		if(hr!=DI_OK){
 			Debug("ジョイスティック[%d]の軸の列挙ができません.\n", i);
@@ -207,7 +207,7 @@ BOOL CALLBACK EnumJoyCallback(const DIDEVICEINSTANCE *pInst, VOID *pContext){
  *	ジョイスティック軸列挙時のコールバック
  */
 BOOL CALLBACK EnumAxisCallback(LPCDIDEVICEOBJECTINSTANCE lpddoi, LPVOID pvRef){
-	int i = (int)pvRef;
+	int i = (int)(INT_PTR)pvRef;
 
 	DIPROPRANGE diprg;
 

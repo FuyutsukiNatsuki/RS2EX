@@ -542,7 +542,7 @@ void CTrainGroup::ListTrain(
 	while(ptr){
 		CListElement *le = lv->InsertItem(-1, ptr->m_TrainPlugin->GetName());
 		le->SetString(1, ptr->IsReverse() ? lang(Yes) : lang(No));
-		le->SetData((DWORD)ptr);
+		le->SetData((RS2OpaqueData)ptr);
 		ptr->SetListElement(le);
 		ptr = ptr->m_Next;
 	}
@@ -1094,7 +1094,7 @@ void CTrainGroup::MergeTrain(CTrainGroup *target, int my_side, int tgt_side){
 	//Dialog("moving %d axle", vsb.size());
 	if(my_side) m_SetBuffer.pop_back(); else m_SetBuffer.pop_front();
 	for(i = 1; i<vsb.size(); ++i){
-		int idx = tgt_side ? vsb.size()-1-i : i;
+		int idx = tgt_side ? RS2SizeToInt(vsb.size())-1-i : i;
 		if(my_side) m_SetBuffer.push_back(*vsb[idx]); else m_SetBuffer.push_front(*vsb[idx]);
 	}
 	//for(isb = m_SetBuffer.begin(); isb!=m_SetBuffer.end(); isb++) Dialog("C %f", isb->m_SumLen);
@@ -1106,7 +1106,7 @@ void CTrainGroup::MergeTrain(CTrainGroup *target, int my_side, int tgt_side){
 		CTrain **carrier = &m_TrainList;
 		while(*carrier) carrier = &(*carrier)->m_Next;
 		for(i = 0; i<vtr.size(); i++){
-			int idx = tgt_side ? vtr.size()-1-i : i;
+			int idx = tgt_side ? RS2SizeToInt(vtr.size())-1-i : i;
 			vtr[idx]->m_Reverse = (vtr[idx]->m_Reverse^!tgt_side^1)&1;
 			vtr[idx]->m_Group = this;
 			vtr[idx]->m_Next = NULL;
@@ -1115,7 +1115,7 @@ void CTrainGroup::MergeTrain(CTrainGroup *target, int my_side, int tgt_side){
 		}
 	}else{
 		for(i = 0; i<vtr.size(); i++){
-			int idx = tgt_side ? vtr.size()-1-i : i;
+			int idx = tgt_side ? RS2SizeToInt(vtr.size())-1-i : i;
 			vtr[idx]->m_Reverse = (vtr[idx]->m_Reverse^!tgt_side)&1;
 			vtr[idx]->m_Group = this;
 			vtr[idx]->m_Next = m_TrainList;
@@ -1162,7 +1162,7 @@ void CTrainGroup::SplitTrain(int split_pos){
 	set<CAxlePosture *> axle_set2;
 	m_Length = new_group->m_Length = 0.0f;
 	int i;
-	for(i = vtr.size()-1; i>=split_pos; i--){
+	for(i = RS2SizeToInt(vtr.size())-1; i>=split_pos; i--){
 		vtr[i]->m_Group = new_group;
 		vtr[i]->m_Next = new_group->m_TrainList;
 		new_group->m_Length += vtr[i]->GetLength();

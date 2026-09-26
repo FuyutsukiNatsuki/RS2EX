@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "CSkinPlugin.h"
 #include "CSkinSelectMode.h"
@@ -80,7 +80,7 @@ void CSkinSelectMode::WindowResized(
  */
 CPopMenu *CSkinSelectMode::Dispatch(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	return CPluginMode::Dispatch(type, data);
 }

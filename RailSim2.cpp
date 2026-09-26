@@ -180,7 +180,7 @@ void Main(){
 
 	if(g_PluginViewArg){
 		char *cparam = g_PluginViewArg;
-		int cplen = strlen(cparam);
+		int cplen = RS2SizeToInt(strlen(cparam));
 		char tname[256], dname[256];
 		char *ptr = cparam+cplen-5;
 		while(*ptr!='\\') ptr--;

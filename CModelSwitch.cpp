@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CListView.h"
 #include "CExpression.h"
@@ -125,7 +126,7 @@ void CModelSwitch::EditSwitch(
 		}
 	}
 	if(ole && ole->IsSelected() && !force_reset){
-		int opt = ole->GetData();
+		int opt = (int)ole->GetData();	//	[RS2EX] this slot carries the option number, not a pointer
 		if(opt!=m_Value){
 			m_Value = opt;
 			bool async = false;
@@ -185,7 +186,7 @@ bool CSwitchEntry::CheckValue(
 ){
 	switch(m_ConditionType){
 	case 0: {
-		int i, vn = m_Value.size();
+		int i, vn = RS2SizeToInt(m_Value.size());
 		if(!vn) return true;
 		for(i = 0; i<vn; i++) if(m_Value[i]==value) return true;
 		return false; }

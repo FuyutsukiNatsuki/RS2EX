@@ -155,8 +155,8 @@ CTreeFileElement *CTreeDirElement::FindPlugin(
  */
 void CTreeDirElement::Drop(){
 	if(CDragContainer::GetType()!=DRAG_PLUGIN) return;
-	list<DWORD> &data = CDragContainer::GetData();
-	IDWORD idat = data.begin();
+	list<RS2OpaqueData> &data = CDragContainer::GetData();
+	IOPAQUEDATA idat = data.begin();
 	CTreeDirElement *p = ((CTreeElement *)*idat)->m_Parent;
 	if(p==this) return;
 	for(; idat!=data.end(); idat++){
@@ -208,7 +208,7 @@ void CTreeDirElement::PushListElement(
 ){
 	int index = lv->GetItemNum();
 	lv->InsertItem(index, (char *)m_String.c_str(), RS2TextureRef(), g_SkinDirIconRect);
-	lv->GetElement(index)->SetData((DWORD)this);
+	lv->GetElement(index)->SetData((RS2OpaqueData)this);
 }
 
 /*

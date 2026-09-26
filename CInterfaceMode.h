@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CINTERFACEMODE_H_INCLUDED
 #define CINTERFACEMODE_H_INCLUDED
 
@@ -71,8 +72,8 @@ public:
 	CPluginMode(char *);
 	virtual ~CPluginMode();
 	virtual void WindowResized(int, int, CWindowCtrl *);
-	virtual CPopMenu *Dispatch(CMDTYPE, DWORD) = 0;
-	virtual void DoubleClick(CMDTYPE, DWORD){}
+	virtual CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData) = 0;
+	virtual void DoubleClick(CMDTYPE, RS2OpaqueData){}
 	virtual bool DrawBackground(){ return false; }
 	CPluginTree *GetTree(){ return &m_PluginTree; }
 	void ViewProperty();

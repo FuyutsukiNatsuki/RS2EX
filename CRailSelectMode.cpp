@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CRailPlugin.h"
 #include "CPierPlugin.h"
@@ -18,7 +19,7 @@ CRailSelectMode::CRailSelectMode():
  */
 CPopMenu *CRailSelectMode::Dispatch(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	return CPluginMode::Dispatch(type, data);
 }

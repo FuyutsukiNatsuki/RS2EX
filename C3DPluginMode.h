@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef C3DPLUGINMODE_H_INCLUDED
 #define C3DPLUGINMODE_H_INCLUDED
 
@@ -16,7 +17,7 @@ public:
 	virtual void WindowResized(int w, int h, CWindowCtrl * wnd){
 		CPluginMode::WindowResized(w, h, wnd);
 	}
-	virtual CPopMenu *Dispatch(CMDTYPE, DWORD) = 0;
+	virtual CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData) = 0;
 	virtual bool DrawBackground(){ return false; }
 	virtual char *PluginDirName() = 0;
 	virtual CPluginList *GetPluginList() = 0;
@@ -49,7 +50,7 @@ public:
 	virtual ~CModelPluginMode(){}
 	void InitSwitchWindow();
 	virtual void WindowResized(int, int, CWindowCtrl *);
-	virtual CPopMenu *Dispatch(CMDTYPE, DWORD) = 0;
+	virtual CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData) = 0;
 	virtual CModelPlugin *GetModelPlugin() = 0;
 	virtual char *PluginDirName() = 0;
 	virtual CPluginList *GetPluginList() = 0;

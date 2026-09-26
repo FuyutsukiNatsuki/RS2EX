@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CSTATION_H_INCLUDED
 #define CSTATION_H_INCLUDED
 
@@ -60,7 +61,7 @@ public:
 	~CStation();
 	CPlatformInst *PushPlatformInst(CPlatformInst &);
 	void MakePlatformArray();
-	int GetPlatformCount(){ return m_PlatformArray.size(); }
+	int GetPlatformCount(){ return RS2SizeToInt(m_PlatformArray.size()); }
 	CPlatformInst *GetPlatformInst(int i){ return m_PlatformArray[i]; }
 	bool IsSelectVisible();
 	void Remove();

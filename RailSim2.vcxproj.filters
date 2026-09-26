@@ -378,6 +378,12 @@
     <ClCompile Include="RS2Display.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
+    <ClCompile Include="RS2NetworkDisabled.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
+    <ClCompile Include="RS2Width.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
     <ClCompile Include="RS2XFileImporter.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
@@ -598,9 +604,6 @@
       <Filter>Source Files\RS2 Source\Misc Source</Filter>
     </ClCompile>
     <ClCompile Include="md5.cpp">
-      <Filter>Source Files\RS2 Source\Misc Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Network.cpp">
       <Filter>Source Files\RS2 Source\Misc Source</Filter>
     </ClCompile>
     <ClCompile Include="RailMap.cpp">
@@ -1057,9 +1060,6 @@
     <ClInclude Include="md5.h">
       <Filter>Header Files\RS2 Header\Misc Header</Filter>
     </ClInclude>
-    <ClInclude Include="Network.h">
-      <Filter>Header Files\RS2 Header\Misc Header</Filter>
-    </ClInclude>
     <ClInclude Include="RailMap.h">
       <Filter>Header Files\RS2 Header\Misc Header</Filter>
     </ClInclude>
@@ -1124,6 +1124,9 @@
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2Display.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
+    <ClInclude Include="RS2Width.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2NetworkDisabled.h">

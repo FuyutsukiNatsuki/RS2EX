@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CLISTVIEW_H_INCLUDED
 #define CLISTVIEW_H_INCLUDED
 
@@ -15,7 +15,7 @@ class CListElement{
 	friend class CListView;
 protected:
 	bool m_Selected;			//	選択フラグ
-	DWORD m_Data;				//	関連データ
+	RS2OpaqueData m_Data;				//	関連データ
 	vector<string> m_String;	//	文字列
 	CListElement *m_Next;		//	次
 	CListView *m_Owner;			//	リストビュー
@@ -23,8 +23,8 @@ protected:
 public:
 	CListElement(int, char *, CListView *);
 	virtual ~CListElement(){}
-	DWORD GetData(){ return m_Data; }
-	void SetData(DWORD d){ m_Data = d; }
+	RS2OpaqueData GetData(){ return m_Data; }
+	void SetData(RS2OpaqueData d){ m_Data = d; }
 	bool IsSelected(){ return m_Selected; }
 	char *GetString(int i){ return (char *)m_String[i].c_str(); }
 	void SetString(int i, char *s){ m_String[i] = s; }

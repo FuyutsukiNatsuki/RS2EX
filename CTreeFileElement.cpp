@@ -55,7 +55,7 @@ void CTreeFileElement::PushListElement(
 	RS2TextureRef icon = m_Plugin->GetIconTexture();
 	CListElement *le = lv->InsertItem(index, (char *)m_Plugin->m_Name.c_str(),
 		icon, !icon.IsEmpty() ? m_Plugin->GetIconRect() : g_SkinFileIconRect);
-	le->SetData((DWORD)this);
+	le->SetData((RS2OpaqueData)this);
 	le->SetString(1, (char *)m_Plugin->m_ID.c_str());
 	le->SetString(2, (char *)m_Plugin->m_Author.c_str());
 }
@@ -151,7 +151,7 @@ int CTreeFileElement::ScanInput(
 			case 3:
 				if(GetFrameCount()-m_ClickTime<DBLCLK_FRAME){
 					m_ClickTime = 0;
-					m_Owner->m_Commander->DoubleClick(m_CommandType, (DWORD)GetPlugin());
+					m_Owner->m_Commander->DoubleClick(m_CommandType, (RS2OpaqueData)GetPlugin());
 					g_Skin->MouseUp();
 				}else{
 					m_RenameWait = true;
@@ -163,7 +163,7 @@ int CTreeFileElement::ScanInput(
 			break;
 		}
 		if(m_Owner->m_Commander && GetButton(DIM_RIGHT)==S_PUSH){
-			CPopMenu *pop = m_Owner->m_Commander->Dispatch(m_CommandType, (DWORD)GetPlugin());
+			CPopMenu *pop = m_Owner->m_Commander->Dispatch(m_CommandType, (RS2OpaqueData)GetPlugin());
 			if(pop){
 				m_Owner->SetFocusItem(this);
 				m_Owner->GiveFocus(false);

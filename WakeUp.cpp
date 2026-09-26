@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 
 #ifdef _MSC_VER
@@ -25,7 +26,7 @@ void WakeUp(){
 	int i;
 	for(i = 1; i<__argc; i++){
 		char *cparam = __argv[i];
-		int cplen = strlen(cparam);
+		int cplen = RS2SizeToInt(strlen(cparam));
 		if(cplen<8) continue;
 		if(cparam[1]!=':' || cparam[2]!='\\') continue;
 		if(strcmpi(cparam+cplen-4, ".txt")) continue;

@@ -365,7 +365,7 @@ RS2PackedColor CheckTexTrans(LPCSTR str){
 	}
 	if(!sharp) return 0x00000000;
 	if(!dot || dot<sharp) dot = ptr;
-	int len = dot-sharp;
+	int len = RS2DiffToInt(dot-sharp);
 	if(len==2){
 		switch(sharp[1]){
 		case 'B': case 'b': return 0xff000000;

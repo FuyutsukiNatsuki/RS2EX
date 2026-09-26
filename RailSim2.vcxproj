@@ -235,6 +235,8 @@
     <ClCompile Include="RS2MeshImport.cpp" />
     <ClCompile Include="RS2Math.cpp" />
     <ClCompile Include="RS2Display.cpp" />
+    <ClCompile Include="RS2NetworkDisabled.cpp" />
+    <ClCompile Include="RS2Width.cpp" />
     <ClCompile Include="RS2XFileImporter.cpp" />
     <ClCompile Include="RS2StageProbe.cpp" />
     <ClCompile Include="RS2TextureSource.cpp" />
@@ -307,7 +309,6 @@
     <ClCompile Include="HighTimer.cpp" />
     <ClCompile Include="Language.cpp" />
     <ClCompile Include="md5.cpp" />
-    <ClCompile Include="Network.cpp" />
     <ClCompile Include="RailMap.cpp" />
     <ClCompile Include="RailSim2.cpp" />
     <ClCompile Include="Script.cpp" />
@@ -462,7 +463,6 @@
     <ClInclude Include="LanguageID.h" />
     <ClInclude Include="Macro.h" />
     <ClInclude Include="md5.h" />
-    <ClInclude Include="Network.h" />
     <ClInclude Include="RailMap.h" />
     <ClInclude Include="RSPV.H" />
     <ClInclude Include="RS2EXTiming.h" />
@@ -504,6 +504,7 @@
     <ClInclude Include="RS2MeshImport.h" />
     <ClInclude Include="RS2Math.h" />
     <ClInclude Include="RS2Display.h" />
+    <ClInclude Include="RS2Width.h" />
     <ClInclude Include="RS2NetworkDisabled.h" />
     <ClInclude Include="RS2StageProbe.h" />
     <ClInclude Include="RS2TextureSource.h" />

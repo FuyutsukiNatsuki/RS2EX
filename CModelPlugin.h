@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CMODELPLUGIN_H_INCLUDED
 #define CMODELPLUGIN_H_INCLUDED
 
@@ -76,10 +77,10 @@ public:
 	void FreeInst(){ m_LinkInst = NULL; }
 	void AddPartsNum(int n){ m_PartsNum += n; }
 	int GetPartsNum(){ return m_PartsNum; }
-	int GetMoverNum(){ return m_MoverState.size(); }
-	int GetAnimationNum(){ return m_Animation.size(); }
-	int GetParticleNum(){ return m_Particle.size(); }
-	int GetSoundNum(){ return m_SoundEffector.size(); }
+	int GetMoverNum(){ return RS2SizeToInt(m_MoverState.size()); }
+	int GetAnimationNum(){ return RS2SizeToInt(m_Animation.size()); }
+	int GetParticleNum(){ return RS2SizeToInt(m_Particle.size()); }
+	int GetSoundNum(){ return RS2SizeToInt(m_SoundEffector.size()); }
 	void SimulateEffect(CModelInst *);
 	CPLUGIN_CASTFUNC(CModelPlugin);
 };

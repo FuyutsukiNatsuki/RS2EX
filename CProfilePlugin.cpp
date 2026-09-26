@@ -573,7 +573,7 @@ void CProfilePlugin::Render(
 			}
 		}
 		sort(ms_TempIndex.begin(), ms_TempIndex.end());
-		DWORD i, dwNumEdges = ms_TempIndex.size();
+		DWORD i, dwNumEdges = RS2SizeToDword(ms_TempIndex.size());
 		for(i = 0; i<dwNumEdges; i++){
 			CProfileVertex *edge = ms_TempIndex[i];
 			while(i<dwNumEdges-1 && edge->IsSame(ms_TempIndex[i+1])){
@@ -628,7 +628,7 @@ void CProfilePlugin::ResetMapTemp(){
 void CProfilePlugin::CopyMapTemp(
 	vector<float> &mapv	//	ë„ì¸êÊ
 ){
-	int pn = m_Profile.size()+m_Interval.size();
+	int pn = RS2SizeToInt(m_Profile.size()+m_Interval.size());
 	if(!pn) return;
 	mapv.resize(pn);
 	vector<float>::iterator ptr = mapv.begin();

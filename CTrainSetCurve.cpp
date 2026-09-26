@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "CRailWay.h"
 #include "CTrain.h"
@@ -223,9 +223,9 @@ void CGroupEndLocator::Attach(
  */
 void CGroupEndLocator::Detach(){
 	if(m_SetRail){
-		int before = m_SetRail->m_GroupEnd.size();
+		int before = RS2SizeToInt(m_SetRail->m_GroupEnd.size());
 		m_SetRail->m_GroupEnd.remove(this);
-		int after = m_SetRail->m_GroupEnd.size();
+		int after = RS2SizeToInt(m_SetRail->m_GroupEnd.size());
 	//	if(before==after) Dialog("ERROR@CGroupEndLocator::Detach");
 	}
 }

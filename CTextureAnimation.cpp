@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "CCustomizerMisc.h"
 #include "CModelPlugin.h"
@@ -241,7 +241,7 @@ char *CTextureAnimation::Read(
  *	ÉfÅ[É^ì«çû
  */
 void CTextureAnimation::LoadData(){
-	int i, fn = m_FrameList.size();
+	int i, fn = RS2SizeToInt(m_FrameList.size());
 	for(i = 0; i<fn; i++) m_FrameList[i].LoadData();
 }
 

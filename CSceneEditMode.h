@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CSCENEEDITMODE_H_INCLUDED
 #define CSCENEEDITMODE_H_INCLUDED
 
@@ -32,8 +33,8 @@ public:
 	CSceneEditMode();
 	~CSceneEditMode();
 	void WindowResized(int, int, CWindowCtrl *);
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
-	void DoubleClick(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
+	void DoubleClick(CMDTYPE, RS2OpaqueData);
 	CModelPlugin *GetModelPlugin();
 	void AddScene(CSurfacePlugin *);
 	void DeleteScene(CScene *);

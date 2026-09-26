@@ -137,7 +137,7 @@ void CDiaDialogBase::WindowResized(
  */
 CPopMenu *CDiaDialogBase::Dispatch(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	switch(type){
 	case CMD_GROUP: {

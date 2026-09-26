@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CPOPMENU_H_INCLUDED
 #define CPOPMENU_H_INCLUDED
 
@@ -67,8 +68,8 @@ typedef enum{
  */
 class CMenuCommander{
 public:
-	virtual CPopMenu *Dispatch(CMDTYPE, DWORD) = 0;
-	virtual void DoubleClick(CMDTYPE, DWORD){}
+	virtual CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData) = 0;
+	virtual void DoubleClick(CMDTYPE, RS2OpaqueData){}
 };
 
 #endif

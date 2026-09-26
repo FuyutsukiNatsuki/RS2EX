@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CGIRDERSELECTMODE_H_INCLUDED
 #define CGIRDERSELECTMODE_H_INCLUDED
 
@@ -12,7 +13,7 @@ private:
 public:
 	CGirderSelectMode();
 	~CGirderSelectMode(){}
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	char *PluginDirName(){ return "Girder"; }
 	CPluginList *GetPluginList();
 	void Enter3DPlugin();

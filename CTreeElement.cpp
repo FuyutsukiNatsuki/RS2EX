@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CPluginTree.h"
 
@@ -50,7 +51,7 @@ bool CTreeElement::IsInsideItem(
 void CTreeElement::BeginRename(){
 	if(!IsRenamable()) return;
 	m_EditBox = new CEditBox;
-	m_Width = (m_String.size()+1)*FONT_WIDTH+2;
+	m_Width = RS2SizeToInt(m_String.size()+1)*FONT_WIDTH+2;
 	m_EditBox->Create(0, 0, m_Width-2, PT_NAME_MAX, m_String);
 	m_Owner->GiveFocus(false);
 }
@@ -79,7 +80,7 @@ void CTreeElement::EndRename(
 void CTreeElement::PrepareDrag(){
 	m_State = 1;
 	CDragContainer::BeginDrag(DRAG_PLUGIN, m_Owner);
-	CDragContainer::Insert((DWORD)this);
+	CDragContainer::Insert((RS2OpaqueData)this);
 }
 
 /*

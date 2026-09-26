@@ -36,7 +36,7 @@ CListElement::CListElement(
 void CListElement::BeginRename(){
 	m_EditBox = new CEditBox;
 	m_EditBox->Create(0, 0,
-		(m_String[0].size()+1)*FONT_WIDTH, LV_NAME_MAX, m_String[0]);
+		RS2SizeToInt(m_String[0].size()+1)*FONT_WIDTH, LV_NAME_MAX, m_String[0]);
 	m_Owner->GiveFocus(false);
 }
 
@@ -736,7 +736,7 @@ bool CListView::ScanInput(){
 					m_FocusIndex = oldindex;
 					m_FocusItem = oldfocus;
 				}
-				CPopMenu *pop = m_Commander->Dispatch(m_CmdType, (DWORD)popitem);
+				CPopMenu *pop = m_Commander->Dispatch(m_CmdType, (RS2OpaqueData)popitem);
 				GiveFocus(!pop);
 				if(pop) pop->Popup(pos.x, pos.y);
 				return true;

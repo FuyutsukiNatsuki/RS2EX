@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CPOLESELECTMODE_H_INCLUDED
 #define CPOLESELECTMODE_H_INCLUDED
 
@@ -12,7 +13,7 @@ private:
 public:
 	CPoleSelectMode();
 	~CPoleSelectMode(){}
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	char *PluginDirName(){ return "Pole"; }
 	CPluginList *GetPluginList();
 	void Enter3DPlugin();

@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CSkinPlugin.h"
@@ -65,7 +66,7 @@ void CTrainTemplate::Save(
 	fprintf(file, "\tTrainTemplate{\n");
 	fprintf(file, "\t\tTrainPlugin = \"%s\";\n", m_TrainID.c_str());
 	fprintf(file, "\t\tReverse = %s;\n", YESNO[m_Reverse]);
-	fprintf(file, "\t\tSwitchNum = %d;\n", m_SwitchOption.size());
+	fprintf(file, "\t\tSwitchNum = %d;\n", RS2SizeToInt(m_SwitchOption.size()));
 	if(m_SwitchOption.size()){
 		fprintf(file, "\t\tSwitchOption = %d", m_SwitchOption[0]);
 		for(i = 1; i<m_SwitchOption.size(); i++) fprintf(file, ", %d", m_SwitchOption[i]);
@@ -304,10 +305,10 @@ void CTrainGroupTemplate::SetPreview(){
  *	テンプレートリスト読込
  */
 void LoadTrainGroupTemplateList(){
-	long filelist;
+	intptr_t filelist;	//	[RS2EX] v0.3.0: the CRT search handle is pointer-sized
 	_finddata_t data;
 	if(chdir(g_BaseDir) || chdir(TGT_DIRNAME)) return;
-	if((filelist = _findfirst("*.txt", &data))>=0){
+	if((filelist = _findfirst("*.txt", &data))!=-1){
 		do{
 			FILE *file;
 			if(data.attrib&_A_SUBDIR) continue;

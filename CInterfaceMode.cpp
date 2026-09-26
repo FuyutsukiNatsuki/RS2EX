@@ -3,7 +3,6 @@
 #include "CFileMode.h"
 #include "HighTimer.h"
 #include "Capture.h"
-#include "Network.h"
 #include "CModelPlugin.h"
 #include "CEnvPlugin.h"
 #include "CSkinPlugin.h"
@@ -267,7 +266,7 @@ void CPluginMode::WindowResized(
  */
 CPopMenu *CPluginMode::Dispatch(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	if(type==CMD_PILVELEM){
 		class CListDirCreator: public CMenuCommand{

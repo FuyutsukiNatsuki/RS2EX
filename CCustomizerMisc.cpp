@@ -95,7 +95,7 @@ char *CShadowInhibitor::Read(
 void CShadowInhibitor::ApplyCustomizer(
 	CMesh *mesh	//	メッシュ
 ){
-	int i, mn = m_MaterialID.size();
+	int i, mn = RS2SizeToInt(m_MaterialID.size());
 	switch(CNamedObject::GetAfterRender()){
 	case 0:
 		if(m_Transparent){
@@ -163,7 +163,7 @@ void CEnvMapper::ApplyCustomizer(
 	CMesh *mesh	//	メッシュ
 ){
 	if(!g_ConfigMode->GetEnvMap()) return;
-	int i, mn = m_MaterialID.size();
+	int i, mn = RS2SizeToInt(m_MaterialID.size());
 	for(i = 0; i<mn; i++){
 		int tmp = m_MaterialID[i];
 		if(!mesh->CheckMatNum(tmp)) continue;
@@ -201,7 +201,7 @@ char *CAlphaTester::Read(
 void CAlphaTester::ApplyCustomizer(
 	CMesh *mesh	//	メッシュ
 ){
-	int i, mn = m_MaterialID.size();
+	int i, mn = RS2SizeToInt(m_MaterialID.size());
 	for(i = 0; i<mn; i++){
 		int tmp = m_MaterialID[i];
 		if(!mesh->CheckMatNum(tmp)) continue;
@@ -439,7 +439,7 @@ char *CMaterialChanger::Read(
 void CMaterialChanger::ApplyCustomizer(
 	CMesh *mesh	//	メッシュ
 ){
-	int i, mn = m_MaterialID.size();
+	int i, mn = RS2SizeToInt(m_MaterialID.size());
 	for(i = 0; i<mn; i++){
 		int tmp = m_MaterialID[i];
 		if(!mesh->CheckMatNum(tmp)) continue;

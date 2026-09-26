@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CListView.h"
 #include "CModelInst.h"
@@ -30,7 +31,7 @@ char *CModelPlugin::ReadModelSwitch(
 ){
 	char *tmp;
 	while(true){
-		CModelSwitch msw(m_ModelSwitch.size());
+		CModelSwitch msw(RS2SizeToInt(m_ModelSwitch.size()));
 		CTextureAnimation anim;
 		if(tmp = msw.Read(str, this)){
 			str = tmp;
@@ -125,7 +126,7 @@ void CModelPlugin::ListSwitch(
 	for(; im!=m_ModelSwitch.end(); im++){
 		CListElement *sle = slv->InsertItem(-1, (char *)im->m_SwitchName.c_str());
 		sle->SetString(1, im->GetCurrentOptionName());
-		sle->SetData((DWORD)&*im);
+		sle->SetData((RS2OpaqueData)&*im);
 		im->SetListElement(sle);
 	}
 	slv->SetSelectionMark(m_SelectSwitchID, 0);

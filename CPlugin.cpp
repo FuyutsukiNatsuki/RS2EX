@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "CPluginTree.h"
 #include "CSkinPlugin.h"
@@ -217,11 +217,11 @@ CPluginList::~CPluginList(){
  *	定義ファイルのロード
  */
 bool CPluginList::List(){
-	long filelist;
+	intptr_t filelist;	//	[RS2EX] v0.3.0: the CRT search handle is pointer-sized
 	_finddata_t data;
 	CPlugin **adr = &m_List;
 	if(chdir(g_BaseDir) || chdir(DirName())) return false;
-	if((filelist = _findfirst("*", &data))>=0){
+	if((filelist = _findfirst("*", &data))!=-1){
 		do{
 			FILE *file;
 			if(!(data.attrib&_A_SUBDIR)) continue;
@@ -345,7 +345,15 @@ char *LoadBinaryText(
 ){
 	if(!file) return NULL;
 	fseek(file, 0, SEEK_END);
-	int size = ftell(file);
+	//	[RS2EX] v0.3.0: ftell fails with -1, and size+1 must not overflow.  A
+	//	definition file is text; 256 MiB is far beyond any real one.
+	const long measured = ftell(file);
+	if(measured<0 || measured>0x10000000L){
+		Debug("[RS2EX] LoadBinaryText: unusable file size %ld\n", measured);
+		fclose(file);
+		return NULL;
+	}
+	int size = (int)measured;
 	if(0<=maxbyte && maxbyte<size) size = maxbyte;
 	fseek(file, 0, SEEK_SET);
 	char *buf = new char[size+1];

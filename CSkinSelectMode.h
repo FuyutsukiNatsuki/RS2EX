@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CSKINSELECTMODE_H_INCLUDED
 #define CSKINSELECTMODE_H_INCLUDED
 
@@ -28,7 +29,7 @@ public:
 	CSkinSelectMode();
 	~CSkinSelectMode(){}
 	void WindowResized(int, int, CWindowCtrl *);
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	char *PluginDirName(){ return "Skin"; }
 	CPluginList *GetPluginList();
 	void EnterPlugin();

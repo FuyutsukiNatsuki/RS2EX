@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CScene.h"
@@ -85,7 +86,7 @@ void CTrainSetMode::WindowResized(
  */
 CPopMenu *CTrainSetMode::Dispatch(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	switch(type){
 	case CMD_GROUP: {

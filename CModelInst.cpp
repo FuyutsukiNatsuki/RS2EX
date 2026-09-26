@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CTrainGroup.h"
@@ -214,7 +215,7 @@ char *CModelInst::ReadModelInst(
 			int opt;
 			if(!(str = ConstInteger(eee = str, &opt))) throw CSynErr(eee);
 			m_SwitchOption.push_back(opt);
-			m_StaticSwitchID.push_back(g_StaticSwitchTable.size());
+			m_StaticSwitchID.push_back(RS2SizeToInt(g_StaticSwitchTable.size()));
 			g_StaticSwitchTable.push_back(CStaticSwitchID(this, sidx));
 			sidx++;
 		} while(!(tmp = Character2(str, ';')));
@@ -256,7 +257,7 @@ void CModelInst::SaveModelInst(
 	bool pst	//	épê®èÓïÒï€ë∂
 ){
 	int i;
-	fprintf(df, "%sSwitchNum = %d;\n", ind, m_SwitchOption.size());
+	fprintf(df, "%sSwitchNum = %d;\n", ind, RS2SizeToInt(m_SwitchOption.size()));
 	if(m_SwitchOption.size()){
 		fprintf(df, "%sSwitchOption = ", ind);
 		for(i = 0; i<m_SwitchOption.size(); i++)

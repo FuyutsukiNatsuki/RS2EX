@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CTrain.h"
@@ -114,7 +115,7 @@ void CTrainEditMode::WindowResized(
  */
 CPopMenu *CTrainEditMode::Dispatch(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	CListElement *renametarget = NULL;
 RETRY:
@@ -138,7 +139,7 @@ RETRY:
 			if(fe){
 				renametarget = le;
 				type = fe->GetCommandType();
-				data = (DWORD)fe->GetPlugin();
+				data = (RS2OpaqueData)fe->GetPlugin();
 				goto RETRY;
 			}
 		}else{
@@ -218,7 +219,7 @@ RETRY:
  */
 void CTrainEditMode::DoubleClick(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	switch(type){
 	case CMD_PITVELEM:

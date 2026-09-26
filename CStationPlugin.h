@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CSTATIONPLUGIN_H_INCLUDED
 #define CSTATIONPLUGIN_H_INCLUDED
 
@@ -54,7 +55,7 @@ public:
 	char *Read(char *);
 	void PushCoord(VEC3 v){ m_CoordList.push_back(v); }
 	void SetPlatformParent(CStationPlugin *);
-	int GetCoordNum(){ return m_CoordList.size(); }
+	int GetCoordNum(){ return RS2SizeToInt(m_CoordList.size()); }
 	void SetPlatformPlugin();
 	CRailBuilder *SetBuilder(MTX4 *);
 	void Preview(MTX4 *, CLineDumpL *);

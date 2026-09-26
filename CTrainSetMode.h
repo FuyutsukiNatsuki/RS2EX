@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CTRAINSETMODE_H_INCLUDED
 #define CTRAINSETMODE_H_INCLUDED
 
@@ -16,7 +17,7 @@ public:
 	CTrainSetMode();
 	~CTrainSetMode();
 	void WindowResized(int, int, CWindowCtrl *);
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	void EnterCursorScenery();
 	void ScanInputCursorScenery();
 	void RenderCursorScenery();

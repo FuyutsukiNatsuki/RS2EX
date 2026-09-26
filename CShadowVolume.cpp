@@ -197,7 +197,7 @@ void CShadowVolume::BuildFromMesh(
 	}
 	sort(m_TempIndex.begin(), m_TempIndex.end());
 
-	DWORD dwNumEdges = m_TempIndex.size();
+	DWORD dwNumEdges = RS2SizeToDword(m_TempIndex.size());
 	for(i = 0; i<dwNumEdges; i++){
 		CEdgeIndex edge = m_TempIndex[i];
 		int cnt = 1;

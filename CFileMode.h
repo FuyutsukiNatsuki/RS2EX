@@ -84,7 +84,7 @@ public:
 	CFileMode();
 	~CFileMode();
 	void WindowResized(int, int, CWindowCtrl *);
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	char *LoadInterfaceSetting(char *);
 	void SaveInterfaceSetting(FILE *);
 	void EnterInterface();

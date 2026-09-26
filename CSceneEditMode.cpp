@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CSimpleDialog.h"
 #include "CScene.h"
@@ -89,7 +89,7 @@ void CSceneEditMode::WindowResized(
  */
 CPopMenu *CSceneEditMode::Dispatch(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	switch(type){
 	case CMD_PITVELEM:
@@ -170,7 +170,7 @@ CPopMenu *CSceneEditMode::Dispatch(
  */
 void CSceneEditMode::DoubleClick(
 	CMDTYPE type,	//	コマンドタイプ
-	DWORD data		//	データ
+	RS2OpaqueData data		//	データ
 ){
 	switch(type){
 	case CMD_PITVELEM:

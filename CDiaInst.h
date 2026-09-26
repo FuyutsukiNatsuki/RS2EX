@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CDIAINST_H_INCLUDED
 #define CDIAINST_H_INCLUDED
 
@@ -39,7 +40,7 @@ public:
 	CDiaListBase();
 	virtual ~CDiaListBase(){}
 	void Free();
-	int Size(){ return m_DiaList.size(); }
+	int Size(){ return RS2SizeToInt(m_DiaList.size()); }
 	void ListElement(CListView *, int);
 	int AddElement(CDiaElementBase *);
 	int DeleteElement(CDiaElementBase *);

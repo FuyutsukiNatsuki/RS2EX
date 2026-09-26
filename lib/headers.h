@@ -27,9 +27,14 @@
 	#endif
 #endif
 
-#ifndef __int3264
-typedef unsigned long *DWORD_PTR;
-#endif
+//	[RS2EX] v0.3.0: the VC6-era "#ifndef __int3264 / typedef unsigned long
+//	*DWORD_PTR" that stood here is gone.  The Windows SDK defines __int3264,
+//	so it never took effect, and if it had it would have declared DWORD_PTR
+//	as a pointer to a 32-bit integer instead of a pointer-sized integer.  The
+//	SDK's types are the authority; this only checks that they are what x64
+//	and x86 expect.
+static_assert(sizeof(DWORD_PTR)==sizeof(void *), "DWORD_PTR must be pointer-sized");
+static_assert(sizeof(LONG_PTR)==sizeof(void *), "LONG_PTR must be pointer-sized");
 
 #ifndef DIRECTINPUT_VERSION
 	#define DIRECTINPUT_VERSION 0x0800
@@ -41,6 +46,7 @@ typedef unsigned long *DWORD_PTR;
 #include <dinput.h>
 #include <dsound.h>
 #include "..\RS2Math.h"
+#include "..\RS2Width.h"
 
 /*
  *	å^ñºïœçX

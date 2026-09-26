@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CTRAINVIEWMODE_H_INCLUDED
 #define CTRAINVIEWMODE_H_INCLUDED
 
@@ -18,7 +19,7 @@ public:
 	CTrainViewMode();
 	~CTrainViewMode();
 	void WindowResized(int, int, CWindowCtrl *);
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	bool CameraCtrlExp(){ return true; }
 	bool CameraCtrlLock(){ return !!m_ViewMode; }
 	void EnterCursorScenery();

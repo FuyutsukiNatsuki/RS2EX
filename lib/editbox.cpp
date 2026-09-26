@@ -68,7 +68,7 @@ void CEditBox::Create(int x, int y, int w, int max, string pre, int imm){
 	m_x = x;
 	m_y = y;
 	m_width = w;
-	m_pos = pre.size();
+	m_pos = RS2SizeToInt(pre.size());
 	m_selpos = 0;
 	m_max = max;
 	m_str = m_show = pre;
@@ -126,7 +126,7 @@ int CEditBox::ScanInput(){
 	int oldsize = m_oldsize;
 	if(IsFEPOpen()){
 		GetCompStr(m_comp);
-		m_oldsize = m_comp.size();
+		m_oldsize = RS2SizeToInt(m_comp.size());
 	}else{
 		m_oldsize = 0;
 	}
@@ -191,9 +191,9 @@ void CEditBox::Render(){
 
 		string tmpstr(&m_str[0], &m_str[m_pos]);
 		m_show.insert(m_pos, m_comp);
-		int tbw = (m_show.size()+1)*RS2GetTextHeight()/2;
+		int tbw = RS2SizeToInt(m_show.size()+1)*RS2GetTextHeight()/2;
 		if(tbw<m_width) tbw = m_width;
-		if(m_pos<m_selpos){ sel1 += m_comp.size(); sel2 += m_comp.size(); }
+		if(m_pos<m_selpos){ sel1 += RS2SizeToInt(m_comp.size()); sel2 += RS2SizeToInt(m_comp.size()); }
 		Grad2DRect(m_x-BASE_MARGINX, m_y, m_x+tbw+BASE_MARGINX, m_y+RS2GetTextHeight(),
 			g_Skin->m_EditCtrlData.m_EditBaseColor);
 		if(sel1!=sel2) Grad2DRect(m_x+sel1*RS2GetTextHeight()/2, m_y,
@@ -211,14 +211,14 @@ void CEditBox::Render(){
 		RS2DrawText(m_x, m_y, g_Skin->m_EditCtrlData.m_EditFontColor, tmpstr.c_str());
 		RS2DrawText(m_x+m_pos*RS2GetTextHeight()/2, m_y,
 			g_Skin->m_EditCtrlData.m_ConvertFontColor, m_comp.c_str());
-		RS2DrawText(m_x+(m_pos+m_comp.size())*RS2GetTextHeight()/2, m_y,
+		RS2DrawText(m_x+RS2SizeToInt(m_pos+m_comp.size())*RS2GetTextHeight()/2, m_y,
 			g_Skin->m_EditCtrlData.m_EditFontColor, &m_str[m_pos]);
 
 		delete [] pClause;
 		delete [] pAttr;
 	}else{
 		//	文字列を表示
-		int tbw = (m_show.size()+1)*RS2GetTextHeight()/2;
+		int tbw = RS2SizeToInt(m_show.size()+1)*RS2GetTextHeight()/2;
 		if(tbw<m_width) tbw = m_width;
 		Grad2DRect(m_x-BASE_MARGINX, m_y, m_x+tbw+BASE_MARGINX, m_y+RS2GetTextHeight(),
 			g_Skin->m_EditCtrlData.m_EditBaseColor);
@@ -250,7 +250,7 @@ void CEditBox::BackSpace(){
 		//	現在位置が 2 文字目以降
 		if(m_pos>0){
 			char *s = (char *)m_str.c_str();
-			int j = CharPrev(s, s+m_pos)-s;
+			int j = RS2DiffToInt(CharPrev(s, s+m_pos)-s);
 			m_str.erase(j, m_pos-j);
 			m_selpos = m_pos = j;
 		}
@@ -268,7 +268,7 @@ void CEditBox::DeleteChar(){
 	if(!DeleteSelected()){
 		if(m_pos<m_str.size()){
 			char *s = (char *)m_str.c_str();
-			int j = CharNext(s+m_pos)-s;
+			int j = RS2DiffToInt(CharNext(s+m_pos)-s);
 			m_str.erase(m_pos, j-m_pos);
 		}
 	}
@@ -324,7 +324,7 @@ void CEditBox::AddString(string s){
 	DeleteSelected();
 	ClearCharQueue();
 	m_str.insert(m_str.begin()+m_pos, s.begin(), s.end());
-	m_selpos = m_pos += s.size();
+	m_selpos = m_pos += RS2SizeToInt(s.size());
 	Clip();
 	m_show = m_str;
 	m_frame = BLINK_FRAME/5;
@@ -370,7 +370,7 @@ void CEditBox::ClipPaste(){
 	DeleteSelected();
 	ClearCharQueue();
 	m_str.insert(m_str.begin()+m_pos, s.begin(), s.end());
-	m_selpos = m_pos += s.size();
+	m_selpos = m_pos += RS2SizeToInt(s.size());
 	Clip();
 	m_show = m_str;
 	m_frame = BLINK_FRAME/5;
@@ -381,7 +381,7 @@ void CEditBox::ClipPaste(){
  */
 void CEditBox::MoveLeft(){
 	char *s = (char *)m_str.c_str();
-	if(m_pos>0) m_pos = CharPrev(s, s+m_pos)-s;
+	if(m_pos>0) m_pos = RS2DiffToInt(CharPrev(s, s+m_pos)-s);
 	if(!CheckShift()) m_selpos = m_pos;
 	m_frame = BLINK_FRAME/5;
 }
@@ -391,7 +391,7 @@ void CEditBox::MoveLeft(){
  */
 void CEditBox::MoveRight(){
 	char *s = (char *)m_str.c_str();
-	if(m_pos<m_str.size()) m_pos = CharNext(s+m_pos)-s;
+	if(m_pos<RS2SizeToInt(m_str.size())) m_pos = RS2DiffToInt(CharNext(s+m_pos)-s);
 	if(!CheckShift()) m_selpos = m_pos;
 	m_frame = BLINK_FRAME/5;
 }
@@ -409,7 +409,7 @@ void CEditBox::MoveHead(){
  *	キャレットを最後尾に移動
  */
 void CEditBox::MoveLast(){
-	m_pos = m_str.size();
+	m_pos = RS2SizeToInt(m_str.size());
 	if(!CheckShift()) m_selpos = m_pos;
 	m_frame = BLINK_FRAME/5;
 }
@@ -419,7 +419,7 @@ void CEditBox::MoveLast(){
  */
 void CEditBox::SelectAll(){
 	m_selpos = 0;
-	m_pos = m_str.size();
+	m_pos = RS2SizeToInt(m_str.size());
 	m_frame = BLINK_FRAME/5;
 }
 
@@ -430,7 +430,7 @@ void CEditBox::CompEnd(bool get_result){
 	DeleteSelected();
 	if(get_result) GetResultStr(m_comp);
 	m_str = m_str.insert(m_pos, m_comp);
-	m_selpos = m_pos += m_comp.size();
+	m_selpos = m_pos += RS2SizeToInt(m_comp.size());
 	Clip();			//	最大文字数でクリップ
 	m_show = m_str;	//	表示文字列を更新
 	m_comp = "";	//	変換中文字列のクリア
@@ -441,17 +441,17 @@ void CEditBox::CompEnd(bool get_result){
  *	文字数制限
  */
 void CEditBox::Clip(){
-	int size = m_str.size(), i;
+	int size = RS2SizeToInt(m_str.size()), i;
 	if(size<=m_max) return;
 	char *s = (char *)m_str.c_str();
 
 	//	全角文字の整合性をチェックしながら消していく
 	for(i = size; i>m_max;){
-		int j = CharPrev(s, s+i)-s;
+		int j = RS2DiffToInt(CharPrev(s, s+i)-s);
 		m_str.erase(j, i-j);
 		i = j;
 	}
-	size = m_str.size();
+	size = RS2SizeToInt(m_str.size());
 	if(m_pos>size) m_selpos = m_pos = size;
 }
 
@@ -514,7 +514,9 @@ BOOL SelectFile(char *file, int len, const char *def, const char *ext, int flag)
 	char filter[256];
 
 	memset(&ofn, 0, sizeof(OPENFILENAME));
-	memset(file, 0, sizeof(file));
+	//	[RS2EX] v0.3.0: the buffer is len bytes; sizeof(file) is the size of the
+	//	pointer (4 bytes on x86, 8 on x64).
+	if(len>0) memset(file, 0, len);
 	wsprintf(filter, "%s (*.%s)\t*.%s\t\t", def, ext, ext);
 
 	for(int i = 0;i<256;i++){

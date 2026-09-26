@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CSTRUCTSELECTMODE_H_INCLUDED
 #define CSTRUCTSELECTMODE_H_INCLUDED
 
@@ -14,7 +15,7 @@ private:
 public:
 	CStructSelectMode(char *str = NULL);
 	~CStructSelectMode(){}
-	virtual CPopMenu *Dispatch(CMDTYPE, DWORD);
+	virtual CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	virtual CModelPlugin *GetModelPlugin();
 	virtual char *PluginDirName(){ return "Struct"; }
 	virtual CPluginList *GetPluginList();

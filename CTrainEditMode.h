@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CTRAINEDITMODE_H_INCLUDED
 #define CTRAINEDITMODE_H_INCLUDED
 
@@ -28,9 +29,9 @@ public:
 	CTrainEditMode();
 	~CTrainEditMode();
 	void WindowResized(int, int, CWindowCtrl *);
-	CPopMenu *Dispatch(CMDTYPE, DWORD);
+	CPopMenu *Dispatch(CMDTYPE, RS2OpaqueData);
 	CListView *GetTemplateListView(){ return &m_TemplateListView; }
-	void DoubleClick(CMDTYPE, DWORD);
+	void DoubleClick(CMDTYPE, RS2OpaqueData);
 	void SwitchPreviewMode();
 	void AddGroup();
 	void DeleteGroup(CTrainGroup *);
