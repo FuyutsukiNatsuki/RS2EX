@@ -7,6 +7,7 @@
 #include "RS2SaveIdentity.h"
 #include "RS2SaveRefCheck.h"
 #include "RS2InputAudioSmoke.h"
+#include "RS2X64Smoke.h"
 #include "CSkinPlugin.h"
 #include "CSimulationMode.h"
 #include "CFileMode.h"
@@ -903,6 +904,12 @@ void CFileMode::ProcessStartupFile(){
 	//	[RS2EX] v0.3.0: DirectInput / DirectSound as they run (RS2InputAudioSmoke.cpp).
 	if(RS2InputAudioSmokeRequested()){
 		RS2InputAudioSmokeRun();
+		SendWM_CLOSE();
+		return;
+	}
+	//	[RS2EX] v0.3.0: pointer width with a real high address (RS2X64Smoke.cpp).
+	if(RS2X64SmokeRequested()){
+		RS2X64SmokeRun();
 		SendWM_CLOSE();
 		return;
 	}
