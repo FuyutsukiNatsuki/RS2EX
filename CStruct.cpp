@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #include "stdafx.h"
 #include "CListView.h"
 #include "CSimpleDialog.h"
@@ -218,9 +218,9 @@ char *CStruct::Read(
 		delete this;
 		return NULL;
 	}
-	void *oldadr;
-	if(!(str = AsgnPointer(eee = str, "Address", &oldadr))) throw CSynErr(eee);
-	g_AddressMap[oldadr] = this;
+	RS2SaveRef oldadr;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &oldadr))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(oldadr, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	string pid;
 	if(!(str = AsgnString(eee = str, "StructPlugin", &pid))) throw CSynErr(eee);
 	m_ModelPlugin = m_StructPlugin = g_StructPluginList->FindPlugin(pid.c_str(), true);
@@ -238,7 +238,7 @@ void CStruct::Save(
 	FILE *df	//	ƒtƒ@ƒCƒ‹
 ){
 	fprintf(df, "\t\t\tStruct{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	fprintf(df, "\t\t\t\tStructPlugin = \"%s\";\n", CheckPluginID(m_StructPlugin));
 	SaveModelInst(df, "\t\t\t\t", true);
 	fprintf(df, "\t\t\t}\n");

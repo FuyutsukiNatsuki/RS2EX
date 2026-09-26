@@ -18,7 +18,6 @@ private:
 	static CRailConnector **ms_Root;	//	接続ルート
 	static float ms_MinDist;			//	最小検出距離
 	static CRailConnector *ms_Detect;	//	検出情報
-	void *m_OldAdr;						//	旧アドレス
 	int m_Selected;						//	選択フラグ
 	int m_Side;							//	進行方向
 	int m_TrailPoint[2];				//	トレール方向

@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #pragma warning (disable: 4786)
 
 #include <string>
@@ -23,6 +23,7 @@ using namespace std;
 #include "SystemCover.h"
 #include "GraphicCover.h"
 #include "Script.h"
+#include "RS2SaveRef.h"	//	[RS2EX] v0.3.0
 #include "CWaveArray.h"
 #include "CVertexDump.h"
 #include "CStringTexture.h"

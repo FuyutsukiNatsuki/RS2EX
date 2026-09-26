@@ -1,16 +1,19 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-26.
+//	Modified for RS2EX on 2026-09-26.
 //
 //	Save-file identity (v0.2.0).
 //
 //	From v0.2.0 a layout carries who wrote it, in its DatafileHeader:
 //
 //		RS2EXProduct = "RS2EX";
-//		RS2EXSaveSchema = 1;
-//		RS2EXProducer = "0.2.0";
+//		RS2EXSaveSchema = 2;
+//		RS2EXProducer = "0.3.0";
 //
 //	The schema is the save format's own version and changes only when the
 //	format does, never with every release.  The producer is informational.
+//	Schema 1 was v0.2.0 (addresses as %p); schema 2 is v0.3.0 (logical IDs,
+//	RS2SaveRef.h).
 //
 //	This module is the one place that knows the current schema and decides
 //	what a file is.  Classification reads the header only, before anything is

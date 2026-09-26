@@ -8,6 +8,9 @@
 /*
  *	エラーハンドラ
  */
+//	[RS2EX] v0.3.0: true while an automated check loads broken files on purpose.
+extern bool g_RS2QuietSyntaxErrors;
+
 class CSynErr{
 private:
 	char *m_ErrorPos;	//	エラー発生箇所

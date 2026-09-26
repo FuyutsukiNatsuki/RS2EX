@@ -82,7 +82,7 @@ char *CWindowInfo::Read(
 		str = m_Div->Read(str);
 		m_Scene = GetFirstLeaf()->GetScene();
 	}else{
-		if(!(str = AsgnPointer(eee = str, "Scene", (void **)&m_Scene))) throw CSynErr(eee);
+		if(!(str = RS2AsgnSaveRefSlot(eee = str, "Scene", (void **)&m_Scene))) throw CSynErr(eee);
 		m_Scene = (CScene *)ReplaceAdr(m_Scene);
 		str = m_Camera.Read(str);
 	}
@@ -103,7 +103,7 @@ void CWindowInfo::Save(
 	if(m_Div){
 		m_Div->Save(df, indent2);
 	}else{
-		fprintf(df, "%s\tScene = %p;\n", indent.c_str(), m_Scene);
+		fprintf(df, "%s\tScene = " RS2_SAVEREF_FMT ";\n", indent.c_str(), RS2SaveRefOf(m_Scene));
 		m_Camera.Save(df, indent2);
 	}
 	fprintf(df, "%s}\n", indent.c_str());

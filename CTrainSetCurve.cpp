@@ -12,7 +12,6 @@ void *ReplaceAdr(void *);
 
 //	外部グローバル
 extern CScene *g_Scene;
-extern map<void *, void *> g_AddressMap;
 
 /*
  *	コンストラクタ
@@ -258,15 +257,15 @@ char *CGroupEndLocator::Read(
 ){
 	char *eee;
 	if(!(str = BeginBlock(str, pref))) return NULL;
-	void *oldadr;
-	if(!(str = AsgnPointer(eee = str, "Address", &oldadr))) throw CSynErr(eee);
-	g_AddressMap[oldadr] = this;
+	RS2SaveRef oldadr;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &oldadr))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(oldadr, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	if(!(str = Assignment(eee = str, "Location"))) throw CSynErr(eee);
 	if(!(str = ConstInteger(eee = str, &m_Side))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
 	if(!(str = ConstFloat(eee = str, &m_Offset))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
-	if(!(str = HexPointer(eee = str, (void **)&m_SetRail))) throw CSynErr(eee);
+	if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&m_SetRail))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ';'))) throw CSynErr(eee);
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 	return str;
@@ -281,8 +280,8 @@ void CGroupEndLocator::Save(
 	char *pref	//	プレフィックス
 ){
 	fprintf(df, "%s%s{\n", ind, pref);
-	fprintf(df, "%s\tAddress = %p;\n", ind, this);
-	fprintf(df, "%s\tLocation = %d, %f, %p;\n", ind, m_Side, m_Offset, m_SetRail);
+	fprintf(df, "%s\tAddress = " RS2_SAVEREF_FMT ";\n", ind, RS2SaveRefDefine(this));
+	fprintf(df, "%s\tLocation = %d, %f, " RS2_SAVEREF_FMT ";\n", ind, m_Side, m_Offset, RS2SaveRefOf(m_SetRail));
 	fprintf(df, "%s}\n", ind);
 }
 

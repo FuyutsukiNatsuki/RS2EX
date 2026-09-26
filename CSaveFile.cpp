@@ -43,7 +43,8 @@ char *g_DayOfWeek[7];	//	曜日
 char *g_TrainSetString[2] = {lang(NotSet), lang(Set)};	//	編成設置状態
 CScene *g_Scene;					//	カレントシーン
 CTrainGroup *g_TrainGroup;			//	カレント編成
-map<void *, void *> g_AddressMap;	//	アドレス変換
+//	[RS2EX] v0.3.0: g_AddressMap is RS2SaveRef.cpp's reference table now.
+bool g_RS2LoadWithoutSimulation = false;	//	[RS2EX] v0.3.0: -saverefcheck only	//	アドレス変換
 set<string> g_LackPlugin;			//	不足プラグイン
 //int g_GroupEndCount = 0;			//	debug
 
@@ -728,8 +729,7 @@ bool CSaveFile::Load(
 	g_Scene = NULL;
 	g_ConfigMode->FreeWindowDiv();
 	g_TrainGroup = NULL;
-	g_AddressMap.clear();
-	g_AddressMap[NULL] = NULL;
+	RS2SaveRefBeginLoad();	//	[RS2EX] v0.3.0 (was g_AddressMap)
 	g_LackPlugin.clear();
 	if(upname) m_FileName = fname;
 	CScene *currentscene;
@@ -776,6 +776,10 @@ bool CSaveFile::Load(
 		else if(m_Identity.schema>RS2_SAVE_SCHEMA_CURRENT) throw CSynErr(eee, lang(SaveFormatNewer));
 		else if(m_Identity.schema<RS2_SAVE_SCHEMA_CURRENT) m_Identity.saveClass = RS2_SAVE_OLDER_RS2EX;
 		else m_Identity.saveClass = RS2_SAVE_CURRENT;
+		//	[RS2EX] v0.3.0: schema 2 writes references as decimal logical IDs;
+		//	RailSim II, RS2EX v0.1.x and schema 1 wrote hexadecimal addresses,
+		//	read here as opaque IDs (RS2SaveRef.h).
+		RS2SaveRefSetSyntax(m_Identity.schema>=2 ? RS2_SAVEREF_DECIMAL : RS2_SAVEREF_HEX);
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
 		if(!(str = BeginBlock(eee = str, "LayoutInfo"))) throw CSynErr(eee);
@@ -848,7 +852,7 @@ bool CSaveFile::Load(
 				CTrainGroup *rb_group = NULL;
 				if(!(str = StringLiteral(str, &rb_name))) throw CSynErr(eee);
 				if(!(str = Character2(str, ','))) throw CSynErr(eee);
-				if(!(str = HexPointer(str, (void **)&rb_group))) throw CSynErr(eee);
+				if(!(str = RS2SaveRefSlotValue(str, (void **)&rb_group))) throw CSynErr(eee);
 				g_RailBlockMap[RestoreDoubleQuote(rb_name)] = rb_group;
 				if(!(str = Character2(str, ';'))) throw CSynErr(eee);
 			}
@@ -864,7 +868,7 @@ bool CSaveFile::Load(
 		if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
 
 		if(!(str = BeginBlock(eee = str, "SceneList"))) throw CSynErr(eee);
-		if(!(str = AsgnPointer(eee = str, "CurrentScene", (void **)&currentscene))) throw CSynErr(eee);
+		if(!(str = RS2AsgnSaveRefSlot(eee = str, "CurrentScene", (void **)&currentscene))) throw CSynErr(eee);
 		CScene **sadr = &m_SceneList;
 		while(true){
 			g_Scene = new CScene();
@@ -918,6 +922,9 @@ bool CSaveFile::Load(
 	}
 	g_TrainGroup = m_GroupList;
 	g_Scene = (CScene *)ReplaceAdr(currentscene);
+	Debug("[RS2EX] save references: %u objects, %u unresolved (%s)\n",
+		RS2SaveRefRegisteredCount(), RS2SaveRefUnresolvedCount(),
+		RS2SaveRefGetSyntax()==RS2_SAVEREF_DECIMAL ? "schema 2 IDs" : "legacy / schema 1 tokens");
 	g_Scene->Enter(true);
 	//g_AddressMap.clear();
 	NumberGroup();
@@ -936,7 +943,9 @@ bool CSaveFile::Load(
 		scene = scene->Next();
 	}
 	m_NetworkSyncCount = 0;
-	Simulate(1);	//	1 回だけシミュレート
+	//	[RS2EX] v0.3.0: -saverefcheck compares a save with the save of what it
+	//	loaded back, which only means something without this step.
+	if(!g_RS2LoadWithoutSimulation) Simulate(1);	//	1 回だけシミュレート
 	//	[RS2EX] That one simulation step must not become a visible bridge from
 	//	whatever was loaded before this file.
 	InvalidateTrainRenderState();
@@ -981,6 +990,29 @@ int CSaveFile::Save(
 		m_LegacyLoad = false;
 	}
 
+	//	[RS2EX] v0.3.0: two passes.  The first, written to NUL, only numbers the
+	//	definitions, in the order they are written; the second writes the file
+	//	with those numbers (RS2SaveRef.h).
+	RS2SaveRefBeginSave();
+	FILE *numbering = fopen("NUL", "wt");
+	if(numbering){
+		RS2SaveRefSetNumbering(true);
+		WriteLayout(numbering);
+		RS2SaveRefSetNumbering(false);
+		fclose(numbering);
+	}
+	WriteLayout(df);
+	RS2SaveRefEndSave();
+	fclose(df);
+	return 0;
+}
+
+/*
+ *	[RS2EX] v0.3.0: 保存本体（CSaveFile::Save から 2 回呼ばれる）
+ */
+void CSaveFile::WriteLayout(
+	FILE *df	//	ファイル
+){
 	fprintf(df, "DatafileHeader{\n");
 	fprintf(df, "\tRailSimVersion = %.2f;\n", RAILSIM_VERSION);
 	fprintf(df, "\tDatafileType = %s;\n", LAYOUT_DIRNAME);
@@ -1029,8 +1061,8 @@ int CSaveFile::Save(
 	fprintf(df, "RailBlockList{\n");
 	map<std::string, CTrainGroup *>::iterator railblock;
 	for(railblock = g_RailBlockMap.begin(); railblock!=g_RailBlockMap.end(); ++railblock){
-		if(railblock->second) fprintf(df, "\tRailBlock = \"%s\", %p;\n",
-			ExpandDoubleQuote(railblock->first).c_str(), railblock->second);
+		if(railblock->second) fprintf(df, "\tRailBlock = \"%s\", " RS2_SAVEREF_FMT ";\n",
+			ExpandDoubleQuote(railblock->first).c_str(), RS2SaveRefOf(railblock->second));
 	}
 	fprintf(df, "}\n\n");
 
@@ -1043,7 +1075,7 @@ int CSaveFile::Save(
 	fprintf(df, "}\n\n");
 
 	fprintf(df, "SceneList{\n");
-	fprintf(df, "\tCurrentScene = %p;\n", g_Scene);
+	fprintf(df, "\tCurrentScene = " RS2_SAVEREF_FMT ";\n", RS2SaveRefOf(g_Scene));
 	CScene *scene = m_SceneList;
 	while(scene){
 		scene->Save(df);
@@ -1054,9 +1086,6 @@ int CSaveFile::Save(
 	fprintf(df, "Window{\n");
 	g_ConfigMode->GetRootWindow()->Save(df, "\t");
 	fprintf(df, "}\n\n");
-
-	fclose(df);
-	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1090,27 +1119,14 @@ int GetDaysPerMonth(
 
 /*
  *	変換後アドレス取得
+ *
+ *	[RS2EX] v0.3.0: the argument is a pending reference parked in a pointer
+ *	field by RS2SaveRefSlotValue, not an address (RS2SaveRef.h).  0 is null; a
+ *	reference nothing registered comes back NULL, as before, and is counted.
  */
 void *ReplaceAdr(
-	void *oldadr	//	旧アドレス
+	void *oldadr	//	保留中の参照
 ){
-	if(oldadr){
-		if(!g_AddressMap.count(oldadr)){
-		//	Dialog("Address not found: %p", oldadr);
-			return NULL;
-		}
-		return g_AddressMap[oldadr];
-	}else{
-		return NULL;
-	}
+	return RS2SaveRefResolve(RS2SaveRefFromSlot(oldadr));
 }
 
-/*
- *	マップにアドレスを登録 (ネットワーク同期用)
- */
-void *RegisterNewMapAddress(void *new_adr){
-	extern int g_NetworkDummyMapAddress;
-	while(g_AddressMap.count((void *)g_NetworkDummyMapAddress)) g_NetworkDummyMapAddress++;
-	g_AddressMap[(void *)g_NetworkDummyMapAddress] = new_adr;
-	return (void *)g_NetworkDummyMapAddress;
-}

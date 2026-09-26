@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-26.
+//	Modified for RS2EX on 2026-09-26.
 //
 //	What remains of the network sessions: nothing that can run (v0.3.0).
 //
@@ -43,8 +44,6 @@ int g_LastJoinedHostPort = 51111;
 int g_LastJoinedLocalPort = 51112;
 int g_LastCreatedHostPort = 51111;
 string g_LastScreenName;
-
-int g_NetworkDummyMapAddress = 1;
 
 int RSNCreateSession(int, int, const char *){ return 3; }
 int RSNJoinSession(const char *, int, bool, const char *){ return 3; }

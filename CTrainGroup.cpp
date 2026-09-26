@@ -40,35 +40,6 @@ const double FRAME_PER_DAY = 24.0*60.0*60.0*RS2EXTiming::SIMULATION_HZ;	//	1 “ú“
 CTrain *g_CabinViewTrain = NULL;	//	‰^“]È“K—pŽÔçq
 bool g_UpdateTrainGroupList = false;
 
-void NetSyncSetTrain(
-	void *set_group, void *set_rail, int set_side, float set_sumlen, int set_flag
-){
-	if(!set_group || !g_AddressMap.count(set_group))
-		ErrorDialog("NetSyncSetTrain set_group error.");
-	if(set_rail && !g_AddressMap.count(set_rail))
-		ErrorDialog("NetSyncSetTrain set_rail error.");
-	CTrainGroup *group = (CTrainGroup *)g_AddressMap[set_group];
-	if(set_rail){
-		CRailWay *rail = (CRailWay *)g_AddressMap[set_rail];
-		CRailLinkTemp link(set_side, set_sumlen, R2L(V3ZERO), R2L(V3ZERO), R2L(V3ZERO), R2L(V3ZERO), rail, IRailSplitter());
-		group->Set(&link, set_flag);
-	}else{
-		group->Remove();
-	}
-}
-
-void NetSyncMergeTrain(
-	void *merge_group1, void *merge_group2, int merge_side1, int merge_side2
-){
-	if(!merge_group1 || !g_AddressMap.count(merge_group1))
-		ErrorDialog("NetSyncMergeTrain merge_group1 error.");
-	if(merge_group2 && !g_AddressMap.count(merge_group2))
-		ErrorDialog("NetSyncMergeTrain merge_group2 error.");
-	CTrainGroup *group1 = (CTrainGroup *)g_AddressMap[merge_group1];
-	CTrainGroup *group2 = (CTrainGroup *)g_AddressMap[merge_group2];
-	if(group2) group1->MergeTrain(group2, merge_side1, merge_side2);
-	else group1->SplitTrain(merge_side1);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +50,6 @@ void NetSyncMergeTrain(
 CTrainGroup::CTrainGroup(
 	char *name	//	–¼Ì
 ){
-	m_OldAdr = NULL;
 	m_Name = name;
 	m_ListElement = NULL;
 	m_Enabled = false;
@@ -234,7 +204,7 @@ CModelInst *CTrainGroup::Control(
 	if(GetKey(DIK_DELETE)==S_PUSH){
 		if(g_NetworkInitialized){
 			void EnqueueSetTrainControl(void *, void *, int, float, int);
-			EnqueueSetTrainControl(m_OldAdr, NULL, 0, 0.0f, 0);
+			EnqueueSetTrainControl(NULL, NULL, 0, 0.0f, 0);	//	[RS2EX] v0.3.0: sessions never start
 		}else{
 			PushUndoStack();
 			Remove();
@@ -315,7 +285,7 @@ CModelInst *CTrainGroup::Control(
 	if(CheckCtrl() && CheckShift() && split_pos>0){
 		m_SplitPos = split_pos;
 		if(GetButton(DIM_LEFT)==S_PUSH){
-			if(g_NetworkInitialized) EnqueueMergeTrainControl(m_OldAdr, NULL, m_SplitPos, 0);
+			if(g_NetworkInitialized) EnqueueMergeTrainControl(NULL, NULL, m_SplitPos, 0);
 			else if(g_ManualControl) SplitTrain(m_SplitPos);
 		}
 	}
@@ -944,7 +914,7 @@ void CTrainGroup::Simulate(){
 			int merge_side1 = m_Reverse==true, merge_side2 = g_HitTrainGroup.m_Type==1;
 			if(g_NetworkInitialized){
 				EnqueueMergeTrainControl(
-					m_OldAdr, g_HitTrainGroup.m_Group->m_OldAdr, merge_side1, merge_side2);
+					NULL, NULL, merge_side1, merge_side2);
 			}else if(g_ManualControl){
 				MergeTrain(g_HitTrainGroup.m_Group, merge_side1, merge_side2);
 			}
@@ -1153,7 +1123,6 @@ void CTrainGroup::SplitTrain(int split_pos){
 	CTrainGroup *new_group = new CTrainGroup((char *)m_Name.c_str());
 	new_group->m_Enabled = true;
 	new_group->m_Reverse = false;
-	new_group->m_OldAdr = RegisterNewMapAddress(new_group);
 	new_group->m_Next = m_Next;
 	m_Next = new_group;
 	vector<CTrain *> vtr;
@@ -1275,8 +1244,9 @@ char *CTrainGroup::Read(
 		delete this;
 		return NULL;
 	}
-	if(!(str = AsgnPointer(eee = str, "Address", &m_OldAdr))) throw CSynErr(eee);
-	g_AddressMap[m_OldAdr] = this;
+	RS2SaveRef address;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &address))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(address, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	if(!(str = AsgnString(eee = str, "Name", &m_Name))) throw CSynErr(eee);
 	m_Name = RestoreDoubleQuote(m_Name);
 	if(!(str = AsgnVector3D(eee = str, "CabinPos", m_CabinPos, 2, false))) throw CSynErr(eee);
@@ -1288,8 +1258,16 @@ char *CTrainGroup::Read(
 		m_EffectTargetSpeed = m_TargetSpeed;
 		if(!(str = AsgnFloat(eee = str, "CurrentSpeed", &m_CurrentSpeed))) throw CSynErr(eee);
 		if(!(str = AsgnFloat(eee = str, "StopTarget", &m_StopTarget))) throw CSynErr(eee);
-		if(!(str = AsgnPointer(eee = str, "DepartureTime",
-			(void **)&m_DepartureTime, 2, false))) throw CSynErr(eee);
+		//	[RS2EX] v0.3.0: schema 2 writes the double itself.  The old files
+		//	wrote its two 32-bit halves (low, high) as "addresses"; reading
+		//	them as two void * wrote 16 bytes into this 8-byte double on x64.
+		if(RS2SaveRefGetSyntax()==RS2_SAVEREF_DECIMAL){
+			if(!(str = RS2AsgnSaveDouble(eee = str, "DepartureTime", &m_DepartureTime))) throw CSynErr(eee);
+		}else{
+			RS2SaveRef halves[2];
+			if(!(str = RS2AsgnSaveRef(eee = str, "DepartureTime", halves, 2, false))) throw CSynErr(eee);
+			if(!RS2SaveDoubleFromHalves(halves[0], halves[1], &m_DepartureTime)) throw CSynErr(eee);
+		}
 		if(!(str = AsgnInteger(eee = str, "DoorWait", &m_DoorWait))) throw CSynErr(eee);
 		if(!(str = AsgnYesNo(eee = str, "OpenDoor", m_OpenDoor, 2, false))) throw CSynErr(eee);
 		if(!(str = AsgnYesNo(eee = str, "Reverse", &m_Reverse))) throw CSynErr(eee);
@@ -1301,7 +1279,7 @@ char *CTrainGroup::Read(
 			do{
 				if(m_PointList.size() && !(str = Character2(eee = str, ','))) throw CSynErr(eee);
 				CRailConnector *con;
-				if(!(str = HexPointer(eee = str, (void **)&con))) throw CSynErr(eee);
+				if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&con))) throw CSynErr(eee);
 				m_PointList.insert(con);
 			} while(!(tmp = Character2(str, ';')));
 			str = tmp;
@@ -1311,13 +1289,13 @@ char *CTrainGroup::Read(
 			do{
 				if(m_SeekList.size() && !(str = Character2(eee = str, ','))) throw CSynErr(eee);
 				CRailConnector *con;
-				if(!(str = HexPointer(eee = str, (void **)&con))) throw CSynErr(eee);
+				if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&con))) throw CSynErr(eee);
 				m_SeekList.insert(con);
 			} while(!(tmp = Character2(str, ';')));
 			str = tmp;
 		}
 		if(!(str = m_DiaElement.Read(str))) throw CSynErr(eee);
-		if(!(str = AsgnPointer(eee = str, "Platform", (void **)&m_Platform))) throw CSynErr(eee);
+		if(!(str = RS2AsgnSaveRefSlot(eee = str, "Platform", (void **)&m_Platform))) throw CSynErr(eee);
 	}
 	CTrain **adr = &m_TrainList;
 	while(true){
@@ -1337,7 +1315,7 @@ void CTrainGroup::Save(
 	FILE *df	//	ƒtƒ@ƒCƒ‹
 ){
 	fprintf(df, "\tTrainGroup{\n");
-	fprintf(df, "\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	fprintf(df, "\t\tName = \"%s\";\n", ExpandDoubleQuote(m_Name).c_str());
 	fprintf(df, "\t\tCabinPos = ");
 	V3Save(df, m_CabinPos[0], ", "); V3Save(df, m_CabinPos[1], ";\n");
@@ -1349,30 +1327,27 @@ void CTrainGroup::Save(
 		fprintf(df, "\t\tTargetSpeed = %f;\n", m_TargetSpeed);
 		fprintf(df, "\t\tCurrentSpeed = %f;\n", m_CurrentSpeed);
 		fprintf(df, "\t\tStopTarget = %f;\n", m_StopTarget);
-		fprintf(df, "\t\tDepartureTime = %p, %p;\n",
-			(void *)(ULONG_PTR)*(PDWORD)&m_DepartureTime,
-			(void *)(ULONG_PTR)*((PDWORD)&m_DepartureTime+1));
+		fprintf(df, "\t\tDepartureTime = %.17g;\n", m_DepartureTime);	//	[RS2EX] exact round trip
 		fprintf(df, "\t\tDoorWait = %d;\n", m_DoorWait);
 		fprintf(df, "\t\tOpenDoor = %s, %s;\n", YESNO[m_OpenDoor[0]], YESNO[m_OpenDoor[1]]);
 		fprintf(df, "\t\tReverse = %s;\n", YESNO[m_Reverse]);
 		m_Location[0].Save(df, "\t\t", "GroupEnd0");
 		m_Location[1].Save(df, "\t\t", "GroupEnd1");
 		m_Seeker.Save(df, "\t\t", "Seeker");
-		ISPRailConnector ipr;
 		if(m_PointList.size()){
 			fprintf(df, "\t\tPointList = ");
-			for(ipr = m_PointList.begin(); ipr!=m_PointList.end(); ipr++)
-				fprintf(df, ipr==m_PointList.begin() ? "%p" : ", %p", *ipr);
+			//	[RS2EX] v0.3.0: a set<CRailConnector *> is ordered by address;
+			//	written ordered by reference instead.
+			RS2SaveRefWriteSorted(df, std::vector<const void *>(m_PointList.begin(), m_PointList.end()));
 			fprintf(df, ";\n");
 		}
 		if(m_SeekList.size()){
 			fprintf(df, "\t\tSeekList = ");
-			for(ipr = m_SeekList.begin(); ipr!=m_SeekList.end(); ipr++)
-				fprintf(df, ipr==m_SeekList.begin() ? "%p" : ", %p", *ipr);
+			RS2SaveRefWriteSorted(df, std::vector<const void *>(m_SeekList.begin(), m_SeekList.end()));
 			fprintf(df, ";\n");
 		}
 		m_DiaElement.Save(df, "\t\t");
-		fprintf(df, "\t\tPlatform = %p;\n", m_Platform);
+		fprintf(df, "\t\tPlatform = " RS2_SAVEREF_FMT ";\n", RS2SaveRefOf(m_Platform));
 	}
 	CTrain *train = m_TrainList;
 	while(train){

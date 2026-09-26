@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CSCENE_H_INCLUDED
 #define CSCENE_H_INCLUDED
 
@@ -99,7 +100,6 @@ public:
 
 //	外部グローバル
 extern CScene *g_Scene;
-extern map<void *, void *> g_AddressMap;
 
 //	関数宣言
 void *ReplaceAdr(void *);

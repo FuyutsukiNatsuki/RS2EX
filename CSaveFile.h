@@ -97,6 +97,7 @@ public:
 	char *GetTimeText();
 	bool Load(const char *, const char *, bool, bool, char **, int *, bool, char *);
 	int Save(const char *, const char *, bool, bool);
+	void WriteLayout(FILE *);	//	[RS2EX] v0.3.0
 
 	const RS2SaveIdentity &GetIdentity() const{ return m_Identity; }
 	bool IsLegacyLoad() const{ return m_LegacyLoad; }
@@ -105,10 +106,9 @@ public:
 
 //	外部グローバル
 extern CSaveFile *g_SaveFile;
-extern map<void *, void *> g_AddressMap;
-extern void *RegisterNewMapAddress(void *);
 
 //	関数宣言
 void *ReplaceAdr(void *);
+extern bool g_RS2LoadWithoutSimulation;	//	[RS2EX] v0.3.0: -saverefcheck only
 
 #endif

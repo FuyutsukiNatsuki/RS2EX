@@ -57,7 +57,6 @@ CRailWayLink CRailWay::ms_Detect;
  *	コンストラクタ (読込用)
  */
 CRailWay::CRailWay(){
-	m_OldAdr = NULL;
 	m_Selected = 0;
 	m_Parent = NULL;
 	m_Platform = NULL;
@@ -93,7 +92,6 @@ CRailWay::CRailWay(
 	CPolePlugin *ppi,			//	架線柱プラグイン
 	list<CRailSplitter> *splist	//	繋ぎ変え元リスト
 ){
-	m_OldAdr = NULL;
 	m_Selected = 0;
 	m_Parent = NULL;
 	m_Platform = NULL;
@@ -1322,8 +1320,9 @@ char *CRailWay::Read(
 		delete this;
 		return NULL;
 	}
-	if(!(str = AsgnPointer(eee = str, "Address", &m_OldAdr))) throw CSynErr(eee);
-	g_AddressMap[m_OldAdr] = this;
+	RS2SaveRef address;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &address))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(address, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	string pid;
 	if(!(str = AsgnString(eee = str, "RailPlugin", &pid))) throw CSynErr(eee);
 	m_RailPlugin = g_RailPluginList->FindPlugin(pid.c_str(), true);
@@ -1349,7 +1348,7 @@ char *CRailWay::Read(
 	}
 	if(!(str = m_Link[0].Read(eee = str, "Link0"))) throw CSynErr(eee);
 	if(!(str = m_Link[1].Read(eee = str, "Link1"))) throw CSynErr(eee);
-	if(!(str = AsgnPointer(eee = str, "Platform", (void **)&m_Platform))) throw CSynErr(eee);
+	if(!(str = RS2AsgnSaveRefSlot(eee = str, "Platform", (void **)&m_Platform))) throw CSynErr(eee);
 	if(tmp = AsgnString(str, "RailBlock", &m_RailBlock)){
 		str = tmp;
 		m_RailBlock = RestoreDoubleQuote(m_RailBlock);
@@ -1390,7 +1389,7 @@ char *CRailWay::Read(
 		do{
 			if(m_GroupEnd.size() && !(str = Character2(eee = str, ','))) throw CSynErr(eee);
 			CGroupEndLocator *end;
-			if(!(str = HexPointer(eee = str, (void **)&end))) throw CSynErr(eee);
+			if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&end))) throw CSynErr(eee);
 			m_GroupEnd.push_back(end);
 		} while(!(tmp = Character2(str, ';')));
 		str = tmp;
@@ -1413,9 +1412,9 @@ char *CRailWay::ReadWarp(
 		delete this;
 		return NULL;
 	}
-	void *oldadr;
-	if(!(str = AsgnPointer(eee = str, "Address", &oldadr))) throw CSynErr(eee);
-	g_AddressMap[oldadr] = this;
+	RS2SaveRef oldadr;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &oldadr))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(oldadr, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	if(!(str = m_Link[0].Read(eee = str, "Link0"))) throw CSynErr(eee);
 	if(!(str = m_Link[1].Read(eee = str, "Link1"))) throw CSynErr(eee);
 	if(!(str = EndBlock(eee = str))) throw CSynErr(eee, ERR_ENDBLOCK);
@@ -1433,7 +1432,7 @@ void CRailWay::Save(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\t\t\tRailWay{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	fprintf(df, "\t\t\t\tRailPlugin = \"%s\";\n", CheckPluginID(m_RailPlugin));
 	fprintf(df, "\t\t\t\tTiePlugin = \"%s\";\n", CheckPluginID(m_TiePlugin));
 	fprintf(df, "\t\t\t\tGirderPlugin = \"%s\";\n", CheckPluginID(m_GirderPlugin));
@@ -1452,7 +1451,7 @@ void CRailWay::Save(
 	}
 	m_Link[0].Save(df, "\t\t\t\tLink0 = ");
 	m_Link[1].Save(df, "\t\t\t\tLink1 = ");
-	fprintf(df, "\t\t\t\tPlatform = %p;\n", m_Platform);
+	fprintf(df, "\t\t\t\tPlatform = " RS2_SAVEREF_FMT ";\n", RS2SaveRefOf(m_Platform));
 	if(IsRailBlock()) fprintf(df, "\t\t\t\tRailBlock = \"%s\";\n", ExpandDoubleQuote(m_RailBlock).c_str());
 	if(IsSpeedLimit()) fprintf(df, "\t\t\t\tSpeedLimit = %d;\n", m_SpeedLimit);
 
@@ -1476,9 +1475,10 @@ void CRailWay::Save(
 
 	if(m_GroupEnd.size()){
 		fprintf(df, "\t\t\t\tGroupEnd = ");
-		IPGroupEndLocator ipge = m_GroupEnd.begin();
-		for(; ipge!=m_GroupEnd.end(); ipge++)
-			fprintf(df, ipge==m_GroupEnd.begin() ? "%p" : ", %p", *ipge);
+		//	[RS2EX] v0.3.0: by reference.  The order of this list is rebuilt when
+		//	the trains are placed on loading, so it is not the saved order.
+		std::vector<const void *> ends(m_GroupEnd.begin(), m_GroupEnd.end());
+		RS2SaveRefWriteSorted(df, ends);
 		fprintf(df, ";\n");
 	}
 
@@ -1492,7 +1492,7 @@ void CRailWay::SaveWarp(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\tWarp{\n");
-	fprintf(df, "\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	m_Link[0].Save(df, "\t\tLink0 = ");
 	m_Link[1].Save(df, "\t\tLink1 = ");
 	fprintf(df, "\t}\n");

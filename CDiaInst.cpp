@@ -7,7 +7,6 @@
 void *ReplaceAdr(void *);
 
 //	外部グローバル
-extern map<void *, void *> g_AddressMap;
 
 /*
  *	コンストラクタ
@@ -138,7 +137,7 @@ char *CDiaListBase::Read(
 ){
 	char *eee, *tmp;
 	if(!(str = BeginBlock(str, Label()))) return NULL;
-	if(!(str = AsgnPointer(eee = str, "TrainGroup", (void **)gadr))) throw CSynErr(eee);
+	if(!(str = RS2AsgnSaveRefSlot(eee = str, "TrainGroup", (void **)gadr))) throw CSynErr(eee);
 	if(!(str = AsgnYesNo(eee = str, "UseDefault", &m_UseDefault))) throw CSynErr(eee);
 	while(true){
 		CDiaElementBase *de = NewEntry();
@@ -164,7 +163,7 @@ void CDiaListBase::Save(
 ){
 	string ind2 = string(ind)+"\t";
 	fprintf(df, "%s%s{\n", ind, Label());
-	fprintf(df, "%s\tTrainGroup = %p;\n", ind, group);
+	fprintf(df, "%s\tTrainGroup = " RS2_SAVEREF_FMT ";\n", ind, RS2SaveRefOf(group));
 	fprintf(df, "%s\tUseDefault = %s;\n", ind, YESNO[m_UseDefault]);
 	IPDiaElementBase ipde = m_DiaList.begin();
 	for(; ipde!=m_DiaList.end(); ipde++) (*ipde)->Save(df, (char *)ind2.c_str());
@@ -250,6 +249,11 @@ char *CDiaInstBase::Read(
 /*
  *	保存
  */
+//	[RS2EX] v0.3.0: order of the dia lists in a save (by reference only).
+static bool RS2DiaOrderLess(const pair<RS2SaveRef, IPDiaListBase> &a, const pair<RS2SaveRef, IPDiaListBase> &b){
+	return a.first<b.first;
+}
+
 void CDiaInstBase::Save(
 	FILE *df,	//	ファイル
 	char *ind	//	インデント
@@ -257,9 +261,15 @@ void CDiaInstBase::Save(
 	string ind2 = string(ind)+"\t";
 	fprintf(df, "%s%s{\n", ind, Label());
 	fprintf(df, "%s\tName = \"%s\";\n", ind, ExpandDoubleQuote(m_Name).c_str());
+	//	[RS2EX] v0.3.0: the map is keyed by CTrainGroup * and so ordered by
+	//	address; written ordered by the groups' references instead.
+	vector<pair<RS2SaveRef, IPDiaListBase> > order;
 	IPDiaListBase ipdl = m_DiaMap.begin();
-	for(; ipdl!=m_DiaMap.end(); ipdl++) ipdl->second->Save(
-		df, (char *)ind2.c_str(), ipdl->first);
+	for(; ipdl!=m_DiaMap.end(); ipdl++) order.push_back(make_pair(RS2SaveRefOf(ipdl->first), ipdl));
+	sort(order.begin(), order.end(), RS2DiaOrderLess);
+	size_t io;
+	for(io = 0; io<order.size(); io++) order[io].second->second->Save(
+		df, (char *)ind2.c_str(), order[io].second->first);
 	fprintf(df, "%s}\n", ind);
 }
 

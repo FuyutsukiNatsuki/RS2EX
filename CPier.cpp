@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20, 2026-09-21.
+//	Modified for RS2EX on 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CScene.h"
 #include "CPier.h"
@@ -269,9 +269,9 @@ char *CPier::Read(
 		delete this;
 		return NULL;
 	}
-	void *oldadr;
-	if(!(str = AsgnPointer(eee = str, "Address", &oldadr))) throw CSynErr(eee);
-	g_AddressMap[oldadr] = this;
+	RS2SaveRef oldadr;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &oldadr))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(oldadr, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	string pid;
 	if(!(str = AsgnString(eee = str, "PierPlugin", &pid))) throw CSynErr(eee);
 	m_PierPlugin = g_PierPluginList->FindPlugin(pid.c_str(), true);
@@ -297,7 +297,7 @@ void CPier::Save(
 	FILE *df	//	ƒtƒ@ƒCƒ‹
 ){
 	fprintf(df, "\t\t\tPier{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	fprintf(df, "\t\t\t\tPierPlugin = \"%s\";\n", CheckPluginID(m_PierPlugin));
 	fprintf(df, "\t\t\t\tJointPos = "); V3Save(df, R2L(m_JointObject.GetPos()), ";\n");
 	fprintf(df, "\t\t\t\tJointDir = "); V3Save(df, R2L(m_JointObject.GetDir()), ";\n");

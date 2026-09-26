@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CPopMenu.h"
 #include "CSimpleDialog.h"
@@ -115,17 +116,17 @@ char *CPlatformInst::Read(
 ){
 	char *eee, *tmp;
 	if(!(str = BeginBlock(str, "Platform"))) return NULL;
-	void *oldadr;
-	if(!(str = AsgnPointer(eee = str, "Address", &oldadr))) throw CSynErr(eee);
+	RS2SaveRef oldadr;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &oldadr))) throw CSynErr(eee);
 	if(!(str = AsgnYesNo(eee = str, "Stoppable", &m_Stoppable))) throw CSynErr(eee);
 	if(!(str = AsgnYesNo(eee = str, "OpenDoor", m_OpenDoor, 2, false))) throw CSynErr(eee);
-	g_AddressMap[oldadr] = this;
+	if(!RS2SaveRefRegister(oldadr, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	if(tmp = Assignment(str, "RailList")){
 		str = tmp;
 		do{
 			if(m_RailList.size() && !(str = Character2(eee = str, ','))) throw CSynErr(eee);
 			CRailWay *way;
-			if(!(str = HexPointer(eee = str, (void **)&way))) throw CSynErr(eee);
+			if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&way))) throw CSynErr(eee);
 			m_RailList.push_back(way);
 		} while(!(tmp = Character2(str, ';')));
 		str = tmp;
@@ -141,7 +142,7 @@ void CPlatformInst::Save(
 	FILE *df	//	ファイル
 ){	
 	fprintf(df, "\t\t\t\t\tPlatform{\n");
-	fprintf(df, "\t\t\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\t\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	fprintf(df, "\t\t\t\t\t\tStoppable = %s;\n", YESNO[m_Stoppable]);
 	fprintf(df, "\t\t\t\t\t\tOpenDoor = %s, %s;\n",
 		YESNO[m_OpenDoor[0]], YESNO[m_OpenDoor[1]]);
@@ -149,7 +150,7 @@ void CPlatformInst::Save(
 		fprintf(df, "\t\t\t\t\t\tRailList = ");
 		IPRailWay ipr = m_RailList.begin();
 		for(; ipr!=m_RailList.end(); ipr++) fprintf(
-			df, ipr==m_RailList.begin() ? "%p" : ", %p", *ipr);
+			df, ipr==m_RailList.begin() ? RS2_SAVEREF_FMT : ", " RS2_SAVEREF_FMT, RS2SaveRefOf(*ipr));
 		fprintf(df, ";\n");
 	}
 	fprintf(df, "\t\t\t\t\t}\n");
@@ -325,9 +326,9 @@ char *CStation::Read(
 		delete this;
 		return NULL;
 	}
-	void *oldadr;
-	if(!(str = AsgnPointer(eee = str, "Address", &oldadr))) throw CSynErr(eee);
-	g_AddressMap[oldadr] = this;
+	RS2SaveRef oldadr;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &oldadr))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(oldadr, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	string pid;
 	if(!(str = AsgnString(eee = str, "StationPlugin", &pid))) throw CSynErr(eee);
 	m_ModelPlugin = m_StructPlugin =
@@ -361,7 +362,7 @@ void CStation::Save(
 	FILE *df	//	ファイル
 ){	
 	fprintf(df, "\t\t\tStation{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	fprintf(df, "\t\t\t\tStationPlugin = \"%s\";\n", CheckPluginID(m_StationPlugin));
 	SaveModelInst(df, "\t\t\t\t", true);
 	fprintf(df, "\t\t\t\tPlatformList{\n");

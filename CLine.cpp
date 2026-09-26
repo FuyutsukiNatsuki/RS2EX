@@ -53,7 +53,7 @@ char *CPoleLink::Read(
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
 	if(!(str = ConstInteger(eee = str, &m_Track))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
-	if(!(str = HexPointer(eee = str, (void **)&m_Link))) throw CSynErr(eee);
+	if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&m_Link))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ';'))) throw CSynErr(eee);
 	return str;
 }
@@ -65,7 +65,7 @@ void CPoleLink::Save(
 	FILE *df,	//	ファイル
 	char *pref	//	プレフィックス
 ){
-	fprintf(df, "%s%d, %d, %p;\n", pref, m_Side, m_Track, m_Link);
+	fprintf(df, "%s%d, %d, " RS2_SAVEREF_FMT ";\n", pref, m_Side, m_Track, RS2SaveRefOf(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -234,9 +234,9 @@ char *CPole::Read(
 		delete this;
 		return NULL;
 	}
-	void *oldadr;
-	if(!(str = AsgnPointer(eee = str, "Address", &oldadr))) throw CSynErr(eee);
-	g_AddressMap[oldadr] = this;
+	RS2SaveRef oldadr;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &oldadr))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(oldadr, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	string pid;
 	if(!(str = AsgnString(eee = str, "PolePlugin", &pid))) throw CSynErr(eee);
 	m_PolePlugin = g_PolePluginList->FindPlugin(pid.c_str(), true);
@@ -257,7 +257,7 @@ char *CPole::Read(
 		do{
 			if(m_LineList.size() && !(str = Character2(eee = str, ','))) throw CSynErr(eee);
 			CLine *line;
-			if(!(str = HexPointer(eee = str, (void **)&line))) throw CSynErr(eee);
+			if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&line))) throw CSynErr(eee);
 			m_LineList.push_back(line);
 		} while(!(tmp = Character2(str, ';')));
 		str = tmp;
@@ -275,7 +275,7 @@ void CPole::Save(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\t\t\tPole{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	fprintf(df, "\t\t\t\tPolePlugin = \"%s\";\n", CheckPluginID(m_PolePlugin));
 	fprintf(df, "\t\t\t\tPos = "); V3Save(df, m_Pos, ";\n");
 	fprintf(df, "\t\t\t\tOrigDir = "); V3Save(df, m_OrigDir, ";\n");
@@ -283,7 +283,7 @@ void CPole::Save(
 		fprintf(df, "\t\t\t\tLineList = ");
 		IPLine ipl = m_LineList.begin();
 		for(; ipl!=m_LineList.end(); ipl++) fprintf(df,
-			ipl==m_LineList.begin() ? "%p" : ", %p", *ipl);
+			ipl==m_LineList.begin() ? RS2_SAVEREF_FMT : ", " RS2_SAVEREF_FMT, RS2SaveRefOf(*ipl));
 		fprintf(df, ";\n");
 	}
 	fprintf(df, "\t\t\t}\n");
@@ -447,9 +447,9 @@ char *CLine::Read(
 		delete this;
 		return NULL;
 	}
-	void *oldadr;
-	if(!(str = AsgnPointer(eee = str, "Address", &oldadr))) throw CSynErr(eee);
-	g_AddressMap[oldadr] = this;
+	RS2SaveRef oldadr;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &oldadr))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(oldadr, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	string pid;
 	if(!(str = AsgnString(eee = str, "LinePlugin", &pid))) throw CSynErr(eee);
 	m_LinePlugin = g_LinePluginList->FindPlugin(pid.c_str(), true);
@@ -471,7 +471,7 @@ void CLine::Save(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\t\t\tLine{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	fprintf(df, "\t\t\t\tLinePlugin = \"%s\";\n", CheckPluginID(m_LinePlugin));
 	SaveMapVector(df, "\t\t\t\tLineMapV = ", m_LineMapV);
 	fprintf(df, "\t\t\t\tRight = "); V3Save(df, m_Right, ";\n");

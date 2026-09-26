@@ -1,6 +1,9 @@
 //	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 
+//	[RS2EX] v0.3.0: see CSynErr::Handle.
+bool g_RS2QuietSyntaxErrors = false;
+
 /*
  *	コンストラクタ
  */
@@ -35,6 +38,12 @@ void CSynErr::Handle(
 	string head,	//	メッセージヘッダ
 	char *buf		//	スクリプトバッファ
 ){
+	//	[RS2EX] v0.3.0: -saverefcheck loads deliberately broken layouts; the
+	//	error goes to debug.txt instead of a message box that would stop it.
+	if(g_RS2QuietSyntaxErrors){
+		Debug("RS2SYNTAXERROR|%s|%s\n", head.c_str(), m_Message.c_str());
+		return;
+	}
 	if(!buf || !m_ErrorPos || m_ErrorPos<buf){
 		ErrorDialog("%s\n%s", head.c_str(), m_Message.c_str());
 		return;

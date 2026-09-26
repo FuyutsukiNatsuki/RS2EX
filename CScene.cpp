@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-21.
+//	Modified for RS2EX on 2026-09-21, 2026-09-26.
 #include "stdafx.h"
 #include "CJobTimer.h"
 #include "CRailDetectCurve.h"
@@ -822,9 +822,9 @@ char *CScene::Read(
 		return NULL;
 	}
 	m_Scene = NULL;
-	void *oldadr;
-	if(!(str = AsgnPointer(eee = str, "Address", &oldadr))) throw CSynErr(eee);
-	g_AddressMap[oldadr] = this;
+	RS2SaveRef oldadr;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &oldadr))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(oldadr, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	string pid;
 	if(!(str = AsgnString(eee = str, "Name", &m_Name))) throw CSynErr(eee);
 	m_Name = RestoreDoubleQuote(m_Name);
@@ -905,7 +905,7 @@ void CScene::Save(
 	FILE *df	//	ƒtƒ@ƒCƒ‹
 ){
 	fprintf(df, "\tScene{\n");
-	fprintf(df, "\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	fprintf(df, "\t\tName = \"%s\";\n", ExpandDoubleQuote(m_Name).c_str());
 	fprintf(df, "\t\tSurfacePlugin = \"%s\";\n", CheckPluginID(m_SurfacePlugin));
 	fprintf(df, "\t\tEnvPlugin = \"%s\";\n", CheckPluginID(m_EnvPlugin));

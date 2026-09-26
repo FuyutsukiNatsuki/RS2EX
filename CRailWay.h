@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #ifndef CRAILWAY_H_INCLUDED
 #define CRAILWAY_H_INCLUDED
 
@@ -75,7 +76,6 @@ private:
 	static CRailWay **ms_Root;				//	接続ルート
 	static float ms_MinDist;				//	最小検出距離
 	static CRailWayLink ms_Detect;			//	検出情報
-	void *m_OldAdr;							//	旧アドレス
 	int m_Selected;							//	選択フラグ
 	vector<float> m_RailMapV;				//	レールマッピング V 座標
 	vector<float> m_TieMapV;				//	枕木マッピング V 座標
@@ -120,7 +120,6 @@ public:
 	~CRailWay();
 	CRailWay *Next(){ return m_Next; }
 	CRailWay **NextAdr(){ return &m_Next; }
-	void *OldAdr(){ return m_OldAdr; }
 	int GetSelectFlag(){ return m_Selected; }
 	void AddSelectFlag(int s){ m_Selected |= s; }
 	CRailWayLink CreateLink(int s){ return CRailWayLink(s, this); }

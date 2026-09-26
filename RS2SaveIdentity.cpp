@@ -1,5 +1,6 @@
 //	RS2EX - RailSim II development fork
 //	Created for RS2EX on 2026-09-26.
+//	Modified for RS2EX on 2026-09-26.
 //
 //	Save-file identity (v0.2.0): see RS2SaveIdentity.h.
 
@@ -11,9 +12,9 @@
 #include <io.h>
 #include <sys/stat.h>
 
-const int RS2_SAVE_SCHEMA_CURRENT = 1;
+const int RS2_SAVE_SCHEMA_CURRENT = 2;	//	v0.3.0: logical IDs replace %p (RS2SaveRef.h)
 const char *const RS2_SAVE_PRODUCT = "RS2EX";
-const char *const RS2_SAVE_PRODUCER = "0.2.0";
+const char *const RS2_SAVE_PRODUCER = "0.3.0";
 
 extern const char *LAYOUT_DIRNAME;
 
@@ -284,9 +285,14 @@ bool RS2SaveFixtureCheckRun(){
 		"DatafileHeader{\n\tRailSimVersion = 2.15;\n\tDatafileType = Layout;\n"
 		"\tRS2EXProduct = \"RS2EX\";\n\tRS2EXSaveSchema = 0;\n\tRS2EXProducer = \"0.1.9\";\n}\n\n%s", body);
 	RS2SaveFixtureWrite("older.rs2", text);
+	//	v0.3.0: what v0.2.0 wrote (schema 1) is older now.
 	_snprintf(text, sizeof(text),
 		"DatafileHeader{\n\tRailSimVersion = 2.15;\n\tDatafileType = Layout;\n"
-		"\tRS2EXProduct = \"RS2EX\";\n\tRS2EXSaveSchema = 2;\n\tRS2EXProducer = \"0.3.0\";\n}\n\n%s", body);
+		"\tRS2EXProduct = \"RS2EX\";\n\tRS2EXSaveSchema = 1;\n\tRS2EXProducer = \"0.2.0\";\n}\n\n%s", body);
+	RS2SaveFixtureWrite("older-schema1.rs2", text);
+	_snprintf(text, sizeof(text),
+		"DatafileHeader{\n\tRailSimVersion = 2.15;\n\tDatafileType = Layout;\n"
+		"\tRS2EXProduct = \"RS2EX\";\n\tRS2EXSaveSchema = 3;\n\tRS2EXProducer = \"0.4.0\";\n}\n\n%s", body);
 	RS2SaveFixtureWrite("newer.rs2", text);
 	_snprintf(text, sizeof(text),
 		"DatafileHeader{\n\tRailSimVersion = 2.15;\n\tDatafileType = Layout;\n"
@@ -316,6 +322,7 @@ bool RS2SaveFixtureCheckRun(){
 	RS2SaveFixtureExpect("legacy.rs2", RS2_SAVE_LEGACY, &all);
 	RS2SaveFixtureExpect("legacy200.rs2", RS2_SAVE_LEGACY, &all);
 	RS2SaveFixtureExpect("older.rs2", RS2_SAVE_OLDER_RS2EX, &all);
+	RS2SaveFixtureExpect("older-schema1.rs2", RS2_SAVE_OLDER_RS2EX, &all);
 	RS2SaveFixtureExpect("newer.rs2", RS2_SAVE_NEWER_RS2EX, &all);
 	RS2SaveFixtureExpect("unknown-product.rs2", RS2_SAVE_UNKNOWN, &all);
 	RS2SaveFixtureExpect("unknown-noheader.rs2", RS2_SAVE_UNKNOWN, &all);
@@ -354,7 +361,7 @@ bool RS2SaveFixtureCheckRun(){
 	//	Tidy up.
 	{
 		static const char *const names[] = {
-			"legacy.rs2", "legacy200.rs2", "older.rs2", "newer.rs2", "unknown-product.rs2",
+			"legacy.rs2", "legacy200.rs2", "older.rs2", "older-schema1.rs2", "newer.rs2", "unknown-product.rs2",
 			"unknown-noheader.rs2", "unknown-type.rs2", "unknown-version.rs2", "truncated.rs2",
 			"truncated-identity.rs2", "corrupt-version.rs2", "corrupt-schema.rs2",
 			"corrupt-comment.rs2", "empty.rs2", "blank.rs2", "current.rs2"

@@ -5,6 +5,7 @@
 #include "CSimpleDialog.h"
 #include "CSaveFile.h"
 #include "RS2SaveIdentity.h"
+#include "RS2SaveRefCheck.h"
 #include "CSkinPlugin.h"
 #include "CSimulationMode.h"
 #include "CFileMode.h"
@@ -889,6 +890,12 @@ void CFileMode::ProcessStartupFile(){
 
 	if(RS2SaveFixtureCheckRequested()){
 		RS2SaveFixtureCheckRun();
+		SendWM_CLOSE();
+		return;
+	}
+	//	[RS2EX] v0.3.0: the save-reference fixtures (RS2SaveRefCheck.cpp).
+	if(RS2SaveRefCheckRequested()){
+		RS2SaveRefCheckRun();
 		SendWM_CLOSE();
 		return;
 	}

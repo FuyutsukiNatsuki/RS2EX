@@ -13,12 +13,6 @@ void CalcCantAxis(VEC3 *, VEC3 *, VEC3 *, float);
 extern CScene *g_Scene;
 extern RS2PackedColor g_ColorSelect[];
 
-void SetStaticPointOption(void *point_id, int point_opt){
-	if(!point_id || !g_AddressMap.count(point_id)) ErrorDialog("SetStaticPointOption point_id error.");
-	CRailConnector *rc = (CRailConnector *)g_AddressMap[point_id];
-	rc->SetNetPoint(point_opt);
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -115,7 +109,7 @@ char *CRailConnectorLink::Read(
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
 	if(!(str = ConstInteger(eee = str, &m_Point))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
-	if(!(str = HexPointer(eee = str, (void **)&m_Link))) throw CSynErr(eee);
+	if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&m_Link))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ';'))) throw CSynErr(eee);
 	return str;
 }
@@ -127,7 +121,7 @@ void CRailConnectorLink::Save(
 	FILE *df,	//	ファイル
 	char *pref	//	プレフィックス
 ){
-	fprintf(df, "%s%d, %d, %p;\n", pref, m_Side, m_Point, m_Link);
+	fprintf(df, "%s%d, %d, " RS2_SAVEREF_FMT ";\n", pref, m_Side, m_Point, RS2SaveRefOf(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -169,7 +163,7 @@ char *CRailWayLink::Read(
 	if(!(str = Assignment(eee = str, pref))) throw CSynErr(eee);
 	if(!(str = ConstInteger(eee = str, &m_Side))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
-	if(!(str = HexPointer(eee = str, (void **)&m_Link))) throw CSynErr(eee);
+	if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&m_Link))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ';'))) throw CSynErr(eee);
 	return str;
 }
@@ -181,7 +175,7 @@ void CRailWayLink::Save(
 	FILE *df,	//	ファイル
 	char *pref	//	プレフィックス
 ){
-	fprintf(df, "%s%d, %p;\n", pref, m_Side, m_Link);
+	fprintf(df, "%s%d, " RS2_SAVEREF_FMT ";\n", pref, m_Side, RS2SaveRefOf(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -204,7 +198,7 @@ char *CPierPos::Read(
 	if(!(str = Assignment(eee = str, "PierLink"))) return NULL;
 	if(!(str = ConstFloat(eee = str, &m_Pos))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
-	if(!(str = HexPointer(eee = str, (void **)&m_Link))) throw CSynErr(eee);
+	if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&m_Link))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ';'))) throw CSynErr(eee);
 	return str;
 }
@@ -215,7 +209,7 @@ char *CPierPos::Read(
 void CPierPos::Save(
 	FILE *df	//	ファイル
 ){
-	fprintf(df, "\t\t\t\t\tPierLink = %f, %p;\n", m_Pos, m_Link);
+	fprintf(df, "\t\t\t\t\tPierLink = %f, " RS2_SAVEREF_FMT ";\n", m_Pos, RS2SaveRefOf(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -242,7 +236,7 @@ char *CPolePos::Read(
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
 	if(!(str = BoolYesNo(eee = str, &m_Multi))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ','))) throw CSynErr(eee);
-	if(!(str = HexPointer(eee = str, (void **)&m_Link))) throw CSynErr(eee);
+	if(!(str = RS2SaveRefSlotValue(eee = str, (void **)&m_Link))) throw CSynErr(eee);
 	if(!(str = Character2(eee = str, ';'))) throw CSynErr(eee);
 	return str;
 }
@@ -253,8 +247,8 @@ char *CPolePos::Read(
 void CPolePos::Save(
 	FILE *df	//	ファイル
 ){
-	fprintf(df, "\t\t\t\t\tPoleLink = %f, %d, %s, %p;\n",
-		m_Pos, m_Track, YESNO[m_Multi], m_Link);
+	fprintf(df, "\t\t\t\t\tPoleLink = %f, %d, %s, " RS2_SAVEREF_FMT ";\n",
+		m_Pos, m_Track, YESNO[m_Multi], RS2SaveRefOf(m_Link));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -269,7 +263,6 @@ CRailConnector *CRailConnector::ms_Detect;
  *	コンストラクタ (読込用)
  */
 CRailConnector::CRailConnector(){
-	m_OldAdr = NULL;
 	m_Selected = 0;
 	m_Side = 0;
 	m_TrailPoint[0] = m_TrailPoint[1] = 0;
@@ -290,7 +283,6 @@ CRailConnector::CRailConnector(
 ):
 	m_Splitter(pos, dir)	//	分割子
 {
-	m_OldAdr = NULL;
 	m_Selected = 0;
 	m_TrailPoint[0] = m_TrailPoint[1] = 0;
 	m_Cant = 0.0f;
@@ -322,9 +314,8 @@ void CRailConnector::SetNetPoint(int np){
  */
 void CRailConnector::SwitchNetPoint(){
 	if(g_NetworkInitialized){
-		if(!m_OldAdr) return;
 		void EnqueuePointControl(void *, int);
-		EnqueuePointControl(m_OldAdr, !m_NetPoint);
+		EnqueuePointControl(NULL, !m_NetPoint);	//	[RS2EX] v0.3.0: sessions never start
 	}else{
 		SetNetPoint(!m_NetPoint);
 	}
@@ -485,13 +476,14 @@ char *CRailConnector::Read(
 		delete this;
 		return NULL;
 	}
-	if(!(str = AsgnPointer(eee = str, "Address", &m_OldAdr))) throw CSynErr(eee);
-	g_AddressMap[m_OldAdr] = this;
+	RS2SaveRef address;
+	if(!(str = RS2AsgnSaveRef(eee = str, "Address", &address))) throw CSynErr(eee);
+	if(!RS2SaveRefRegister(address, this)) throw CSynErr(eee);	//	[RS2EX] 0 or a duplicate
 	if(!(str = m_Splitter.Read(eee = str))) throw CSynErr(eee);
 	if(!(str = AsgnFloat(eee = str, "Cant", &m_Cant))) throw CSynErr(eee);
 	if(!(str = AsgnInteger(eee = str, "Side", &m_Side))) throw CSynErr(eee);
 	if(!(str = AsgnInteger(eee = str, "TrailPoint", m_TrailPoint, 2, false))) throw CSynErr(eee);
-	if(!(str = AsgnPointer(eee = str, "User", (void **)&m_User))) throw CSynErr(eee);
+	if(!(str = RS2AsgnSaveRefSlot(eee = str, "User", (void **)&m_User))) throw CSynErr(eee);
 	int i, j;
 	for(i = 0; i<2; i++) for(j = 0; j<2; j++)
 		if(!(str = m_Link[i][j].Read(eee = str, FlashIn("Link%d%d", i, j)))) throw CSynErr(eee);
@@ -511,12 +503,12 @@ void CRailConnector::Save(
 	FILE *df	//	ファイル
 ){
 	fprintf(df, "\t\t\tRailConnector{\n");
-	fprintf(df, "\t\t\t\tAddress = %p;\n", this);
+	fprintf(df, "\t\t\t\tAddress = " RS2_SAVEREF_FMT ";\n", RS2SaveRefDefine(this));
 	m_Splitter.Save(df, "\t\t\t\t");
 	fprintf(df, "\t\t\t\tCant = %f;\n", m_Cant);
 	fprintf(df, "\t\t\t\tSide = %d;\n", m_Side);
 	fprintf(df, "\t\t\t\tTrailPoint = %d, %d;\n", m_TrailPoint[0], m_TrailPoint[1]);
-	fprintf(df, "\t\t\t\tUser = %p;\n", m_User);
+	fprintf(df, "\t\t\t\tUser = " RS2_SAVEREF_FMT ";\n", RS2SaveRefOf(m_User));
 	int i, j;
 	for(i = 0; i<2; i++) for(j = 0; j<2; j++)
 		m_Link[i][j].Save(df, FlashIn("\t\t\t\tLink%d%d = ", i, j));

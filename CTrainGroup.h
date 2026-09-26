@@ -1,4 +1,4 @@
-//	Modified for RS2EX on 2026-09-20.
+//	Modified for RS2EX on 2026-09-20, 2026-09-26.
 #ifndef CTRAINGROUP_H_INCLUDED
 #define CTRAINGROUP_H_INCLUDED
 
@@ -22,7 +22,6 @@ class CTrainGroupTemplate;
  */
 class CTrainGroup{
 private:
-	void *m_OldAdr;						//	旧アドレス
 	int m_ControlState;					//	操作状態
 	int m_Serial;						//	シリアルナンバー
 	int m_State;						//	状態
@@ -65,7 +64,6 @@ public:
 	~CTrainGroup();
 	CTrainGroup *Next(){ return m_Next; }
 	CTrainGroup **NextAdr(){ return &m_Next; }
-	void *OldAdr(){ return m_OldAdr; }
 	char *GetName(){ return (char *)m_Name.c_str(); }
 	void SetName(char *name){ m_Name = name; }
 	void SetListElement(CListElement *le){ m_ListElement = le; }

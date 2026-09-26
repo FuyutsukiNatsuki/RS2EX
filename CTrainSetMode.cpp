@@ -139,7 +139,7 @@ void CTrainSetMode::ScanInputCursorScenery(){
 					if(g_NetworkInitialized){
 						CRailLinkTemp &link = CRailDetectCurve2D::GetDetect();
 						void EnqueueSetTrainControl(void *, void *, int, float, int);
-						EnqueueSetTrainControl(g_TrainGroup->OldAdr(), link.m_Link->OldAdr(),
+						EnqueueSetTrainControl(NULL, NULL,	//	[RS2EX] v0.3.0: sessions never start
 							link.m_Side, link.m_SumLen, CheckCtrl() ? (CheckShift() ? 2 : 1) : 0);
 					}else{
 						g_TrainGroup->Set(&CRailDetectCurve2D::GetDetect(), -1);
