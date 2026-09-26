@@ -372,6 +372,7 @@
     <ClCompile Include="RS2SaveRefCheck.cpp" />
     <ClCompile Include="RS2InputAudioSmoke.cpp" />
     <ClCompile Include="RS2X64Smoke.cpp" />
+    <ClCompile Include="RS2X64Stress.cpp" />
     <ClCompile Include="RS2XFileImporter.cpp" />
     <ClCompile Include="RS2StageProbe.cpp" />
     <ClCompile Include="RS2TextureSource.cpp" />
@@ -644,6 +645,7 @@
     <ClInclude Include="RS2SaveRefCheck.h" />
     <ClInclude Include="RS2InputAudioSmoke.h" />
     <ClInclude Include="RS2X64Smoke.h" />
+    <ClInclude Include="RS2X64Stress.h" />
     <ClInclude Include="RS2NetworkDisabled.h" />
     <ClInclude Include="RS2StageProbe.h" />
     <ClInclude Include="RS2TextureSource.h" />

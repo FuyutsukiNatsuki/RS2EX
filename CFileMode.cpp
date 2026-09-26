@@ -8,6 +8,7 @@
 #include "RS2SaveRefCheck.h"
 #include "RS2InputAudioSmoke.h"
 #include "RS2X64Smoke.h"
+#include "RS2X64Stress.h"
 #include "CSkinPlugin.h"
 #include "CSimulationMode.h"
 #include "CFileMode.h"
@@ -913,6 +914,9 @@ void CFileMode::ProcessStartupFile(){
 		SendWM_CLOSE();
 		return;
 	}
+	//	[RS2EX] v0.3.0: address space and resource lifetimes; the program carries
+	//	on rendering the scene afterwards (RS2X64Stress.cpp).
+	if(RS2X64StressRequested()) RS2X64StressRun();
 	if(!s_StartupPending) return;
 	s_StartupPending = false;
 

@@ -396,6 +396,9 @@
     <ClCompile Include="RS2X64Smoke.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
+    <ClCompile Include="RS2X64Stress.cpp">
+      <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
+    </ClCompile>
     <ClCompile Include="RS2XFileImporter.cpp">
       <Filter>Source Files\RS2 Source\Misc Class Source</Filter>
     </ClCompile>
@@ -1151,6 +1154,9 @@
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2X64Smoke.h">
+      <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
+    </ClInclude>
+    <ClInclude Include="RS2X64Stress.h">
       <Filter>Header Files\RS2 Header\Misc Class Header</Filter>
     </ClInclude>
     <ClInclude Include="RS2NetworkDisabled.h">
