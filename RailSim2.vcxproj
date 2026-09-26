@@ -370,6 +370,7 @@
     <ClCompile Include="RS2Width.cpp" />
     <ClCompile Include="RS2SaveRef.cpp" />
     <ClCompile Include="RS2SaveRefCheck.cpp" />
+    <ClCompile Include="RS2InputAudioSmoke.cpp" />
     <ClCompile Include="RS2XFileImporter.cpp" />
     <ClCompile Include="RS2StageProbe.cpp" />
     <ClCompile Include="RS2TextureSource.cpp" />
@@ -640,6 +641,7 @@
     <ClInclude Include="RS2Width.h" />
     <ClInclude Include="RS2SaveRef.h" />
     <ClInclude Include="RS2SaveRefCheck.h" />
+    <ClInclude Include="RS2InputAudioSmoke.h" />
     <ClInclude Include="RS2NetworkDisabled.h" />
     <ClInclude Include="RS2StageProbe.h" />
     <ClInclude Include="RS2TextureSource.h" />

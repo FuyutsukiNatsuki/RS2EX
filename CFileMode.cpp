@@ -6,6 +6,7 @@
 #include "CSaveFile.h"
 #include "RS2SaveIdentity.h"
 #include "RS2SaveRefCheck.h"
+#include "RS2InputAudioSmoke.h"
 #include "CSkinPlugin.h"
 #include "CSimulationMode.h"
 #include "CFileMode.h"
@@ -896,6 +897,12 @@ void CFileMode::ProcessStartupFile(){
 	//	[RS2EX] v0.3.0: the save-reference fixtures (RS2SaveRefCheck.cpp).
 	if(RS2SaveRefCheckRequested()){
 		RS2SaveRefCheckRun();
+		SendWM_CLOSE();
+		return;
+	}
+	//	[RS2EX] v0.3.0: DirectInput / DirectSound as they run (RS2InputAudioSmoke.cpp).
+	if(RS2InputAudioSmokeRequested()){
+		RS2InputAudioSmokeRun();
 		SendWM_CLOSE();
 		return;
 	}
