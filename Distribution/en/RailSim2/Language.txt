@@ -286,7 +286,7 @@ Resource{
 	SaveFormatLegacyCfm = "Older format (RailSim II / RS2EX v0.1.x). Compatibility is not guaranteed. Load it?";
 	SaveFormatNewer = "A newer RS2EX save format; this version cannot open it";
 	SaveFormatOlderCfm = "An older RS2EX save format. Compatibility is not guaranteed. Load it?";
-	SaveFormatOverwriteCfm = "Overwrite the older-format file in the v0.2 format? Older versions will not open it.";
+	SaveFormatOverwriteCfm = "Overwrite the older-format file in the v0.3 format? Older versions will not open it.";
 	SaveFormatUnknown = "Not recognised as a RailSim II / RS2EX save file";
 	SavedInEveryFile = "* These settings are saved for each file.";
 	SaveNew = "Save new";

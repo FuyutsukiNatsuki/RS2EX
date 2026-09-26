@@ -286,7 +286,7 @@ Resource{
 	SaveFormatLegacyCfm = "旧形式（RailSim II / RS2EX v0.1.x以前）です。互換性は保証されません。読み込みますか？";
 	SaveFormatNewer = "新しいRS2EXの保存形式のため、このバージョンでは開けません";
 	SaveFormatOlderCfm = "古いRS2EXの保存形式です。互換性は保証されません。読み込みますか？";
-	SaveFormatOverwriteCfm = "旧形式のファイルをv0.2形式で上書きします。旧版では開けなくなります。よろしいですか？";
+	SaveFormatOverwriteCfm = "旧形式のファイルをv0.3形式で上書きします。旧版では開けなくなります。よろしいですか？";
 	SaveFormatUnknown = "RailSim II / RS2EXの保存ファイルとして認識できません";
 	SavedInEveryFile = "※ これらの設定はファイルごとに保存されます。";
 	SaveNew = "新規保存";
