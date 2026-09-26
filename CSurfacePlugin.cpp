@@ -1,3 +1,4 @@
+//	Modified for RS2EX on 2026-09-26.
 #include "stdafx.h"
 #include "CCamera.h"
 #include "CSurfacePlugin.h"
@@ -53,8 +54,10 @@ bool CSurfacePlugin::LoadOldForm(){
 	CNamedObject::SetCastShadowDefault(false);
 	FILE *file = fopen(TextName(), "rt");
 	char *dummy = FlashOut();
-	float sc, sizex, sizez;
-	fscanf(file, "%s %s %f %f %f %f", dummy, dummy, &sc, &sizex, &sizez);
+	float sc, sizex, sizez, unused;
+	//	[RS2EX] v0.3.0: six conversions had five destinations; the sixth value
+	//	was written through whatever the next vararg slot held (C4473).
+	fscanf(file, "%s %s %f %f %f %f", dummy, dummy, &sc, &sizex, &sizez, &unused);
 	fclose(file);
 	float oldscale = 2.0f/sc;
 	m_SizeX = sizex*oldscale;
