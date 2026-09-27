@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "CPluginTree.h"
 #include "CSkinPlugin.h"
+#include "RS2PluginDiagnostics.h"
 
 //	外部グローバル
 extern set<string> g_LackPlugin;
@@ -29,6 +30,7 @@ CPlugin::CPlugin(
  *	デストラクタ
  */
 CPlugin::~CPlugin(){
+	RS2PluginDiagnostics().Disassociate(this);
 	DELETE_A(m_Buffer);
 }
 
@@ -144,12 +146,18 @@ string CPlugin::GetBasicInfo(){
 CPlugin *CPlugin::LoadAndGet(){
 	switch(m_State){
 	case 1:	//	予備ロード済み
-		if(m_Version<2.0f){
-			if(!LoadOldForm()) break;
-		}else{
-			if(!Load()) break;
+	{
+		const RS2PluginKey key(RS2PluginTypeFromName(DirName()), m_ID);
+		RS2PluginDiagnostics().MarkLoading(key);
+		bool ok = m_Version<2.0f ? LoadOldForm() : Load();
+		if(!ok){
+			RS2PluginDiagnostics().MarkFailure(key, RS2_PLUGIN_DIAG_FAILED_LOAD,
+				RS2_DIAG_PLUGIN_BODY_PARSE, "Plugin body rejected", "");
+			break;
 		}
 		m_State = 2;
+		RS2PluginDiagnostics().MarkReady(key);
+	}
 	case 2:	//	ロード済み
 		return this;
 	}
@@ -217,6 +225,12 @@ CPluginList::~CPluginList(){
  *	定義ファイルのロード
  */
 bool CPluginList::List(){
+	static bool diagnosticSmokeDone = false;
+	if(!diagnosticSmokeDone && CheckArguments("-plugindiagregistrycheck")){
+		diagnosticSmokeDone = true;
+		Debug("RS2PLUGINDIAGREGISTRY|%s\n",
+			RS2RunPluginDiagnosticsRegistrySmoke() ? "pass" : "FAIL");
+	}
 	intptr_t filelist;	//	[RS2EX] v0.3.0: the CRT search handle is pointer-sized
 	_finddata_t data;
 	CPlugin **adr = &m_List;
@@ -225,23 +239,37 @@ bool CPluginList::List(){
 		do{
 			FILE *file;
 			if(!(data.attrib&_A_SUBDIR)) continue;
+			if(!strcmp(data.name, ".") || !strcmp(data.name, "..")) continue;
 			if(chdir(g_BaseDir) || chdir(DirName()) || chdir(data.name)) continue;
 			CPlugin *newpi = NewEntry(data.name);
+			const RS2PluginKey key(RS2PluginTypeFromName(DirName()), data.name);
+			const string root = string(g_BaseDir)+"\\"+DirName()+"\\"+data.name;
+			RS2PluginDiagnostics().RegisterDiscovered(key, root);
 			if(file = fopen(TextName2(), "rb")){
+				RS2PluginDiagnostics().SetDefinition(key, root+"\\"+TextName2(), false);
 				if(!newpi->PreLoad(file)){
+					RS2PluginDiagnostics().MarkFailure(key, RS2_PLUGIN_DIAG_FAILED_HEADER,
+						RS2_DIAG_PLUGIN_HEADER_PARSE, "Plugin header rejected", root+"\\"+TextName2());
 					delete newpi;
 					continue;
 				}
 			}else if(TextName() && (file = fopen(TextName(), "rt"))){
+				RS2PluginDiagnostics().SetDefinition(key, root+"\\"+TextName(), true);
 				if(!newpi->PreLoadOldForm(file)){
+					RS2PluginDiagnostics().MarkFailure(key, RS2_PLUGIN_DIAG_FAILED_HEADER,
+						RS2_DIAG_PLUGIN_HEADER_PARSE, "Legacy plugin header rejected", root+"\\"+TextName());
 					delete newpi;
 					continue;
 				}
 			}else{
+				RS2PluginDiagnostics().MarkFailure(key, RS2_PLUGIN_DIAG_FAILED_DISCOVERY,
+					RS2_DIAG_FILE_MISSING, "Plugin definition not found", root);
 				delete newpi;
 				continue;
 			}
 			newpi->m_State = 1;
+			RS2PluginDiagnostics().MarkHeaderReady(key, newpi, newpi->m_Name,
+				newpi->m_Author, newpi->m_Version);
 			*adr = newpi;
 			adr = &newpi->m_Next;
 			m_PluginNum++;
@@ -264,6 +292,9 @@ bool CPluginList::LoadOne(
 	if(chdir(g_BaseDir)) return false;
 	FILE *file;
 	CPlugin *newpi = NewEntry(piid);
+	const RS2PluginKey key(RS2PluginTypeFromName(DirName()), piid);
+	RS2PluginDiagnostics().RegisterDiscovered(key, string(g_BaseDir)+"\\"+DirName()+"\\"+piid);
+	RS2PluginDiagnostics().SetDefinition(key, defpath, oldform);
 	bool success = false;
 	if(oldform){
 		if(file = fopen(defpath, "rt")){
@@ -277,10 +308,14 @@ bool CPluginList::LoadOne(
 		}
 	}
 	if(!success){
+		RS2PluginDiagnostics().MarkFailure(key, RS2_PLUGIN_DIAG_FAILED_HEADER,
+			RS2_DIAG_PLUGIN_HEADER_PARSE, "Plugin definition missing or header rejected", defpath);
 		delete newpi;
 		return false;
 	}
 	newpi->m_State = 1;
+	RS2PluginDiagnostics().MarkHeaderReady(key, newpi, newpi->m_Name,
+		newpi->m_Author, newpi->m_Version);
 	*adr = newpi;
 	m_PluginNum++;
 	return true;

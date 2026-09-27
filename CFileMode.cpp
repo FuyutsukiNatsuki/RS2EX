@@ -8,6 +8,7 @@
 #include "RS2SaveRefCheck.h"
 #include "RS2InputAudioSmoke.h"
 #include "RS2X64Smoke.h"
+#include "RS2PluginDiagnostics.h"
 #include "RS2X64Stress.h"
 #include "CSkinPlugin.h"
 #include "CSimulationMode.h"
@@ -911,6 +912,12 @@ void CFileMode::ProcessStartupFile(){
 	//	[RS2EX] v0.3.0: pointer width with a real high address (RS2X64Smoke.cpp).
 	if(RS2X64SmokeRequested()){
 		RS2X64SmokeRun();
+		SendWM_CLOSE();
+		return;
+	}
+	if(CheckArguments("-plugindiagregistrycheck")){
+		const bool pass = RS2RunPluginDiagnosticsRegistrySmoke();
+		Debug("RS2PLUGINDIAGREGISTRY|%s\n", pass ? "pass" : "FAIL" );
 		SendWM_CLOSE();
 		return;
 	}
