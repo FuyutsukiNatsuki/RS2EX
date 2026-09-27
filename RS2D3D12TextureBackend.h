@@ -8,6 +8,14 @@
 
 class RS2TextureRef;
 struct RS2TexturePayloadOps;
+struct RS2TextureDiagnosticsInfo;
+
+enum RS2D3D12TextureFailureStage {
+    RS2_D3D12_TEXTURE_FAILURE_NONE, RS2_D3D12_TEXTURE_FAILURE_DECODE,
+    RS2_D3D12_TEXTURE_FAILURE_UPLOAD, RS2_D3D12_TEXTURE_FAILURE_DESCRIPTOR
+};
+RS2D3D12TextureFailureStage RS2D3D12_GetLastTextureFailureStage();
+const char *RS2D3D12_GetLastTextureFailureMessage();
 
 bool RS2D3D12_CreateTexturePayloadFromFile(
 	void **payload, int *width, int *height,
@@ -16,6 +24,8 @@ bool RS2D3D12_CreateTexturePayloadFromResource(
 	void **payload, int *width, int *height,
 	const char *name, unsigned long colourKey, int mipArgument);
 const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps();
+bool RS2D3D12_GetTexturePayloadDiagnostics(const void *payload,
+    RS2TextureDiagnosticsInfo *out);
 
 //	A CPU-writable texture (v0.1.6): sizes round up to powers of two exactly as
 //	the Direct3D 8 backend rounds them; Lock hands out an A4R4G4B4 copy.

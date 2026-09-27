@@ -8,6 +8,8 @@
 #include "draw.h"
 #include "texture.h"
 #include "..\RS2MaterialBinding.h"
+#include "..\RS2PluginDiagnostics.h"
+#include "..\RS2TextureResource.h"
 
 //	内部グローバル
 CTexList g_TexList;		//	テクスチャリスト
@@ -271,7 +273,14 @@ RS2TextureRef CTexList::Get(
 			&& p->cTrans==cTrans && p->nMipLv==nMipLv){
 			//	Debug("[%s] is in texture-list.\n", strName); /*デバッグ*/
 			p->nRef++;
-			return RS2TextureRef(p->pTex);
+			RS2TextureRef found(p->pTex);
+			int width=0, height=0;
+			found.GetSize(&width, &height);
+			RS2TextureDiagnosticsInfo info;
+			const bool infoReady=found.GetDiagnostics(&info);
+			RS2NoteTextureRequest(strName, cTrans, nMipLv, p->pTex, true,
+				width, height, !fRes, infoReady ? &info : NULL);
+			return found;
 		}
 		p = p->pNext;
 	}
@@ -287,6 +296,7 @@ RS2TextureRef CTexList::Get(
 		? RS2CreateTextureFromResource(strName, cTrans, nMipLv)
 		: RS2CreateTextureFromFile(strName, cTrans, nMipLv);
 	if(!p->pTex){
+		RS2NoteTextureRequest(strName, cTrans, nMipLv, NULL, false, 0, 0, !fRes, NULL);
 		Debug("failed.\n");
 		return RS2TextureRef();
 	}
@@ -300,8 +310,15 @@ RS2TextureRef CTexList::Get(
 	p->nRef = 1;
 	p->cTrans = cTrans;
 	p->nMipLv = nMipLv;
+	RS2TextureRef created(p->pTex);
+	int width=0, height=0;
+	created.GetSize(&width, &height);
+	RS2TextureDiagnosticsInfo info;
+	const bool infoReady=created.GetDiagnostics(&info);
+	RS2NoteTextureRequest(strName, cTrans, nMipLv, p->pTex, false,
+		width, height, !fRes, infoReady ? &info : NULL);
 
-	return RS2TextureRef(p->pTex);
+	return created;
 }
 
 /*
@@ -321,6 +338,7 @@ void CTexList::Release(RS2TextureRef tex){
 			//	参照がなくなればテクスチャを解放、リストから外す
 			if(p->nRef==0){
 				Debug("release(%s)\n", p->strName.c_str());
+				RS2NoteTextureDestroyed(p->pTex);
 				RS2DestroyTexture(p->pTex);
 				p->pTex = 0;
 

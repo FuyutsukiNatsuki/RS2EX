@@ -15,7 +15,8 @@
 
 param(
     [Parameter(Mandatory = $true)][string]$Exe,
-    [Parameter(Mandatory = $true)][string]$Out,
+    [string]$Out,
+    [switch]$NoCapture,
 
     #   Seconds to let the layout load and the scene settle before capturing.
     [int]$Settle = 14,
@@ -73,6 +74,7 @@ $api = Add-Type -MemberDefinition $sig -Name Shot -Namespace RS2EX -PassThru |
     Select-Object -First 1
 
 if (-not (Test-Path $Exe)) { throw "no such executable: $Exe" }
+if (-not $NoCapture -and -not $Out) { throw "-Out is required unless -NoCapture is set" }
 
 $exePath = (Resolve-Path $Exe).Path
 $workDir = Split-Path -Parent $exePath
@@ -100,6 +102,7 @@ if ($argList.Count) {
 } else {
     $proc = Start-Process -FilePath $exePath -WorkingDirectory $workDir -PassThru
 }
+$launchedAt = Get-Date
 
 #   Wait until this run has logged the marker.  Both display modes need it:
 #   a fixed settle time photographs the loading screen whenever loading is
@@ -111,7 +114,6 @@ function Wait-RS2Marker {
 
     while ((Get-Date) -lt $deadline) {
         $proc.Refresh()
-        if ($proc.HasExited) { throw "the program exited before logging '$WaitForLog'" }
         if (Test-Path $log) {
             try {
                 $stream = [System.IO.File]::Open(
@@ -148,6 +150,7 @@ function Wait-RS2Marker {
                 # poll overlaps a write, retry on the next interval.
             }
         }
+        if ($proc.HasExited) { throw "the program exited before logging '$WaitForLog'" }
         #   Loading can stall long enough for Windows to treat the window as
         #   hung and hand activation elsewhere (v0.1.5: DirectInput's device
         #   enumeration waited 40 s on an unresponsive wireless receiver).  An
@@ -188,7 +191,18 @@ function Wait-RS2Marker {
 $windowHandle = [IntPtr]::Zero
 
 try {
-    if ($Fullscreen) {
+    if ($NoCapture) {
+        if ($WaitForLog) { Wait-RS2Marker }
+        else { Start-Sleep -Seconds $Settle }
+        $proc.Refresh()
+        $windowHandle = $proc.MainWindowHandle
+        Write-Host ("ready after {0:N2}s; exited={1}" -f `
+            ((Get-Date) - $launchedAt).TotalSeconds, $proc.HasExited)
+        if (-not $proc.HasExited) {
+            Write-Host ("memory working={0:N1} MiB private={1:N1} MiB" -f `
+                ($proc.WorkingSet64 / 1MB), ($proc.PrivateMemorySize64 / 1MB))
+        }
+    } elseif ($Fullscreen) {
         if ($WaitForLog) { Wait-RS2Marker }
         Start-Sleep -Seconds $Settle
         $proc.Refresh()
@@ -250,6 +264,7 @@ try {
         Start-Sleep -Milliseconds $CursorSettleMilliseconds
     }
 
+    if (-not $NoCapture) {
     if ($w -le 0 -or $h -le 0) { throw "window has no area ($w x $h)" }
 
     $dir = Split-Path -Parent $Out
@@ -263,6 +278,7 @@ try {
     $bmp.Dispose()
 
     Write-Host ("saved {0} ({1}x{2})" -f $Out, $w, $h)
+    }
 }
 finally {
     $proc.Refresh()

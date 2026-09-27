@@ -7,15 +7,11 @@
 
 #include "RS2D3D12.h"
 #include "RS2RenderState.h"
+#include <vector>
 
-// v0.1.2 WP0 measured 94 simultaneous immutable textures and chose 128.
-// v0.1.3 WP0B measured 178 in a layout with DDS trains, past that limit.
-// The installed content holds 907 image files in all (PNG 132, BMP 643,
-// DDS 132), so 1024 slots hold every installed image at once with room to
-// spare.  A slot is one descriptor, a few tens of bytes; the heap is about
-// 32 KB, far below the shader-visible limit.  Exhaustion still fails
-// explicitly - the capacity is a measured bound, not a promise.
-#define RS2D3D12_SRV_CAPACITY 1024
+// v0.3.1 emergency headroom for large plugin corpora. This is one fixed
+// shader-visible heap, not dynamic growth; exhaustion still fails explicitly.
+#define RS2D3D12_SRV_CAPACITY 131072
 
 struct RS2D3D12SrvSlot
 {
@@ -33,12 +29,16 @@ private:
 	UINT m_SamplerStride;
 	unsigned int m_Next;
 	unsigned int m_FreeCount;
-	unsigned int m_Free[RS2D3D12_SRV_CAPACITY];
-	unsigned int m_Serial[RS2D3D12_SRV_CAPACITY];
-	bool m_Used[RS2D3D12_SRV_CAPACITY];
+	std::vector<unsigned int> m_Free;
+	std::vector<unsigned int> m_Serial;
+	std::vector<unsigned char> m_Used;
 	unsigned int m_NextSerial;
 	unsigned int m_Live;
 	unsigned int m_Peak;
+	unsigned long long m_Allocations;
+	unsigned long long m_Releases;
+	unsigned long long m_AllocationFailures;
+	unsigned long long m_StaleReleaseFailures;
 
 	CRS2D3D12Descriptors(const CRS2D3D12Descriptors &);
 	CRS2D3D12Descriptors &operator=(const CRS2D3D12Descriptors &);
@@ -71,6 +71,10 @@ public:
 	unsigned int GetCapacity() const{ return RS2D3D12_SRV_CAPACITY; }
 	unsigned int GetLive() const{ return m_Live; }
 	unsigned int GetPeak() const{ return m_Peak; }
+	unsigned long long GetAllocations() const{ return m_Allocations; }
+	unsigned long long GetReleases() const{ return m_Releases; }
+	unsigned long long GetAllocationFailures() const{ return m_AllocationFailures; }
+	unsigned long long GetStaleReleaseFailures() const{ return m_StaleReleaseFailures; }
 };
 
 bool RS2D3D12DescriptorsSmoke(CRS2D3D12Descriptors *descriptors, ID3D12Device *device);

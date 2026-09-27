@@ -10,6 +10,7 @@
 #include "RS2D3D12Unsupported.h"
 #include "RS2TextureResource.h"
 #include "RS2DDS.h"
+#include "RS2PluginDiagnostics.h"
 
 #include <math.h>
 
@@ -35,6 +36,7 @@ struct RS2D3D12TexturePayload
 	RS2D3D12SrvSlot slot;
 	bool dds;
 	RS2D3D12MutableState *mutableState;	//	0 for file and resource textures
+	RS2TextureDiagnosticsInfo diagnostics;
 };
 
 struct RS2D3D12PendingTextureUpload
@@ -55,6 +57,21 @@ static unsigned int s_PeakDDSTextures = 0;
 static RS2D3D12TexturePayload *s_Bound[2] = { 0, 0 };
 static RS2TextureFilter s_Filter[2] = { RS2_FILTER_POINT, RS2_FILTER_POINT };
 static RS2D3D12TextureRuntimeStats s_RuntimeStats;
+static thread_local RS2D3D12TextureFailureStage s_LastFailureStage =
+    RS2_D3D12_TEXTURE_FAILURE_NONE;
+static thread_local std::string s_LastFailureMessage;
+
+static void RS2D3D12_SetTextureFailure(
+    RS2D3D12TextureFailureStage stage, const std::string &message) {
+    s_LastFailureStage=stage;
+    s_LastFailureMessage=message;
+}
+RS2D3D12TextureFailureStage RS2D3D12_GetLastTextureFailureStage() {
+    return s_LastFailureStage;
+}
+const char *RS2D3D12_GetLastTextureFailureMessage() {
+    return s_LastFailureMessage.c_str();
+}
 static RS2D3D12MutableStats s_MutableStats;
 
 static bool RS2D3D12TextureError(std::string *error, const char *what, HRESULT hr){
@@ -97,6 +114,14 @@ static const RS2TexturePayloadOps s_TextureOps = {
 };
 
 const RS2TexturePayloadOps *RS2D3D12_GetTexturePayloadOps(){ return &s_TextureOps; }
+bool RS2D3D12_GetTexturePayloadDiagnostics(const void *opaque,
+	RS2TextureDiagnosticsInfo *out){
+	if(!opaque || !out) return false;
+	const RS2D3D12TexturePayload *payload =
+		(const RS2D3D12TexturePayload *)opaque;
+	*out = payload->diagnostics;
+	return payload->texture!=0;
+}
 const RS2D3D12MutableStats &RS2D3D12_GetMutableStats(){ return s_MutableStats; }
 void RS2D3D12_CountLiveTextDraw(){ s_MutableStats.liveTextDraws++; }
 unsigned int RS2D3D12_GetLiveTextureCount(){ return s_LiveTextures; }
@@ -245,8 +270,14 @@ static bool RS2D3D12_CreateDDSTexture(
 	RS2DDSInfo info;
 	std::string error;
 
-	if(!RS2LoadDDSFile(path, colourKey, mipArgument, &source, &info, &error)){
+	bool parsed;
+	{
+		RS2PluginDiagnosticsTimer timer(RS2_DIAG_TIME_TEXTURE_DECODE);
+		parsed = RS2LoadDDSFile(path, colourKey, mipArgument, &source, &info, &error);
+	}
+	if(!parsed){
 		s_RuntimeStats.ddsFailures++;
+		RS2D3D12_SetTextureFailure(RS2_D3D12_TEXTURE_FAILURE_DECODE,error);
 		Debug("[RS2EX D3D12 Texture] DDS refused: %s: %s\n", error.c_str(), path);
 		return false;
 	}
@@ -267,8 +298,14 @@ static bool RS2D3D12_CreateDDSTexture(
 	const unsigned long long before = backend->GetTextureUpload()->GetSubmittedBytes();
 	void *opaque = 0;
 
-	if(!backend->GetTextureUpload()->CreateTexture(source, &opaque, &error)){
+	bool uploaded;
+	{
+		RS2PluginDiagnosticsTimer timer(RS2_DIAG_TIME_TEXTURE_UPLOAD);
+		uploaded = backend->GetTextureUpload()->CreateTexture(source, &opaque, &error);
+	}
+	if(!uploaded){
 		s_RuntimeStats.ddsFailures++;
+		RS2D3D12_SetTextureFailure(RS2_D3D12_TEXTURE_FAILURE_UPLOAD,error);
 		Debug("[RS2EX D3D12 Texture] DDS upload failed: %s: %s\n", error.c_str(), path);
 		return false;
 	}
@@ -278,6 +315,8 @@ static bool RS2D3D12_CreateDDSTexture(
 
 	if(!RS2D3D12_PublishTexture(backend, opaque, outPayload)){
 		s_RuntimeStats.ddsFailures++;
+		RS2D3D12_SetTextureFailure(RS2_D3D12_TEXTURE_FAILURE_DESCRIPTOR,
+			"SRV descriptor allocation or write failed");
 		return false;
 	}
 
@@ -298,6 +337,7 @@ static bool RS2D3D12_CreatePublicTexture(
 	if(outPayload) *outPayload = 0;
 	if(width) *width = 0;
 	if(height) *height = 0;
+	RS2D3D12_SetTextureFailure(RS2_D3D12_TEXTURE_FAILURE_NONE,"");
 	if(!outPayload || !width || !height) return false;
 	CRS2D3D12Backend *backend = RS2D3D12GetActiveBackend();
 	if(!backend) return false;
@@ -313,17 +353,34 @@ static bool RS2D3D12_CreatePublicTexture(
 
 	CRS2DecodedImage image;
 	std::string error;
-	const bool decoded = fromResource
-		? RS2DecodeImageResource(source, colourKey, mipArgument, &image, &error)
-		: RS2DecodeImageFile(source, colourKey, mipArgument, &image, &error);
+	bool decoded;
+	{
+		RS2PluginDiagnosticsTimer timer(RS2_DIAG_TIME_TEXTURE_DECODE);
+		decoded = fromResource
+			? RS2DecodeImageResource(source, colourKey, mipArgument, &image, &error)
+			: RS2DecodeImageFile(source, colourKey, mipArgument, &image, &error);
+	}
 	if(!decoded){
+		RS2D3D12_SetTextureFailure(RS2_D3D12_TEXTURE_FAILURE_DECODE,error);
 		Debug("[RS2EX D3D12 Texture] decode failed: %s\n", error.c_str());
 		return false;
 	}
 	backend->CollectRetiredTextures();
 	void *opaque = 0;
-	if(!backend->GetTextureUpload()->CreateTexture(image, &opaque, &error)) return false;
-	if(!RS2D3D12_PublishTexture(backend, opaque, outPayload)) return false;
+	bool uploaded;
+	{
+		RS2PluginDiagnosticsTimer timer(RS2_DIAG_TIME_TEXTURE_UPLOAD);
+		uploaded = backend->GetTextureUpload()->CreateTexture(image, &opaque, &error);
+	}
+	if(!uploaded){
+		RS2D3D12_SetTextureFailure(RS2_D3D12_TEXTURE_FAILURE_UPLOAD,error);
+		return false;
+	}
+	if(!RS2D3D12_PublishTexture(backend, opaque, outPayload)){
+		RS2D3D12_SetTextureFailure(RS2_D3D12_TEXTURE_FAILURE_DESCRIPTOR,
+			"SRV descriptor allocation or write failed");
+		return false;
+	}
 	*width = (int)image.GetWidth();
 	*height = (int)image.GetHeight();
 	if(fromResource) s_RuntimeStats.resourceSuccesses++;
@@ -954,6 +1011,24 @@ bool CRS2D3D12TextureUpload::CreateTexture(
 	payload->owner = 0;
 	payload->dds = false;
 	payload->mutableState = 0;
+	payload->diagnostics.mipCount = mipCount;
+	payload->diagnostics.decodedLogicalBytes = image.GetDataBytes();
+	payload->diagnostics.gpuLogicalBytes = image.GetDataBytes();
+	const D3D12_RESOURCE_ALLOCATION_INFO allocation =
+		m_Device->GetResourceAllocationInfo(0, 1, &textureDesc);
+	if(allocation.SizeInBytes && allocation.SizeInBytes!=(UINT64)-1){
+		payload->diagnostics.gpuAllocationBytes = allocation.SizeInBytes;
+		payload->diagnostics.allocationAvailable = true;
+	}
+	switch(image.GetFormat()){
+	case RS2_TEXTURE_SOURCE_RGBA8:
+		payload->diagnostics.format = RS2_TEXTURE_DIAG_RGBA8; break;
+	case RS2_TEXTURE_SOURCE_BC1:
+		payload->diagnostics.format = RS2_TEXTURE_DIAG_BC1; break;
+	case RS2_TEXTURE_SOURCE_BC3:
+		payload->diagnostics.format = RS2_TEXTURE_DIAG_BC3; break;
+	default: break;
+	}
 	s_LiveTextures++;
 	if(s_LiveTextures>s_PeakTextures) s_PeakTextures = s_LiveTextures;
 

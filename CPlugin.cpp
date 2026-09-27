@@ -99,6 +99,8 @@ char *CPlugin::LoadHeader(
 bool CPlugin::PreLoad(
 	FILE *file	//	ファイル
 ){
+	const RS2PluginKey key(RS2PluginTypeFromName(DirName()), m_ID);
+	RS2PluginDiagnosticsTimer timer(key, RS2_DIAG_TIME_HEADER);
 	char *str = m_Buffer = LoadBinaryText(file);
 	try{
 		str = LoadHeader(str);
@@ -117,6 +119,8 @@ bool CPlugin::PreLoad(
 bool CPlugin::PreLoadOldForm(
 	FILE *file	//	ファイル
 ){
+	const RS2PluginKey key(RS2PluginTypeFromName(DirName()), m_ID);
+	RS2PluginDiagnosticsTimer timer(key, RS2_DIAG_TIME_HEADER);
 	try{
 		char *name = FlashOut(0), *auth = FlashOut(1);
 		if(fscanf(file, "%s %s", name, auth)<2) throw CSynErr(NULL);
@@ -149,6 +153,8 @@ CPlugin *CPlugin::LoadAndGet(){
 	{
 		const RS2PluginKey key(RS2PluginTypeFromName(DirName()), m_ID);
 		RS2PluginDiagnostics().MarkLoading(key);
+		RS2PluginDiagnosticsScope scope(key);
+		RS2PluginDiagnosticsTimer timer(key, RS2_DIAG_TIME_FULL_PARSE);
 		bool ok = m_Version<2.0f ? LoadOldForm() : Load();
 		if(!ok){
 			RS2PluginDiagnostics().MarkFailure(key, RS2_PLUGIN_DIAG_FAILED_LOAD,
@@ -226,6 +232,12 @@ CPluginList::~CPluginList(){
  */
 bool CPluginList::List(){
 	static bool diagnosticSmokeDone = false;
+	static bool resourceSmokeDone = false;
+	if(!resourceSmokeDone && CheckArguments("-plugindiagsmoke")){
+		resourceSmokeDone = true;
+		Debug("RS2PLUGINDIAGSMOKE|%s\n",
+			RS2RunPluginDiagnosticsSmoke() ? "pass" : "FAIL");
+	}
 	if(!diagnosticSmokeDone && CheckArguments("-plugindiagregistrycheck")){
 		diagnosticSmokeDone = true;
 		Debug("RS2PLUGINDIAGREGISTRY|%s\n",

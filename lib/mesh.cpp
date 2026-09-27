@@ -15,6 +15,7 @@
 #endif
 
 #include "..\RS2MeshImport.h"
+#include "..\RS2PluginDiagnostics.h"
 #include "..\RS2MaterialBinding.h"
 #include "..\CModelPlugin.h"
 #include "..\CEnvPlugin.h"
@@ -28,6 +29,18 @@ extern CEnvPlugin *g_Env;
 //	内部グローバル
 int g_AncientNightFlag;				//	旧バージョン対応用・夜間発光フラグ
 CMeshList g_MeshList;				//	テクスチャリスト
+
+static void RS2ObserveMeshRequest(const char *path, RS2PackedColor colour,
+	int mip, CMesh *mesh, bool cacheHit){
+	if(!mesh){
+		RS2NoteMeshRequest(path, colour, mip, NULL, cacheHit, 0, 0, 0, 0, 0, 0);
+		return;
+	}
+	const CRS2MeshData &data = mesh->GetMeshData();
+	RS2NoteMeshRequest(path, colour, mip, mesh, cacheHit,
+		data.GetVertexCount(), data.GetFaceCount(), data.GetIndexCount(),
+		data.GetMaterialCount(), data.GetSubsetCount(), data.GetCpuByteSize());
+}
 RS2Material *g_AltMaterial = NULL;	//	代替マテリアル
 
 
@@ -600,6 +613,7 @@ CMesh *CMeshList::Get(BOOL fRes, LPCSTR strName, RS2PackedColor cTrans, int nMip
 			&& p->cTrans==cTrans && p->nMipLv==nMipLv){
 			//	Debug("[%s] is in mesh-list.\n", strName); /*デバッグ*/
 			p->nRef++;
+			RS2ObserveMeshRequest(strName, cTrans, nMipLv, &p->m_Mesh, true);
 			return &p->m_Mesh;
 		}
 		p = p->pNext;
@@ -609,7 +623,13 @@ CMesh *CMeshList::Get(BOOL fRes, LPCSTR strName, RS2PackedColor cTrans, int nMip
 
 	p = new MESHINFO;
 
-	if(!p->m_Mesh.Load(fRes, (char *)strName, cTrans, nMipLv)){
+	bool loaded;
+	{
+		RS2PluginDiagnosticsTimer timer(RS2_DIAG_TIME_MESH_IMPORT);
+		loaded = p->m_Mesh.Load(fRes, (char *)strName, cTrans, nMipLv)!=FALSE;
+	}
+	if(!loaded){
+		RS2ObserveMeshRequest(strName, cTrans, nMipLv, NULL, false);
 		Debug("failed.\n");
 		return NULL;
 	}
@@ -626,6 +646,7 @@ CMesh *CMeshList::Get(BOOL fRes, LPCSTR strName, RS2PackedColor cTrans, int nMip
 	//	the field and cache hits became a coin toss.
 	p->cTrans = cTrans;
 	p->nMipLv = nMipLv;
+	RS2ObserveMeshRequest(strName, cTrans, nMipLv, &p->m_Mesh, false);
 
 	return &p->m_Mesh;
 }
@@ -646,6 +667,7 @@ void CMeshList::Release(CMesh *pMesh){
 			//	参照がなくなればメッシュを解放、リストから外す
 			if(p->nRef==0){
 				Debug("release(%s)\n", p->strName.c_str());
+				RS2NoteMeshDestroyed(&p->m_Mesh);
 				p->m_Mesh.Free();
 
 				if(p==m_pList){

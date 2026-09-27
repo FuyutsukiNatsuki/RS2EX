@@ -16,6 +16,7 @@
 #include "CSurfacePlugin.h"
 #include "CEnvPlugin.h"
 #include "CGameMode.h"
+#include "RS2PluginDiagnostics.h"
 
 //	内部定数
 extern const float RAILSIM_VERSION = 2.15f;	//	本体バージョン
@@ -312,11 +313,21 @@ void Main(){
 	}
 	DeleteObject(g_TempFont);
 	skin->SetPreview();
+	if(CheckArguments("-plugindiag") || CheckArguments("-plugindiagdump"))
+		RS2ReconcileUnrepresentablePluginDirectories();
+	if(CheckArguments("-plugindiagdump")){
+		const bool ok=RS2WritePluginDiagnosticsDump("plugin-diagnostics-initial.txt",true);
+		Debug("RS2PLUGINDIAGDUMP|initial|%s\n",ok ? "pass" : "FAIL");
+	}
 	CTreeDirElement::InitMenu();
 	g_Cursor.Init();
 	g_CursorLockable = true;
 	InitGrid();
 	CGameMode::MainLoop();
+	if(CheckArguments("-plugindiagdump")){
+		const bool ok=RS2WritePluginDiagnosticsDump("plugin-diagnostics-final.txt",false);
+		Debug("RS2PLUGINDIAGDUMP|final|%s\n",ok ? "pass" : "FAIL");
+	}
 	FreeGraphicCoverResources();
 	DELETE_V(g_SaveFile);
 	ClipCursor(NULL);

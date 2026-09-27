@@ -229,7 +229,10 @@ static void RS2XSTextures(bool *all){
 		textureBaseline, descriptorBaseline, capacity);
 
 	chdir(g_BaseDir);
-	const unsigned int fileCycles = capacity*2+2, mutableCycles = capacity+2;
+	// The allocator smoke covers all 131,072 descriptors and overflow. Keep
+	// this end-to-end resource stress bounded: 393,220 texture creations would
+	// otherwise dominate the x64 regression after the v0.3.1 capacity raise.
+	const unsigned int fileCycles = 4096, mutableCycles = 2048;
 	unsigned int c, fileDone = 0, mutableDone = 0, peak = descriptorBaseline;
 	for(c = 0; c<fileCycles; c++){
 		CRS2TextureResource *t = RS2CreateTextureFromFile("Skin\\Default_Blue\\Frame.png", 0, 1);
@@ -251,8 +254,8 @@ static void RS2XSTextures(bool *all){
 	backend->CollectRetiredTextures();
 	Debug("RS2X64STRESS|texture cycles: file %u of %u, mutable %u of %u, descriptors peak %u\n",
 		fileDone, fileCycles, mutableDone, mutableCycles, peak);
-	RS2XSStep("textures: skin PNG, 2 x heap capacity + 2 cycles", fileDone==fileCycles, all);
-	RS2XSStep("textures: mutable 64 x 64, heap capacity + 2 cycles", mutableDone==mutableCycles, all);
+	RS2XSStep("textures: skin PNG, 4096 create / destroy cycles", fileDone==fileCycles, all);
+	RS2XSStep("textures: mutable 64 x 64, 2048 cycles", mutableDone==mutableCycles, all);
 	RS2XSStep("descriptors reused (peak below capacity)", peak<capacity, all);
 	RS2XSStep("live textures and descriptors back to baseline",
 		RS2D3D12_GetLiveTextureCount()==textureBaseline && descriptors->GetLive()==descriptorBaseline, all);

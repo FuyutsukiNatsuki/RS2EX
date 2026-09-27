@@ -3,14 +3,16 @@
 
 #include "stdafx.h"
 #include "RS2D3D12Descriptors.h"
+#include "RS2PluginDiagnostics.h"
+#include <new>
+#include <unordered_set>
 
 CRS2D3D12Descriptors::CRS2D3D12Descriptors()
 	: m_SrvHeap(0), m_SamplerHeap(0), m_SrvStride(0), m_SamplerStride(0),
-	  m_Next(0), m_FreeCount(0), m_NextSerial(0), m_Live(0), m_Peak(0)
+	  m_Next(0), m_FreeCount(0), m_NextSerial(0), m_Live(0), m_Peak(0),
+	  m_Allocations(0), m_Releases(0), m_AllocationFailures(0),
+	  m_StaleReleaseFailures(0)
 {
-	ZeroMemory(m_Free, sizeof(m_Free));
-	ZeroMemory(m_Serial, sizeof(m_Serial));
-	ZeroMemory(m_Used, sizeof(m_Used));
 }
 
 CRS2D3D12Descriptors::~CRS2D3D12Descriptors(){ Destroy(); }
@@ -18,6 +20,15 @@ CRS2D3D12Descriptors::~CRS2D3D12Descriptors(){ Destroy(); }
 bool CRS2D3D12Descriptors::Create(ID3D12Device *device){
 	Destroy();
 	if(!device) return false;
+	try{
+		m_Free.assign(RS2D3D12_SRV_CAPACITY, 0);
+		m_Serial.assign(RS2D3D12_SRV_CAPACITY, 0);
+		m_Used.assign(RS2D3D12_SRV_CAPACITY, 0);
+	}catch(const std::bad_alloc &){
+		Debug("[RS2EX D3D12 Descriptor] CPU bookkeeping allocation failed\n");
+		Destroy();
+		return false;
+	}
 
 	D3D12_DESCRIPTOR_HEAP_DESC desc;
 	ZeroMemory(&desc, sizeof(desc));
@@ -75,14 +86,18 @@ void CRS2D3D12Descriptors::Destroy(){
 	RELEASE(m_SrvHeap);
 	m_SrvStride = m_SamplerStride = 0;
 	m_Next = m_FreeCount = m_Live = m_Peak = 0;
-	ZeroMemory(m_Used, sizeof(m_Used));
+	m_Free.clear();
+	m_Serial.clear();
+	m_Used.clear();
+	m_Allocations = m_Releases = m_AllocationFailures = m_StaleReleaseFailures = 0;
 }
 
 bool CRS2D3D12Descriptors::Allocate(RS2D3D12SrvSlot *out){
 	if(out) *out = RS2D3D12SrvSlot();
-	if(!out || !m_SrvHeap) return false;
+	if(!out || !m_SrvHeap){ m_AllocationFailures++; return false; }
 	if(m_NextSerial==0xffffffffu){
 		Debug("[RS2EX D3D12 Descriptor] SRV allocation serial exhausted\n");
+		m_AllocationFailures++;
 		return false;
 	}
 	unsigned int index;
@@ -91,6 +106,8 @@ bool CRS2D3D12Descriptors::Allocate(RS2D3D12SrvSlot *out){
 	else{
 		Debug("[RS2EX D3D12 Descriptor] SRV heap exhausted: live %u capacity %u\n",
 			m_Live, RS2D3D12_SRV_CAPACITY);
+		m_AllocationFailures++;
+		RS2NoteDescriptorExhaustion();
 		return false;
 	}
 	m_Used[index] = true;
@@ -99,6 +116,7 @@ bool CRS2D3D12Descriptors::Allocate(RS2D3D12SrvSlot *out){
 	out->index = index;
 	out->serial = m_NextSerial;
 	if(++m_Live>m_Peak) m_Peak = m_Live;
+	m_Allocations++;
 	return true;
 }
 
@@ -110,11 +128,13 @@ bool CRS2D3D12Descriptors::IsLive(const RS2D3D12SrvSlot &slot) const{
 bool CRS2D3D12Descriptors::Free(const RS2D3D12SrvSlot &slot){
 	if(!IsLive(slot)){
 		Debug("[RS2EX D3D12 Descriptor] stale or invalid SRV release\n");
+		m_StaleReleaseFailures++;
 		return false;
 	}
 	m_Used[slot.index] = false;
 	m_Free[m_FreeCount++] = slot.index;
 	m_Live--;
+	m_Releases++;
 	return true;
 }
 
@@ -207,7 +227,13 @@ bool RS2D3D12DescriptorsSmoke(CRS2D3D12Descriptors *descriptors, ID3D12Device *d
 			&desc, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, 0,
 			IID_PPV_ARGS(&texture)))) return false;
 
-	RS2D3D12SrvSlot slots[RS2D3D12_SRV_CAPACITY];
+	const unsigned long long allocationsBefore = descriptors->GetAllocations();
+	const unsigned long long releasesBefore = descriptors->GetReleases();
+	const unsigned long long failuresBefore = descriptors->GetAllocationFailures();
+	const unsigned long long staleBefore = descriptors->GetStaleReleaseFailures();
+	std::vector<RS2D3D12SrvSlot> slots(RS2D3D12_SRV_CAPACITY);
+	std::unordered_set<SIZE_T> handles;
+	handles.reserve(RS2D3D12_SRV_CAPACITY);
 	bool ok = true;
 	unsigned int i;
 	for(i = 0; i<RS2D3D12_SRV_CAPACITY; i++){
@@ -221,11 +247,7 @@ bool RS2D3D12DescriptorsSmoke(CRS2D3D12Descriptors *descriptors, ID3D12Device *d
 			ok = false;
 			break;
 		}
-		for(unsigned int j = 0; j<i; j++){
-			D3D12_GPU_DESCRIPTOR_HANDLE other;
-			if(!descriptors->GetSrvHandles(slots[j], 0, &other)
-					|| other.ptr==handle.ptr) ok = false;
-		}
+		if(!handles.insert(handle.ptr).second) ok = false;
 	}
 	if(ok){
 		RS2D3D12SrvSlot overflow;
@@ -253,9 +275,19 @@ bool RS2D3D12DescriptorsSmoke(CRS2D3D12Descriptors *descriptors, ID3D12Device *d
 	for(i = 0; i<RS2D3D12_SRV_CAPACITY; i++)
 		if(descriptors->IsLive(slots[i]) && !descriptors->Free(slots[i])) ok = false;
 	if(descriptors->GetLive()!=0) ok = false;
+	if(ok) ok = descriptors->GetAllocations()-allocationsBefore
+			== (unsigned long long)RS2D3D12_SRV_CAPACITY+1
+		&& descriptors->GetReleases()-releasesBefore
+			== (unsigned long long)RS2D3D12_SRV_CAPACITY+1
+		&& descriptors->GetAllocationFailures()-failuresBefore==1
+		&& descriptors->GetStaleReleaseFailures()-staleBefore==1;
 	texture->Release();
-	Debug("RS2D3D12DESCRIPTOR|capacity=%u peak=%u live=%u sampler=point,linear|%s\n",
+	Debug("RS2D3D12DESCRIPTOR|capacity=%u peak=%u live=%u alloc=%llu release=%llu failed=%llu stale=%llu sampler=point,linear|%s\n",
 		descriptors->GetCapacity(), descriptors->GetPeak(), descriptors->GetLive(),
+		descriptors->GetAllocations()-allocationsBefore,
+		descriptors->GetReleases()-releasesBefore,
+		descriptors->GetAllocationFailures()-failuresBefore,
+		descriptors->GetStaleReleaseFailures()-staleBefore,
 		ok ? "pass" : "FAIL");
 	return ok;
 }

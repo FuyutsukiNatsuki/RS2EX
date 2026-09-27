@@ -5,6 +5,7 @@
 #include "window.h"
 #include "sound.h"
 #include "wave.h"
+#include "..\RS2PluginDiagnostics.h"
 
 /*
  *	コンストラクタ
@@ -30,6 +31,7 @@ CWave::~CWave(){
  *	strFile	: ファイル名
  */
 BOOL CWave::Load(char *strFile){
+	RS2PluginDiagnosticsTimer timer(RS2_DIAG_TIME_AUDIO_LOAD);
 	//	既存なら解放
 	if(m_pSB) Free();
 
@@ -55,6 +57,7 @@ BOOL CWave::Load(char *strFile){
 	hMMI = mmioOpen(strFile, NULL, MMIO_READ|MMIO_ALLOCBUF);
 
 	if(!hMMI){
+		RS2NoteAudioLoad(m_strName.c_str(), false, 0, 0);
 		Debug("open error.\n");
 		return FALSE;
 	}
@@ -96,11 +99,13 @@ BOOL CWave::Load(char *strFile){
 
 	//	クローズ
 	mmioClose(hMMI, 0);
+	RS2NoteAudioLoad(m_strName.c_str(), true, len, m_BytesPerSec);
 	Debug("ok.\n");
 	return TRUE;
 
 error:
 	mmioClose(hMMI, 0);
+	RS2NoteAudioLoad(m_strName.c_str(), false, 0, 0);
 	return FALSE;
 }
 

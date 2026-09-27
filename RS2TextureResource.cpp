@@ -28,6 +28,13 @@ bool RS2TextureRef::GetSize(int *width, int *height) const{
 	return true;
 }
 
+bool RS2TextureRef::GetDiagnostics(RS2TextureDiagnosticsInfo *out) const{
+	if(!out || !m_Resource ||
+		!m_Resource->IsOwnedByBackend(RS2_RENDERER_D3D12)) return false;
+	return RS2D3D12_GetTexturePayloadDiagnostics(
+		m_Resource->GetPayloadForBackend(), out);
+}
+
 CRS2TextureResource::CRS2TextureResource()
 	: m_Backend(RS2_RENDERER_NONE),
 	  m_Payload(0),

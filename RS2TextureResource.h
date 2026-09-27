@@ -23,6 +23,23 @@
 
 class CRS2TextureResource;
 
+enum RS2TextureDiagnosticFormat {
+    RS2_TEXTURE_DIAG_UNKNOWN, RS2_TEXTURE_DIAG_RGBA8,
+    RS2_TEXTURE_DIAG_BC1, RS2_TEXTURE_DIAG_BC3
+};
+
+struct RS2TextureDiagnosticsInfo {
+    RS2TextureDiagnosticFormat format;
+    unsigned int mipCount;
+    unsigned long long decodedLogicalBytes;
+    unsigned long long gpuLogicalBytes;
+    unsigned long long gpuAllocationBytes;
+    bool allocationAvailable;
+    RS2TextureDiagnosticsInfo(): format(RS2_TEXTURE_DIAG_UNKNOWN), mipCount(0),
+        decodedLogicalBytes(0), gpuLogicalBytes(0), gpuAllocationBytes(0),
+        allocationAvailable(false) {}
+};
+
 /*
  *	Where a locked texture's pixels are.
  *
@@ -79,6 +96,7 @@ public:
 	CRS2TextureResource *GetResource() const{ return m_Resource; }
 
 	bool GetSize(int *width, int *height) const;
+	bool GetDiagnostics(RS2TextureDiagnosticsInfo *out) const;
 };
 
 /*

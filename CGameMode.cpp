@@ -1,5 +1,6 @@
 //	Modified for RS2EX on 2026-09-19, 2026-09-20, 2026-09-21, 2026-09-26.
 #include "stdafx.h"
+#include "RS2PluginDiagnosticsUI.h"
 #include "HighTimer.h"
 #include "RS2Fixture.h"
 #include "Capture.h"
@@ -491,6 +492,7 @@ void CGameMode::SetNeutral(){
 bool CGameMode::ScanInputFrame(
 	int option	//	2: photomode
 ){
+	if(RS2PluginDiagnosticsUIScanInput()) return true;
 	if(g_RSPV) return false;
 	bool enmouse = option&2 ? false : true;
 	int i, j;
@@ -637,7 +639,7 @@ void CGameMode::RenderFrame(
 		SetUVMap(0.875f, 0.375f, 1.0f, 0.5f);
 		TexMap2DRect(right1, ty, right2, g_DispHeight, 0xffffffff);
 		CToggleIcon::RenderPopupText();
-		if(top2<=0) return;
+		if(top2<=0){ RS2PluginDiagnosticsUIRender(); return; }
 		g_StrTex->RenderCenter(TILE_UNIT*6+MODE_LABEL_WIDTH/2, top1+TILE_UNIT/4+FontY(TILE_UNIT),
 			g_Skin->m_FrameData.m_LabelFontColor, 0, ms_ModeLabel.c_str());
 		g_StrTex->RenderLeft(TILE_UNIT*10+MODE_LABEL_WIDTH, top1+FontY(TILE_UNIT),
@@ -656,6 +658,7 @@ void CGameMode::RenderFrame(
 			ScaleColor(0xffffffff, g_BlinkAlpha), ScaleColor(0xff000000, g_BlinkAlpha),
 			speed ? FlashIn("%d %s", speed, lang(XSpeed)) : lang(Paused));
 	}
+	RS2PluginDiagnosticsUIRender();
 }
 
 /*
